@@ -122,7 +122,7 @@ fn main() {
     // STEP 4: Print the analysis summary
     
     println!("\n{}", "=".repeat(60));
-    println!("📊 SECURITY ANALYSIS SUMMARY");
+    println!("SECURITY ANALYSIS SUMMARY");
     println!("{}", "=".repeat(60));
     
     // Overall threat counts
@@ -145,9 +145,9 @@ fn main() {
         .collect();
     
     if high_risk_ips.is_empty() {
-        println!("   ✅ No high-risk IPs detected (3+ occurrences)");
+        println!("   No high-risk IPs detected (3+ occurrences)");
     } else {
-        println!("   🚨 High-Risk IPs (3+ occurrences):");
+        println!("   High-Risk IPs (3+ occurrences):");
         for (ip, count) in high_risk_ips {
             println!("      {} - {} occurrences", ip, count);
         }
@@ -161,7 +161,7 @@ fn main() {
     }
     
     // Risk assessment
-    println!("\n⚖️  Overall Risk Level:");
+    println!("\n Overall Risk Level:");
     let total_threats = failed_logins + root_attempts + suspicious_file_access + critical_alerts;
     let risk_level = if total_threats >= 10 {
         "HIGH - Immediate action required"
