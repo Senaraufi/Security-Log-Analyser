@@ -1,0 +1,66 @@
+This is my txt file for possible ideas about a Startup i want to make. I want this statrup to be more Cyber security based and be focused on security.
+Given the time we live in the best bet would probably be AI. By that i mean either build something with the help of AI, or build something that can do something that AI cannot yet or will not.The trick is AI and Computers can obviously be and do things humans can so its very difficult to build something with a computer that AI (A technical computer cant do). 
+Maybe build something that only humans can do BUT build it with code and AI!
+
+Well the question is "WHAT"? 
+
+An app that takes Computer and Cybersecurity terms or even computer engineering terms and gives them back in plain english simplified. An automated AI Soc analysit.
+
+An AI tool that:
+
+	-ingests logs from SIEM/SOAR
+
+	-summarizes threats
+
+	-determines root cause
+
+	-recommends remediation steps
+
+	-reduces false positives
+
+	-explains findings in plain English
+Here is the catch tho I wanna build this Entirely (or mainly mostly) with Rust. Will i be able to do this idk? But ill def try. If encessary i can switch programing languages but if not extremely neccesary ill try make it possible with rust. 
+
+A Rust backend that:
+
+	-ingests logs (syslog, Windows, cloud events)
+
+	-normalizes them super fast with Rust
+
+	-runs rule-based detection
+
+	-sends summaries to an AI model for reasoning only (no hacking)
+
+	-outputs human-readable security insights
+Now i need some research on how can i build this and IF i can.
+
+┌─────────────────┐
+│  Log Sources    │ (Syslog, Windows, Cloud)
+└────────┬────────┘
+         │
+┌────────▼────────┐
+│ Rust Ingestor   │ (tokio async streams)
+│  - Parse        │
+│  - Normalize    │
+│  - Buffer       │
+└────────┬────────┘
+         │
+┌────────▼────────┐
+│ Rule Engine     │ (Rust-based detection)
+│  - Sigma rules  │
+│  - Custom rules │
+│  - IOC matching │
+└────────┬────────┘
+         │
+┌────────▼────────┐
+│ AI Summarizer   │ (API calls to LLM)
+│  - Batch events │
+│  - Context      │
+│  - Reasoning    │
+└────────┬────────┘
+         │
+┌────────▼────────┐
+│ Output Layer    │ (REST API / Dashboard)
+└─────────────────┘
+
+possible workflow
