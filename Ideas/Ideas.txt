@@ -64,3 +64,52 @@ Now i need some research on how can i build this and IF i can.
 └─────────────────┘
 
 possible workflow
+
+I can also make a frontend that alows the user to upload the logs and get a response rather than going through the terminal or the backend logic fo ppl who are not developeers or into comp sci
+
+
+frontend flow
+
+┌─────────────────┐
+│   Web Browser   │  ← User uploads logs here
+│   (Frontend)    │
+└────────┬────────┘
+         │ HTTP
+         ▼
+┌─────────────────┐
+│  Rust Backend   │  ← Your log parser + API
+│   (Axum/Actix)  │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│   AI API        │  ← OpenAI/Claude
+│ (OpenAI/Claude) │
+└─────────────────┘
+
+┌─────────────────────────────────────────────────┐
+│     Security Log Analyzer                       │
+├─────────────────────────────────────────────────┤
+│                                                 │
+│  Upload Log File:                               │
+│  ┌─────────────────────────────────┐            │
+│  │  [Choose File] sample_logs.txt  │            │
+│  └─────────────────────────────────┘            │
+│                                                 │
+│  [ Analyze Logs ]                               │
+│                                                 │
+├─────────────────────────────────────────────────┤
+│     Analysis Results:                           │
+│                                                 │
+│      Failed Login Attempts: 4                   │
+│                                                 │
+│     Suspicious IPs:                             │
+│    • 192.168.1.100 (3 attempts)                 │
+│    • 203.0.113.45 (2 attempts)                  │
+│                                                 │
+│     Critical Alerts:                            │
+│    • Brute force attack detected from           │
+│      192.168.1.100                              │
+│                                                 │
+│  [ Download Report ]  [ Analyze with AI ]       │
+└─────────────────────────────────────────────────┘

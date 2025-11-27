@@ -2,7 +2,7 @@
 
 Building a Rust-based AI security tool that ingests logs, detects threats, and provides AI-powered analysis.
 
-## 🎯 Project Goal
+## Project Goal
 
 An AI tool that:
 - Ingests logs from SIEM/SOAR systems
@@ -23,7 +23,7 @@ An AI tool that:
 - AI model integration (OpenAI/Claude/local models)
 - Human-readable security insights
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 Startup/
@@ -39,9 +39,9 @@ Startup/
 └── README.md                  # This file
 ```
 
-## 🚀 Current Progress
+## Current Progress
 
-### ✅ Completed
+### Completed
 - [x] Initial project planning
 - [x] Learning roadmap created
 - [x] First Rust project: Log parser
@@ -50,17 +50,17 @@ Startup/
   - Detects failed login attempts
   - Identifies suspicious IPs
 
-### 🔄 In Progress
+### In Progress
 - [ ] Learning Rust fundamentals (Week 1-3)
 - [ ] Building log parsing skills
 
-### 📋 Next Steps
+### Next Steps
 - [ ] Add async log streaming
 - [ ] Integrate with AI APIs
 - [ ] Build rule engine
 - [ ] Create web interface
 
-## 🛠️ Getting Started
+## Getting Started
 
 ### Prerequisites
 - Rust installed (`curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`)
@@ -83,18 +83,18 @@ cd log_parser
 cargo clippy
 ```
 
-## 📚 Learning Resources
+## Learning Resources
 
 See `rust-learning-roadmap.md` for a comprehensive 12-week learning plan.
 
-## 🔒 Security Note
+## Security Note
 
 This is a private repository for development and learning. Do not commit:
 - API keys
 - Sensitive credentials
 - Real security logs with private data
 
-## 📝 License
+## License
 
 Private project - All rights reserved
 

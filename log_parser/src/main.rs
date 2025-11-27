@@ -1,29 +1,21 @@
-// Import the Regex library for pattern matching in strings
-// This lets us search for patterns like IP addresses, timestamps, etc.
+// Regex library for pattern matching in strings
+// to search for patterns like IP addresses, timestamps...
 use regex::Regex;
-
-// Import File to open files from the filesystem
 use std::fs::File;
 
-// Import BufRead and BufReader for efficient line-by-line reading
-// BufReader reads in chunks (buffered) which is faster than reading byte-by-byte
+// efficient line-by-line reading reads in chunks (safer than byte-by-byte)
 use std::io::{BufRead, BufReader};
 
-// ============================================================================
-// STRUCT DEFINITION: LogEntry
-// ============================================================================
-// This is our data structure that holds all the important parts of a log line
-// Think of it like a template or blueprint for storing log information
+// HashMap to count IP occurrences (key-value pairs)
+use std::collections::HashMap;
 
-// #[derive(Debug)] automatically creates a way to print this struct for debugging
-#[derive(Debug)]
+// STRUCT DEFINITION: LogEntry
+// data structure that holds all the important parts of a log line
+// template or blueprint for storing log information
+#[derive(Debug)] // automatically creates a way to print this struct for debugging
 struct LogEntry {
-    // The time when the event happened (e.g., "2024-01-15 10:30:45")
     timestamp: String,
-    
-    // The severity level (e.g., "ERROR", "INFO", "CRITICAL")
     level: String,
-    
     // The IP address involved (if any exists in the log)
     // Option<String> means it can be Some("192.168.1.1") or None (if no IP found)
     ip_address: Option<String>,
@@ -31,21 +23,16 @@ struct LogEntry {
     // The username involved (if any exists in the log)
     // Option<String> means it might not always be present
     username: Option<String>,
-    
-    // The full message text from the log
+
     message: String,
 }
 
-// ============================================================================
 // MAIN FUNCTION: Entry point of the program
-// ============================================================================
 fn main() {
     // Print a header message to show the program is starting
     println!("Security Log Parser - Starting Analysis\n");
     
-    // ========================================================================
     // STEP 1: Open and prepare the log file for reading
-    // ========================================================================
     
     // File::open() tries to open "sample_logs.txt"
     // .expect() means: if it fails, crash the program with this error message
@@ -57,17 +44,16 @@ fn main() {
     // This is MUCH faster for large files
     let reader = BufReader::new(file);
     
-    // ========================================================================
     // STEP 2: Initialize counters and storage for our analysis
-    // ========================================================================
     
-    // Counter for how many failed login attempts we find
-    // 'mut' means mutable - we can change this value later
     let mut failed_logins = 0;
+    let mut root_attempts = 0;  // Track attempts to access root user
+    let mut suspicious_file_access = 0;  // Track suspicious file operations
+    let mut critical_alerts = 0;
     
-    // A vector (dynamic array) to store all suspicious IP addresses
-    // Vec::new() creates an empty vector that we'll add IPs to
-    let mut suspicious_ips = Vec::new();
+    // HashMap to count how many times each IP appears
+    // Key: IP address (String), Value: count (usize)
+    let mut ip_frequency: HashMap<String, usize> = HashMap::new();
     
     // ========================================================================
     // STEP 3: Process each line of the log file
@@ -94,52 +80,100 @@ fn main() {
                 // {:?} is the Debug format - it prints the whole struct
                 println!("📋 Parsed: {:?}", entry);
                 
-                // ============================================================
                 // THREAT DETECTION LOGIC
-                // ============================================================
                 
-                // Check if this is a failed login attempt
-                // We look for two conditions:
-                // 1. The log level is "ERROR"
-                // 2. The message contains the text "Failed login"
-                if entry.level == "ERROR" && entry.message.contains("Failed login") {
-                    
-                    // Increment our counter of failed logins
-                    failed_logins += 1;
-                    
-                    // If this log entry has an IP address, add it to our list
-                    // &entry.ip_address borrows the IP (doesn't take ownership)
-                    // if let Some(ip) = ... means "if there IS an IP address"
-                    if let Some(ip) = &entry.ip_address {
-                        // .clone() creates a copy of the IP string
-                        // .push() adds it to the end of our vector
-                        suspicious_ips.push(ip.clone());
-                    }
+                // Track IP frequency for all entries
+                if let Some(ip) = &entry.ip_address {
+                    // .entry() gets or creates the HashMap entry for this IP
+                    // .and_modify() updates if exists, .or_insert() creates if new
+                    ip_frequency.entry(ip.clone())
+                        .and_modify(|count| *count += 1)  // Increment if exists
+                        .or_insert(1);  // Set to 1 if new
                 }
                 
-                // Check if this is a CRITICAL alert
-                // These are the most severe and need immediate attention
+                // DETECTION RULE 1: Failed login attempts
+                if entry.level == "ERROR" && entry.message.contains("Failed login") {
+                    failed_logins += 1;
+                }
+                
+                // DETECTION RULE 2: Root user access attempts (high risk)
+                if entry.message.contains("user: root") {
+                    root_attempts += 1;
+                    println!(" Root access attempt detected: {}", entry.message);
+                }
+                
+                // DETECTION RULE 3: Suspicious file access
+                if entry.message.contains("/etc/passwd") || 
+                   entry.message.contains("/etc/shadow") ||
+                   entry.message.contains("Suspicious file") {
+                    suspicious_file_access += 1;
+                    println!("🔍 Suspicious file access: {}", entry.message);
+                }
+                
+                // DETECTION RULE 4: Critical alerts
                 if entry.level == "CRITICAL" {
-                    // Print a special alert message
-                    println!("CRITICAL ALERT: {}", entry.message);
+                    critical_alerts += 1;
+                    println!("🚨 CRITICAL ALERT: {}", entry.message);
                 }
             }
         }
     }
     
-    // ========================================================================
     // STEP 4: Print the analysis summary
-    // ========================================================================
     
-    // \n creates a blank line before the summary
-    println!("\nAnalysis Summary:");
+    println!("\n{}", "=".repeat(60));
+    println!("📊 SECURITY ANALYSIS SUMMARY");
+    println!("{}", "=".repeat(60));
     
-    // Print how many failed login attempts we found
+    // Overall threat counts
+    println!("\nThreat Statistics:");
     println!("   Failed login attempts: {}", failed_logins);
+    println!("   Root user attempts: {}", root_attempts);
+    println!("   Suspicious file access: {}", suspicious_file_access);
+    println!("   Critical alerts: {}", critical_alerts);
     
-    // Print all the suspicious IP addresses we collected
-    // {:?} prints the vector in a debug format showing all IPs
-    println!("   Suspicious IPs: {:?}", suspicious_ips);
+    // Find IPs with multiple failed attempts (potential attackers)
+    println!("\n🎯 IP Address Analysis:");
+    
+    // Create a vector of (IP, count) pairs and sort by count (highest first)
+    let mut ip_vec: Vec<_> = ip_frequency.iter().collect();
+    ip_vec.sort_by(|a, b| b.1.cmp(a.1));  // Sort by count, descending
+    
+    // Flag IPs with 3+ occurrences as high risk
+    let high_risk_ips: Vec<_> = ip_vec.iter()
+        .filter(|(_, count)| **count >= 3)
+        .collect();
+    
+    if high_risk_ips.is_empty() {
+        println!("   ✅ No high-risk IPs detected (3+ occurrences)");
+    } else {
+        println!("   🚨 High-Risk IPs (3+ occurrences):");
+        for (ip, count) in high_risk_ips {
+            println!("      {} - {} occurrences", ip, count);
+        }
+    }
+    
+    // Show all IPs with their counts
+    println!("\n   All IP Activity:");
+    for (ip, count) in ip_vec {
+        let risk_indicator = if *count >= 3 { "🔴" } else { "🟢" };
+        println!("      {} {} - {} occurrences", risk_indicator, ip, count);
+    }
+    
+    // Risk assessment
+    println!("\n⚖️  Overall Risk Level:");
+    let total_threats = failed_logins + root_attempts + suspicious_file_access + critical_alerts;
+    let risk_level = if total_threats >= 10 {
+        "HIGH - Immediate action required"
+    } else if total_threats >= 5 {
+        "MEDIUM - Monitor closely"
+    } else {
+        "LOW - Normal activity"
+    };
+    println!("   {}", risk_level);
+    println!("   Total threat indicators: {}", total_threats);
+    
+    println!("\n{}", "=".repeat(60));
 }
 
 // ============================================================================
