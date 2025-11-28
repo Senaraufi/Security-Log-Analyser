@@ -16,7 +16,7 @@ The Security API is a full-stack web application that:
   - Accepts log file uploads via HTTP POST
   - Analyzes logs using the same logic as the CLI tool
   - Returns JSON results to the frontend
-  - Displays beautiful, interactive results in the browser
+  - Displays interactive results in the browser
 
 Architecture:
 ┌─────────────────────────────────────────────────────────────────┐
