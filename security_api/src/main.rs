@@ -30,6 +30,9 @@ struct ThreatStats {
     root_attempts: usize,
     suspicious_file_access: usize,
     critical_alerts: usize,
+    sql_injection_attempts: usize,
+    port_scanning_attempts: usize,
+    malware_detections: usize,
 }
 
 #[derive(Serialize)]
@@ -340,11 +343,23 @@ async fn serve_frontend() -> Html<&'static str> {
                         <div class="stat-value" id="critical-alerts">0</div>
                         <div class="stat-label">Critical Alerts</div>
                     </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="sql-injection">0</div>
+                        <div class="stat-label">SQL Injection</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="port-scanning">0</div>
+                        <div class="stat-label">Port Scanning</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="malware">0</div>
+                        <div class="stat-label">Malware</div>
+                    </div>
                 </div>
             </div>
             
             <div class="section">
-                <h2>🎯 IP Address Analysis</h2>
+                <h2> IP Address Analysis</h2>
                 <div id="high-risk-ips"></div>
                 <div id="all-ips"></div>
             </div>
@@ -416,6 +431,9 @@ async fn serve_frontend() -> Html<&'static str> {
             document.getElementById('root-attempts').textContent = data.threat_statistics.root_attempts;
             document.getElementById('file-access').textContent = data.threat_statistics.suspicious_file_access;
             document.getElementById('critical-alerts').textContent = data.threat_statistics.critical_alerts;
+            document.getElementById('sql-injection').textContent = data.threat_statistics.sql_injection_attempts;
+            document.getElementById('port-scanning').textContent = data.threat_statistics.port_scanning_attempts;
+            document.getElementById('malware').textContent = data.threat_statistics.malware_detections;
             
             const highRiskContainer = document.getElementById('high-risk-ips');
             if (data.ip_analysis.high_risk_ips.length > 0) {
@@ -483,6 +501,9 @@ fn process_logs(content: &str) -> AnalysisResult {
     let mut root_attempts = 0;
     let mut suspicious_file_access = 0;
     let mut critical_alerts = 0;
+    let mut sql_injection_attempts = 0;
+    let mut port_scanning_attempts = 0;
+    let mut malware_detections = 0;
     let mut ip_frequency: HashMap<String, usize> = HashMap::new();
     
     for line in content.lines() {
@@ -510,6 +531,24 @@ fn process_logs(content: &str) -> AnalysisResult {
             if entry.level == "CRITICAL" {
                 critical_alerts += 1;
             }
+            
+            if entry.message.contains("SELECT") ||
+               entry.message.contains("DROP TABLE") ||
+               entry.message.contains("UNION SELECT") {
+                sql_injection_attempts += 1;
+            }
+            
+            if entry.message.contains("port scan") ||
+               entry.message.contains("nmap") {
+                port_scanning_attempts += 1;
+            }
+            
+            if entry.message.contains("malware") ||
+               entry.message.contains("trojan") ||
+               entry.message.contains("virus") ||
+               entry.message.contains("ransomware") {
+                malware_detections += 1;
+            }
         }
     }
     
@@ -533,7 +572,8 @@ fn process_logs(content: &str) -> AnalysisResult {
         })
         .collect();
     
-    let total_threats = failed_logins + root_attempts + suspicious_file_access + critical_alerts;
+    let total_threats = failed_logins + root_attempts + suspicious_file_access + critical_alerts + 
+                        sql_injection_attempts + port_scanning_attempts + malware_detections;
     let (level, description) = if total_threats >= 10 {
         ("HIGH", "Immediate action required")
     } else if total_threats >= 5 {
@@ -548,6 +588,9 @@ fn process_logs(content: &str) -> AnalysisResult {
             root_attempts,
             suspicious_file_access,
             critical_alerts,
+            sql_injection_attempts,
+            port_scanning_attempts,
+            malware_detections,
         },
         ip_analysis: IpAnalysis {
             high_risk_ips,

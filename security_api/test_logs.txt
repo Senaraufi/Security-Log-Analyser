@@ -1,0 +1,20 @@
+2024-01-15 10:30:45 [ERROR] Failed login attempt from 192.168.1.100 user: admin
+2024-01-15 10:31:12 [INFO] Successful login from 10.0.0.50 user: john.doe
+2024-01-15 10:32:03 [WARN] Multiple failed attempts from 192.168.1.100
+2024-01-15 10:33:21 [ERROR] Failed login attempt from 192.168.1.100 user: root
+2024-01-15 10:34:55 [INFO] User john.doe accessed /admin/dashboard
+2024-01-15 10:35:10 [ERROR] Failed login attempt from 203.0.113.45 user: admin
+2024-01-15 10:36:22 [CRITICAL] Brute force attack detected from 192.168.1.100
+2024-01-15 10:37:01 [INFO] Firewall rule applied, blocking 192.168.1.100
+2024-01-15 10:38:15 [WARN] Suspicious file access: /etc/passwd by user: www-data
+2024-01-15 10:39:30 [ERROR] Failed login attempt from 203.0.113.45 user: root
+2024-01-15 10:40:00 [ERROR] SQL injection attempt detected: SELECT * FROM users
+2024-01-15 10:41:15 [WARN] Suspicious query: DROP TABLE users detected
+2024-01-15 10:42:30 [ERROR] UNION SELECT attack from 192.168.1.100
+2024-01-15 10:43:45 [WARN] Port scan detected from 203.0.113.45
+2024-01-15 10:44:00 [ERROR] nmap scan activity from 192.168.1.100
+2024-01-15 10:45:15 [CRITICAL] Malware signature detected in uploaded file
+2024-01-15 10:46:30 [ERROR] Trojan detected: Backdoor.Win32.Agent
+2024-01-15 10:47:45 [CRITICAL] Ransomware activity detected
+2024-01-15 10:48:00 [WARN] Virus scan found infected file
+2024-01-15 10:49:15 [ERROR] Failed login attempt from 192.168.1.100 user: admin
