@@ -1,6 +1,6 @@
 # How the Log Parser Works - Visual Guide
 
-## 🎯 Overall Flow
+## Overall Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -47,7 +47,7 @@
 
 ---
 
-## 📝 Example: Processing One Log Line
+## Example: Processing One Log Line
 
 ### Input Line:
 ```
@@ -109,8 +109,8 @@
 ┌──────────────────────────────────────────────────────────────────┐
 │ 5. THREAT DETECTION                                             │
 │                                                                  │
-│ Check 1: Is level == "ERROR"? ✅ YES                             │
-│ Check 2: Does message contain "Failed login"? ✅ YES             │
+│ Check 1: Is level == "ERROR"? YES                             │
+│ Check 2: Does message contain "Failed login"? YES             │
 │                                                                  │
 │ Actions:                                                         │
 │   - failed_logins += 1  (now = 1)                                │

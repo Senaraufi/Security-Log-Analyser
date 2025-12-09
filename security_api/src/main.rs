@@ -22,6 +22,14 @@ struct AnalysisResult {
     threat_statistics: ThreatStats,
     ip_analysis: IpAnalysis,
     risk_assessment: RiskAssessment,
+    parsing_info: ParsingInfo,
+}
+
+#[derive(Serialize)]
+struct ParsingInfo {
+    total_lines: usize,
+    parsed_lines: usize,
+    skipped_lines: usize,
 }
 
 #[derive(Serialize)]
@@ -365,8 +373,27 @@ async fn serve_frontend() -> Html<&'static str> {
             </div>
             
             <div class="section">
-                <h2>⚖️ Risk Assessment</h2>
+                <h2>⚖️  Risk Assessment</h2>
                 <div id="risk-assessment"></div>
+            </div>
+            
+            <div class="section">
+                <h2>📄 Parsing Information</h2>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5em; font-weight: bold; color: #667eea;" id="total-lines">0</div>
+                        <div style="color: #666; font-size: 0.9em;">Total Lines</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5em; font-weight: bold; color: #10b981;" id="parsed-lines">0</div>
+                        <div style="color: #666; font-size: 0.9em;">Parsed Successfully</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5em; font-weight: bold; color: #ef4444;" id="skipped-lines">0</div>
+                        <div style="color: #666; font-size: 0.9em;">Skipped/Failed</div>
+                    </div>
+                </div>
+                <div id="parsing-warning" style="margin-top: 15px;"></div>
             </div>
         </div>
     </div>
@@ -417,7 +444,7 @@ async fn serve_frontend() -> Html<&'static str> {
             } catch (error) {
                 errorContainer.innerHTML = `
                     <div class="alert alert-error">
-                        ❌ Error: ${error.message}
+                         Error: ${error.message}
                     </div>
                 `;
             } finally {
@@ -434,6 +461,25 @@ async fn serve_frontend() -> Html<&'static str> {
             document.getElementById('sql-injection').textContent = data.threat_statistics.sql_injection_attempts;
             document.getElementById('port-scanning').textContent = data.threat_statistics.port_scanning_attempts;
             document.getElementById('malware').textContent = data.threat_statistics.malware_detections;
+            
+            // Display parsing information
+            document.getElementById('total-lines').textContent = data.parsing_info.total_lines;
+            document.getElementById('parsed-lines').textContent = data.parsing_info.parsed_lines;
+            document.getElementById('skipped-lines').textContent = data.parsing_info.skipped_lines;
+            
+            // Show warning if many lines were skipped
+            const warningContainer = document.getElementById('parsing-warning');
+            if (data.parsing_info.skipped_lines > 0) {
+                const percentage = (data.parsing_info.skipped_lines / data.parsing_info.total_lines * 100).toFixed(1);
+                warningContainer.innerHTML = `
+                    <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; border-radius: 5px;">
+                        <strong>⚠️ Warning:</strong> ${data.parsing_info.skipped_lines} lines (${percentage}%) could not be parsed.
+                        <br><small>Expected format: YYYY-MM-DD HH:MM:SS [LEVEL] message</small>
+                    </div>
+                `;
+            } else {
+                warningContainer.innerHTML = '<div style="color: #10b981;">✅ All lines parsed successfully!</div>';
+            }
             
             const highRiskContainer = document.getElementById('high-risk-ips');
             if (data.ip_analysis.high_risk_ips.length > 0) {
@@ -506,8 +552,19 @@ fn process_logs(content: &str) -> AnalysisResult {
     let mut malware_detections = 0;
     let mut ip_frequency: HashMap<String, usize> = HashMap::new();
     
+    let mut total_lines = 0;
+    let mut parsed_lines = 0;
+    
     for line in content.lines() {
+        total_lines += 1;
+        
+        // Skip empty lines
+        if line.trim().is_empty() {
+            continue;
+        }
+        
         if let Some(entry) = parse_log_line(line) {
+            parsed_lines += 1;
             if let Some(ip) = &entry.ip_address {
                 ip_frequency.entry(ip.clone())
                     .and_modify(|count| *count += 1)
@@ -600,6 +657,11 @@ fn process_logs(content: &str) -> AnalysisResult {
             level: level.to_string(),
             total_threats,
             description: description.to_string(),
+        },
+        parsing_info: ParsingInfo {
+            total_lines,
+            parsed_lines,
+            skipped_lines: total_lines - parsed_lines,
         },
     }
 }
