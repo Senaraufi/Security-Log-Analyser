@@ -1,0 +1,15 @@
+2024-12-09 20:30:00 [ERROR] This line is correct
+01/15/2024 10:30:45 [ERROR] Wrong date format - using MM/DD/YYYY
+2024-01-15 10:30:45 ERROR Missing brackets around level
+15-01-2024 10:30:45 [ERROR] Wrong date format - DD-MM-YYYY
+2024-01-15 10:30 [ERROR] Missing seconds in time
+2024-01-15 [ERROR] Missing time completely
+10:30:45 [ERROR] Missing date completely
+2024-01-15 10:30:45 [INFO] This line is also correct
+2024-01-15  10:30:45 [ERROR] Double space before time
+2024-01-15 10:30:45[ERROR] Missing space before bracket
+Just a random line with no format at all
+2024-12-09 20:35:00 [CRITICAL] Another correct line
+2024/12/09 20:30:00 [ERROR] Using slashes instead of dashes
+2024-12-09 14:30:45 PM [ERROR] 12-hour format not supported
+2024-12-09 20:40:00 [WARN] Final correct line

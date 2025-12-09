@@ -30,6 +30,15 @@ struct ParsingInfo {
     total_lines: usize,
     parsed_lines: usize,
     skipped_lines: usize,
+    errors: Vec<ParseError>,
+}
+
+#[derive(Serialize)]
+struct ParseError {
+    line_number: usize,
+    line_content: String,
+    error_type: String,
+    suggestion: String,
 }
 
 #[derive(Serialize)]
@@ -471,12 +480,42 @@ async fn serve_frontend() -> Html<&'static str> {
             const warningContainer = document.getElementById('parsing-warning');
             if (data.parsing_info.skipped_lines > 0) {
                 const percentage = (data.parsing_info.skipped_lines / data.parsing_info.total_lines * 100).toFixed(1);
-                warningContainer.innerHTML = `
-                    <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; border-radius: 5px;">
+                let errorHtml = `
+                    <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; border-radius: 5px; margin-bottom: 15px;">
                         <strong>⚠️ Warning:</strong> ${data.parsing_info.skipped_lines} lines (${percentage}%) could not be parsed.
                         <br><small>Expected format: YYYY-MM-DD HH:MM:SS [LEVEL] message</small>
                     </div>
                 `;
+                
+                // Display specific errors
+                if (data.parsing_info.errors && data.parsing_info.errors.length > 0) {
+                    errorHtml += '<div style="margin-top: 15px;"><h4 style="margin-bottom: 10px;">🔍 Parsing Errors (showing first 10):</h4>';
+                    data.parsing_info.errors.forEach(error => {
+                        errorHtml += `
+                            <div style="background: #fee; border-left: 3px solid #ef4444; padding: 10px; margin-bottom: 10px; border-radius: 4px; font-size: 0.9em;">
+                                <div style="font-weight: bold; color: #dc2626; margin-bottom: 5px;">
+                                    Line ${error.line_number}: ${error.error_type}
+                                </div>
+                                <div style="background: #f5f5f5; padding: 8px; border-radius: 3px; margin: 5px 0; font-family: monospace; font-size: 0.85em; overflow-x: auto;">
+                                    ${error.line_content}
+                                </div>
+                                <div style="color: #059669; margin-top: 5px;">
+                                    💡 <strong>Fix:</strong> ${error.suggestion}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    if (data.parsing_info.skipped_lines > data.parsing_info.errors.length) {
+                        errorHtml += `<div style="color: #666; font-style: italic; margin-top: 10px;">
+                            ... and ${data.parsing_info.skipped_lines - data.parsing_info.errors.length} more errors
+                        </div>`;
+                    }
+                    
+                    errorHtml += '</div>';
+                }
+                
+                warningContainer.innerHTML = errorHtml;
             } else {
                 warningContainer.innerHTML = '<div style="color: #10b981;">✅ All lines parsed successfully!</div>';
             }
@@ -554,6 +593,7 @@ fn process_logs(content: &str) -> AnalysisResult {
     
     let mut total_lines = 0;
     let mut parsed_lines = 0;
+    let mut parse_errors: Vec<ParseError> = Vec::new();
     
     for line in content.lines() {
         total_lines += 1;
@@ -605,6 +645,22 @@ fn process_logs(content: &str) -> AnalysisResult {
                entry.message.contains("virus") ||
                entry.message.contains("ransomware") {
                 malware_detections += 1;
+            }
+        } else {
+            // Line failed to parse - diagnose the error
+            // Only store first 10 errors to avoid overwhelming the UI
+            if parse_errors.len() < 10 {
+                let (error_type, suggestion) = diagnose_parse_error(line);
+                parse_errors.push(ParseError {
+                    line_number: total_lines,
+                    line_content: if line.len() > 100 {
+                        format!("{}...", &line[..100])
+                    } else {
+                        line.to_string()
+                    },
+                    error_type,
+                    suggestion,
+                });
             }
         }
     }
@@ -662,6 +718,7 @@ fn process_logs(content: &str) -> AnalysisResult {
             total_lines,
             parsed_lines,
             skipped_lines: total_lines - parsed_lines,
+            errors: parse_errors,
         },
     }
 }
@@ -689,4 +746,91 @@ fn parse_log_line(line: &str) -> Option<LogEntry> {
         username,
         message: message.to_string(),
     })
+}
+
+fn diagnose_parse_error(line: &str) -> (String, String) {
+    use regex::Regex;
+    
+    // Check for date format
+    let date_pattern = Regex::new(r"\d{4}-\d{2}-\d{2}").unwrap();
+    let has_date = date_pattern.is_match(line);
+    
+    // Check for time format
+    let time_pattern = Regex::new(r"\d{2}:\d{2}:\d{2}").unwrap();
+    let has_time = time_pattern.is_match(line);
+    
+    // Check for level in brackets
+    let level_pattern = Regex::new(r"\[(\w+)\]").unwrap();
+    let has_level = level_pattern.is_match(line);
+    
+    // Check for level without brackets
+    let level_no_brackets = Regex::new(r"\b(ERROR|WARN|INFO|CRITICAL|DEBUG)\b").unwrap();
+    let has_level_no_brackets = level_no_brackets.is_match(line) && !has_level;
+    
+    // Check for wrong date format (MM/DD/YYYY or DD-MM-YYYY)
+    let wrong_date_slash = Regex::new(r"\d{2}/\d{2}/\d{4}").unwrap();
+    let wrong_date_reverse = Regex::new(r"\d{2}-\d{2}-\d{4}").unwrap();
+    
+    // Diagnose the issue
+    if !has_date && !has_time {
+        return (
+            "Missing timestamp".to_string(),
+            "Add timestamp in format: YYYY-MM-DD HH:MM:SS".to_string()
+        );
+    }
+    
+    if wrong_date_slash.is_match(line) {
+        return (
+            "Wrong date format (MM/DD/YYYY)".to_string(),
+            "Use YYYY-MM-DD format instead of MM/DD/YYYY".to_string()
+        );
+    }
+    
+    if wrong_date_reverse.is_match(line) {
+        return (
+            "Wrong date format (DD-MM-YYYY)".to_string(),
+            "Use YYYY-MM-DD format instead of DD-MM-YYYY".to_string()
+        );
+    }
+    
+    if !has_date {
+        return (
+            "Invalid date format".to_string(),
+            "Date must be YYYY-MM-DD (e.g., 2024-12-09)".to_string()
+        );
+    }
+    
+    if !has_time {
+        return (
+            "Invalid time format".to_string(),
+            "Time must be HH:MM:SS in 24-hour format (e.g., 14:30:45)".to_string()
+        );
+    }
+    
+    if has_level_no_brackets {
+        return (
+            "Missing brackets around level".to_string(),
+            "Level must be in square brackets: [ERROR], [WARN], [INFO], [CRITICAL]".to_string()
+        );
+    }
+    
+    if !has_level {
+        return (
+            "Missing or invalid log level".to_string(),
+            "Add log level in brackets after timestamp: [ERROR], [WARN], [INFO], [CRITICAL]".to_string()
+        );
+    }
+    
+    // Check spacing issues
+    if has_date && has_time && has_level {
+        return (
+            "Incorrect spacing or format".to_string(),
+            "Format must be: YYYY-MM-DD HH:MM:SS [LEVEL] message (check spaces)".to_string()
+        );
+    }
+    
+    (
+        "Unknown format error".to_string(),
+        "Expected format: YYYY-MM-DD HH:MM:SS [LEVEL] message".to_string()
+    )
 }
