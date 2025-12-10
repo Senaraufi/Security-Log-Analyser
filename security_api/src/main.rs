@@ -724,113 +724,169 @@ fn process_logs(content: &str) -> AnalysisResult {
 }
 
 fn parse_log_line(line: &str) -> Option<LogEntry> {
-    let re = Regex::new(
+    // Try multiple common log formats
+    
+    // Format 1: YYYY-MM-DD HH:MM:SS [LEVEL] message
+    let format1 = Regex::new(
         r"(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) \[(?P<level>\w+)\] (?P<message>.*)"
     ).ok()?;
     
-    let caps = re.captures(line)?;
-    let message = caps.name("message")?.as_str();
+    // Format 2: [YYYY-MM-DD HH:MM:SS] LEVEL: message
+    let format2 = Regex::new(
+        r"\[(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\] (?P<level>\w+): (?P<message>.*)"
+    ).ok()?;
     
-    let ip_re = Regex::new(r"\b(?:\d{1,3}\.){3}\d{1,3}\b").ok()?;
-    let ip_address = ip_re.find(message).map(|m| m.as_str().to_string());
+    // Format 3: YYYY/MM/DD HH:MM:SS [LEVEL] message
+    let format3 = Regex::new(
+        r"(?P<timestamp>\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}) \[(?P<level>\w+)\] (?P<message>.*)"
+    ).ok()?;
     
-    let user_re = Regex::new(r"user: (\S+)").ok()?;
-    let username = user_re.captures(message)
-        .and_then(|c| c.get(1))
-        .map(|m| m.as_str().to_string());
+    // Format 4: MM/DD/YYYY HH:MM:SS [LEVEL] message
+    let format4 = Regex::new(
+        r"(?P<timestamp>\d{2}/\d{2}/\d{4} \d{2}:\d{2}:\d{2}) \[(?P<level>\w+)\] (?P<message>.*)"
+    ).ok()?;
+    
+    // Format 5: YYYY-MM-DD HH:MM:SS LEVEL message (no brackets)
+    let format5 = Regex::new(
+        r"(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) (?P<level>ERROR|WARN|INFO|CRITICAL|DEBUG|FATAL)\s+(?P<message>.*)"
+    ).ok()?;
+    
+    // Format 6: Syslog style - Mon DD HH:MM:SS hostname level: message
+    let format6 = Regex::new(
+        r"(?P<timestamp>\w{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}) \S+ (?P<level>\w+): (?P<message>.*)"
+    ).ok()?;
+    
+    // Format 7: Just timestamp and message (extract level from message)
+    let format7 = Regex::new(
+        r"(?P<timestamp>\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}:\d{2})"
+    ).ok()?;
+    
+    // Try each format
+    let (timestamp, level, message) = if let Some(caps) = format1.captures(line) {
+        (
+            caps.name("timestamp")?.as_str().to_string(),
+            caps.name("level")?.as_str().to_string(),
+            caps.name("message")?.as_str().to_string(),
+        )
+    } else if let Some(caps) = format2.captures(line) {
+        (
+            caps.name("timestamp")?.as_str().to_string(),
+            caps.name("level")?.as_str().to_string(),
+            caps.name("message")?.as_str().to_string(),
+        )
+    } else if let Some(caps) = format3.captures(line) {
+        (
+            caps.name("timestamp")?.as_str().to_string(),
+            caps.name("level")?.as_str().to_string(),
+            caps.name("message")?.as_str().to_string(),
+        )
+    } else if let Some(caps) = format4.captures(line) {
+        (
+            caps.name("timestamp")?.as_str().to_string(),
+            caps.name("level")?.as_str().to_string(),
+            caps.name("message")?.as_str().to_string(),
+        )
+    } else if let Some(caps) = format5.captures(line) {
+        (
+            caps.name("timestamp")?.as_str().to_string(),
+            caps.name("level")?.as_str().to_string(),
+            caps.name("message")?.as_str().to_string(),
+        )
+    } else if let Some(caps) = format6.captures(line) {
+        (
+            caps.name("timestamp")?.as_str().to_string(),
+            caps.name("level")?.as_str().to_string(),
+            caps.name("message")?.as_str().to_string(),
+        )
+    } else if let Some(caps) = format7.captures(line) {
+        // Extract level from anywhere in the line
+        let level_re = Regex::new(r"\b(ERROR|WARN|INFO|CRITICAL|DEBUG|FATAL)\b").ok()?;
+        let level = level_re.find(line)
+            .map(|m| m.as_str().to_string())
+            .unwrap_or_else(|| "INFO".to_string());
+        (
+            caps.name("timestamp")?.as_str().to_string(),
+            level,
+            line.to_string(),
+        )
+    } else {
+        // No timestamp found - treat entire line as message
+        // Extract level if present
+        let level_re = Regex::new(r"\b(ERROR|WARN|INFO|CRITICAL|DEBUG|FATAL)\b").ok()?;
+        let level = level_re.find(line)
+            .map(|m| m.as_str().to_string())
+            .unwrap_or_else(|| "INFO".to_string());
+        
+        return Some(LogEntry {
+            timestamp: "Unknown".to_string(),
+            level,
+            ip_address: extract_ip(line),
+            username: extract_username(line),
+            message: line.to_string(),
+        });
+    };
     
     Some(LogEntry {
-        timestamp: caps.name("timestamp")?.as_str().to_string(),
-        level: caps.name("level")?.as_str().to_string(),
-        ip_address,
-        username,
-        message: message.to_string(),
+        timestamp,
+        level,
+        ip_address: extract_ip(&message),
+        username: extract_username(&message),
+        message,
     })
 }
 
+fn extract_ip(text: &str) -> Option<String> {
+    let ip_re = Regex::new(r"\b(?:\d{1,3}\.){3}\d{1,3}\b").ok()?;
+    ip_re.find(text).map(|m| m.as_str().to_string())
+}
+
+fn extract_username(text: &str) -> Option<String> {
+    // Try multiple username patterns
+    let patterns = vec![
+        r"user:?\s*(\S+)",
+        r"username:?\s*(\S+)",
+        r"login:?\s*(\S+)",
+        r"account:?\s*(\S+)",
+    ];
+    
+    for pattern in patterns {
+        if let Ok(re) = Regex::new(pattern) {
+            if let Some(caps) = re.captures(text) {
+                if let Some(user) = caps.get(1) {
+                    return Some(user.as_str().to_string());
+                }
+            }
+        }
+    }
+    None
+}
+
 fn diagnose_parse_error(line: &str) -> (String, String) {
-    use regex::Regex;
+    // Since we now accept any format, this should rarely be called
+    // Only truly unparseable lines (empty, garbage, etc.) will reach here
     
-    // Check for date format
-    let date_pattern = Regex::new(r"\d{4}-\d{2}-\d{2}").unwrap();
-    let has_date = date_pattern.is_match(line);
-    
-    // Check for time format
-    let time_pattern = Regex::new(r"\d{2}:\d{2}:\d{2}").unwrap();
-    let has_time = time_pattern.is_match(line);
-    
-    // Check for level in brackets
-    let level_pattern = Regex::new(r"\[(\w+)\]").unwrap();
-    let has_level = level_pattern.is_match(line);
-    
-    // Check for level without brackets
-    let level_no_brackets = Regex::new(r"\b(ERROR|WARN|INFO|CRITICAL|DEBUG)\b").unwrap();
-    let has_level_no_brackets = level_no_brackets.is_match(line) && !has_level;
-    
-    // Check for wrong date format (MM/DD/YYYY or DD-MM-YYYY)
-    let wrong_date_slash = Regex::new(r"\d{2}/\d{2}/\d{4}").unwrap();
-    let wrong_date_reverse = Regex::new(r"\d{2}-\d{2}-\d{4}").unwrap();
-    
-    // Diagnose the issue
-    if !has_date && !has_time {
+    if line.trim().is_empty() {
         return (
-            "Missing timestamp".to_string(),
-            "Add timestamp in format: YYYY-MM-DD HH:MM:SS".to_string()
+            "Empty line".to_string(),
+            "Line contains no content".to_string()
         );
     }
     
-    if wrong_date_slash.is_match(line) {
+    // Check if it looks like it might be a log line
+    let has_numbers = line.chars().any(|c| c.is_numeric());
+    let has_letters = line.chars().any(|c| c.is_alphabetic());
+    
+    if !has_numbers && !has_letters {
         return (
-            "Wrong date format (MM/DD/YYYY)".to_string(),
-            "Use YYYY-MM-DD format instead of MM/DD/YYYY".to_string()
+            "Invalid content".to_string(),
+            "Line contains only special characters or whitespace".to_string()
         );
     }
     
-    if wrong_date_reverse.is_match(line) {
-        return (
-            "Wrong date format (DD-MM-YYYY)".to_string(),
-            "Use YYYY-MM-DD format instead of DD-MM-YYYY".to_string()
-        );
-    }
-    
-    if !has_date {
-        return (
-            "Invalid date format".to_string(),
-            "Date must be YYYY-MM-DD (e.g., 2024-12-09)".to_string()
-        );
-    }
-    
-    if !has_time {
-        return (
-            "Invalid time format".to_string(),
-            "Time must be HH:MM:SS in 24-hour format (e.g., 14:30:45)".to_string()
-        );
-    }
-    
-    if has_level_no_brackets {
-        return (
-            "Missing brackets around level".to_string(),
-            "Level must be in square brackets: [ERROR], [WARN], [INFO], [CRITICAL]".to_string()
-        );
-    }
-    
-    if !has_level {
-        return (
-            "Missing or invalid log level".to_string(),
-            "Add log level in brackets after timestamp: [ERROR], [WARN], [INFO], [CRITICAL]".to_string()
-        );
-    }
-    
-    // Check spacing issues
-    if has_date && has_time && has_level {
-        return (
-            "Incorrect spacing or format".to_string(),
-            "Format must be: YYYY-MM-DD HH:MM:SS [LEVEL] message (check spaces)".to_string()
-        );
-    }
-    
+    // If we got here, the line was processed but might lack structure
+    // This is now informational rather than an error
     (
-        "Unknown format error".to_string(),
-        "Expected format: YYYY-MM-DD HH:MM:SS [LEVEL] message".to_string()
+        "Unstructured log line".to_string(),
+        "Line was processed but may lack timestamp or level. Threats will still be detected.".to_string()
     )
 }
