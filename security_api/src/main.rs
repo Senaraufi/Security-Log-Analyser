@@ -90,8 +90,8 @@ async fn main() {
         .await
         .unwrap();
     
-    println!("🚀 Security API Server running on http://localhost:3000");
-    println!("📊 Upload logs at: http://localhost:3000");
+    println!("Security API Server running on http://localhost:3000");
+    println!("Upload logs at: http://localhost:3000");
     
     axum::serve(listener, app).await.unwrap();
 }
