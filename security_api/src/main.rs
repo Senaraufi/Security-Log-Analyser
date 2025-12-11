@@ -468,6 +468,179 @@ async fn serve_frontend() -> Html<&'static str> {
         .alert-error {
             border-color: var(--accent-red);
         }
+        
+        /* Collapsible sections */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            padding: 4px 0;
+        }
+        
+        .section-header:hover h2 {
+            color: var(--accent-blue);
+        }
+        
+        .collapse-icon {
+            font-size: 1.2em;
+            transition: transform 0.3s ease;
+            color: var(--text-secondary);
+        }
+        
+        .collapse-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+        
+        .section-content {
+            max-height: 2000px;
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            opacity: 1;
+        }
+        
+        .section-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+        }
+        
+        /* Summary cards */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .summary-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        
+        .summary-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--shadow-hover);
+        }
+        
+        .summary-card-value {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .summary-card-label {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+        
+        /* Progress bars */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+            border-radius: 4px;
+        }
+        
+        /* Charts */
+        .chart-container {
+            margin: 20px 0;
+        }
+        
+        .bar-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+            height: 200px;
+            padding: 10px 0;
+        }
+        
+        .bar {
+            flex: 1;
+            background: var(--accent-blue);
+            border-radius: 4px 4px 0 0;
+            min-height: 4px;
+            position: relative;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+        }
+        
+        .bar:hover {
+            opacity: 0.8;
+        }
+        
+        .bar-value {
+            position: absolute;
+            top: -25px;
+            font-size: 0.85em;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .bar-label {
+            margin-top: 8px;
+            font-size: 0.75em;
+            color: var(--text-secondary);
+            text-align: center;
+            word-wrap: break-word;
+        }
+        
+        /* Donut chart */
+        .donut-chart {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            margin: 20px 0;
+        }
+        
+        .donut {
+            position: relative;
+            width: 150px;
+            height: 150px;
+        }
+        
+        .donut-legend {
+            flex: 1;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        
+        .legend-label {
+            flex: 1;
+            font-size: 0.9em;
+        }
+        
+        .legend-value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
     </style>
 </head>
 <body>
@@ -508,85 +681,140 @@ async fn serve_frontend() -> Html<&'static str> {
         <div id="error-container"></div>
         
         <div class="results" id="results">
-            <div class="section">
-                <h2>Threat Statistics</h2>
-                <div class="stat-grid">
-                    <div class="stat-box">
-                        <div class="stat-value" id="failed-logins">0</div>
-                        <div class="stat-label">Failed Logins</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="root-attempts">0</div>
-                        <div class="stat-label">Root Attempts</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="file-access">0</div>
-                        <div class="stat-label">File Access</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="critical-alerts">0</div>
-                        <div class="stat-label">Critical Alerts</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="sql-injection">0</div>
-                        <div class="stat-label">SQL Injection</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="port-scanning">0</div>
-                        <div class="stat-label">Port Scanning</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="malware">0</div>
-                        <div class="stat-label">Malware</div>
-                    </div>
+            <!-- Quick Summary Dashboard -->
+            <div class="summary-grid">
+                <div class="summary-card" style="border-left: 4px solid var(--accent-red);">
+                    <div class="summary-card-value" style="color: var(--accent-red);" id="summary-threats">0</div>
+                    <div class="summary-card-label">Total Threats</div>
+                </div>
+                <div class="summary-card" style="border-left: 4px solid var(--accent-blue);">
+                    <div class="summary-card-value" style="color: var(--accent-blue);" id="summary-lines">0</div>
+                    <div class="summary-card-label">Lines Analyzed</div>
+                </div>
+                <div class="summary-card" style="border-left: 4px solid var(--accent-yellow);">
+                    <div class="summary-card-value" style="color: var(--accent-yellow);" id="summary-ips">0</div>
+                    <div class="summary-card-label">Unique IPs</div>
+                </div>
+                <div class="summary-card" style="border-left: 4px solid var(--accent-green);">
+                    <div class="summary-card-value" style="color: var(--accent-green);" id="summary-quality">0%</div>
+                    <div class="summary-card-label">Format Quality</div>
                 </div>
             </div>
             
-            <div class="section">
-                <h2>IP Address Analysis</h2>
-                <div id="high-risk-ips"></div>
-                <div id="all-ips"></div>
-            </div>
-            
+            <!-- Risk Assessment (Always Visible) -->
             <div class="section">
                 <h2>Risk Assessment</h2>
                 <div id="risk-assessment"></div>
             </div>
             
+            <!-- Threat Statistics (Collapsible) -->
             <div class="section">
-                <h2>Log Parsing Information</h2>
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
-                    <div style="text-align: center;">
-                        <div style="font-size: 2em; font-weight: 700; color: var(--accent-blue);" id="total-lines">0</div>
-                        <div style="color: var(--text-secondary); font-size: 0.85em; font-weight: 500;">Total Lines</div>
-                    </div>
-                    <div style="text-align: center;">
-                        <div style="font-size: 2em; font-weight: 700; color: var(--accent-green);" id="parsed-lines">0</div>
-                        <div style="color: var(--text-secondary); font-size: 0.85em; font-weight: 500;">Parsed Successfully</div>
-                    </div>
-                    <div style="text-align: center;">
-                        <div style="font-size: 2em; font-weight: 700; color: var(--accent-red);" id="skipped-lines">0</div>
-                        <div style="color: var(--text-secondary); font-size: 0.85em; font-weight: 500;">Skipped/Failed</div>
+                <div class="section-header" onclick="toggleSection('threats')">
+                    <h2>Threat Statistics</h2>
+                    <span class="collapse-icon" id="threats-icon">▼</span>
+                </div>
+                <div class="section-content" id="threats-content">
+                    <div id="threats-chart" class="chart-container"></div>
+                    <div class="stat-grid" style="margin-top: 20px;">
+                        <div class="stat-box">
+                            <div class="stat-value" id="failed-logins">0</div>
+                            <div class="stat-label">Failed Logins</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="root-attempts">0</div>
+                            <div class="stat-label">Root Attempts</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="file-access">0</div>
+                            <div class="stat-label">File Access</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="critical-alerts">0</div>
+                            <div class="stat-label">Critical Alerts</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="sql-injection">0</div>
+                            <div class="stat-label">SQL Injection</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="port-scanning">0</div>
+                            <div class="stat-label">Port Scanning</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="malware">0</div>
+                            <div class="stat-label">Malware</div>
+                        </div>
                     </div>
                 </div>
-                
-                <h3 style="color: var(--text-primary); font-size: 1em; font-weight: 600; margin-bottom: 12px;">Format Quality</h3>
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
-                    <div style="text-align: center;">
-                        <div style="font-size: 1.8em; font-weight: 700; color: var(--accent-green);" id="perfect-format">0</div>
-                        <div style="color: var(--text-secondary); font-size: 0.85em; font-weight: 500;">Perfect Format</div>
-                    </div>
-                    <div style="text-align: center;">
-                        <div style="font-size: 1.8em; font-weight: 700; color: var(--accent-blue);" id="alternative-format">0</div>
-                        <div style="color: var(--text-secondary); font-size: 0.85em; font-weight: 500;">Alternative Format</div>
-                    </div>
-                    <div style="text-align: center;">
-                        <div style="font-size: 1.8em; font-weight: 700; color: var(--accent-yellow);" id="fallback-format">0</div>
-                        <div style="color: var(--text-secondary); font-size: 0.85em; font-weight: 500;">Fallback Format</div>
-                    </div>
+            </div>
+            
+            <!-- IP Address Analysis (Collapsible) -->
+            <div class="section">
+                <div class="section-header" onclick="toggleSection('ips')">
+                    <h2>IP Address Analysis</h2>
+                    <span class="collapse-icon" id="ips-icon">▼</span>
                 </div>
-                
-                <div id="parsing-warning" style="margin-top: 20px;"></div>
+                <div class="section-content" id="ips-content">
+                    <div id="high-risk-ips"></div>
+                    <div id="all-ips"></div>
+                </div>
+            </div>
+            
+            <!-- Log Parsing Information (Collapsible) -->
+            <div class="section">
+                <div class="section-header" onclick="toggleSection('parsing')">
+                    <h2>Log Parsing Information</h2>
+                    <span class="collapse-icon" id="parsing-icon">▼</span>
+                </div>
+                <div class="section-content" id="parsing-content">
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 2em; font-weight: 700; color: var(--accent-blue);" id="total-lines">0</div>
+                            <div style="color: var(--text-secondary); font-size: 0.85em; font-weight: 500;">Total Lines</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="background: var(--accent-blue); width: 100%;"></div>
+                            </div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2em; font-weight: 700; color: var(--accent-green);" id="parsed-lines">0</div>
+                            <div style="color: var(--text-secondary); font-size: 0.85em; font-weight: 500;">Parsed Successfully</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="parsed-progress" style="background: var(--accent-green);"></div>
+                            </div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2em; font-weight: 700; color: var(--accent-red);" id="skipped-lines">0</div>
+                            <div style="color: var(--text-secondary); font-size: 0.85em; font-weight: 500;">Skipped/Failed</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="skipped-progress" style="background: var(--accent-red);"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h3 style="color: var(--text-primary); font-size: 1em; font-weight: 600; margin: 20px 0 12px 0;">Format Quality Distribution</h3>
+                    <div class="donut-chart">
+                        <canvas id="format-donut" class="donut" width="150" height="150"></canvas>
+                        <div class="donut-legend">
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: var(--accent-green);"></div>
+                                <div class="legend-label">Perfect Format</div>
+                                <div class="legend-value" id="perfect-format">0</div>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: var(--accent-blue);"></div>
+                                <div class="legend-label">Alternative Format</div>
+                                <div class="legend-value" id="alternative-format">0</div>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: var(--accent-yellow);"></div>
+                                <div class="legend-label">Fallback Format</div>
+                                <div class="legend-value" id="fallback-format">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="parsing-warning" style="margin-top: 20px;"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -618,6 +846,100 @@ async fn serve_frontend() -> Html<&'static str> {
                 localStorage.setItem('theme', 'light');
             }
         });
+        
+        // Collapsible section toggle
+        function toggleSection(sectionId) {
+            const content = document.getElementById(`${sectionId}-content`);
+            const icon = document.getElementById(`${sectionId}-icon`);
+            
+            content.classList.toggle('collapsed');
+            icon.classList.toggle('collapsed');
+        }
+        
+        // Draw bar chart for threats
+        function drawThreatsChart(data) {
+            const container = document.getElementById('threats-chart');
+            const threats = [
+                { label: 'Failed Logins', value: data.threat_statistics.failed_logins, color: 'var(--accent-red)' },
+                { label: 'Root Attempts', value: data.threat_statistics.root_attempts, color: 'var(--accent-red)' },
+                { label: 'File Access', value: data.threat_statistics.suspicious_file_access, color: 'var(--accent-yellow)' },
+                { label: 'Critical', value: data.threat_statistics.critical_alerts, color: 'var(--accent-red)' },
+                { label: 'SQL Injection', value: data.threat_statistics.sql_injection_attempts, color: 'var(--accent-red)' },
+                { label: 'Port Scan', value: data.threat_statistics.port_scanning_attempts, color: 'var(--accent-yellow)' },
+                { label: 'Malware', value: data.threat_statistics.malware_detections, color: 'var(--accent-red)' }
+            ];
+            
+            const maxValue = Math.max(...threats.map(t => t.value), 1);
+            
+            let chartHTML = '<div class="bar-chart">';
+            threats.forEach(threat => {
+                const height = (threat.value / maxValue) * 100;
+                chartHTML += `
+                    <div class="bar" style="height: ${height}%; background: ${threat.color};">
+                        <div class="bar-value">${threat.value}</div>
+                    </div>
+                `;
+            });
+            chartHTML += '</div>';
+            
+            chartHTML += '<div style="display: flex; gap: 12px; justify-content: space-around; margin-top: 10px;">';
+            threats.forEach(threat => {
+                chartHTML += `<div class="bar-label">${threat.label}</div>`;
+            });
+            chartHTML += '</div>';
+            
+            container.innerHTML = chartHTML;
+        }
+        
+        // Draw donut chart for format quality
+        function drawFormatDonut(perfect, alternative, fallback) {
+            const canvas = document.getElementById('format-donut');
+            const ctx = canvas.getContext('2d');
+            const total = perfect + alternative + fallback;
+            
+            if (total === 0) return;
+            
+            const centerX = 75;
+            const centerY = 75;
+            const radius = 60;
+            const innerRadius = 40;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, 150, 150);
+            
+            let currentAngle = -Math.PI / 2;
+            
+            // Draw perfect format
+            if (perfect > 0) {
+                const angle = (perfect / total) * 2 * Math.PI;
+                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-green');
+                drawDonutSegment(ctx, centerX, centerY, radius, innerRadius, currentAngle, currentAngle + angle);
+                currentAngle += angle;
+            }
+            
+            // Draw alternative format
+            if (alternative > 0) {
+                const angle = (alternative / total) * 2 * Math.PI;
+                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-blue');
+                drawDonutSegment(ctx, centerX, centerY, radius, innerRadius, currentAngle, currentAngle + angle);
+                currentAngle += angle;
+            }
+            
+            // Draw fallback format
+            if (fallback > 0) {
+                const angle = (fallback / total) * 2 * Math.PI;
+                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-yellow');
+                drawDonutSegment(ctx, centerX, centerY, radius, innerRadius, currentAngle, currentAngle + angle);
+            }
+        }
+        
+        function drawDonutSegment(ctx, x, y, radius, innerRadius, startAngle, endAngle) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, startAngle, endAngle);
+            ctx.arc(x, y, innerRadius, endAngle, startAngle, true);
+            ctx.closePath();
+            ctx.fill();
+        }
         
         // File upload functionality
         const fileInput = document.getElementById('file-upload');
@@ -675,6 +997,15 @@ async fn serve_frontend() -> Html<&'static str> {
         });
         
         function displayResults(data) {
+            // Update summary cards
+            document.getElementById('summary-threats').textContent = data.risk_assessment.total_threats;
+            document.getElementById('summary-lines').textContent = data.parsing_info.total_lines;
+            document.getElementById('summary-ips').textContent = data.ip_analysis.all_ips.length;
+            
+            const formatQuality = ((data.parsing_info.format_quality.perfect_format / data.parsing_info.total_lines) * 100).toFixed(0);
+            document.getElementById('summary-quality').textContent = formatQuality + '%';
+            
+            // Update threat statistics
             document.getElementById('failed-logins').textContent = data.threat_statistics.failed_logins;
             document.getElementById('root-attempts').textContent = data.threat_statistics.root_attempts;
             document.getElementById('file-access').textContent = data.threat_statistics.suspicious_file_access;
@@ -683,15 +1014,31 @@ async fn serve_frontend() -> Html<&'static str> {
             document.getElementById('port-scanning').textContent = data.threat_statistics.port_scanning_attempts;
             document.getElementById('malware').textContent = data.threat_statistics.malware_detections;
             
+            // Draw threats chart
+            drawThreatsChart(data);
+            
             // Display parsing information
             document.getElementById('total-lines').textContent = data.parsing_info.total_lines;
             document.getElementById('parsed-lines').textContent = data.parsing_info.parsed_lines;
             document.getElementById('skipped-lines').textContent = data.parsing_info.skipped_lines;
             
+            // Update progress bars
+            const parsedPercent = (data.parsing_info.parsed_lines / data.parsing_info.total_lines * 100);
+            const skippedPercent = (data.parsing_info.skipped_lines / data.parsing_info.total_lines * 100);
+            document.getElementById('parsed-progress').style.width = parsedPercent + '%';
+            document.getElementById('skipped-progress').style.width = skippedPercent + '%';
+            
             // Display format quality
             document.getElementById('perfect-format').textContent = data.parsing_info.format_quality.perfect_format;
             document.getElementById('alternative-format').textContent = data.parsing_info.format_quality.alternative_format;
             document.getElementById('fallback-format').textContent = data.parsing_info.format_quality.fallback_format;
+            
+            // Draw format quality donut chart
+            drawFormatDonut(
+                data.parsing_info.format_quality.perfect_format,
+                data.parsing_info.format_quality.alternative_format,
+                data.parsing_info.format_quality.fallback_format
+            );
             
             // Show warning if many lines were skipped or used fallback format
             const warningContainer = document.getElementById('parsing-warning');
