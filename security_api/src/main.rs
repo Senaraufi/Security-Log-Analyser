@@ -98,1058 +98,873 @@ async fn main() {
 
 async fn serve_frontend() -> Html<&'static str> {
     Html(r#"
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Security Log Analyzer</title>
-    <style>
-        :root {
-            --bg-primary: #f5f7fa;
-            --bg-secondary: #ffffff;
-            --bg-tertiary: #f8fafc;
-            --text-primary: #2c3e50;
-            --text-secondary: #6c757d;
-            --border-color: #e1e8ed;
-            --border-light: #cbd5e0;
-            --shadow: rgba(0, 0, 0, 0.08);
-            --shadow-hover: rgba(0, 0, 0, 0.12);
-            --accent-blue: #0066cc;
-            --accent-green: #28a745;
-            --accent-red: #dc3545;
-            --accent-yellow: #ffc107;
-        }
-        
-        body.dark-mode {
-            --bg-primary: #0d1117;
-            --bg-secondary: #161b22;
-            --bg-tertiary: #1c2128;
-            --text-primary: #c9d1d9;
-            --text-secondary: #8b949e;
-            --border-color: #30363d;
-            --border-light: #21262d;
-            --shadow: rgba(0, 0, 0, 0.3);
-            --shadow-hover: rgba(0, 0, 0, 0.5);
-            --accent-blue: #58a6ff;
-            --accent-green: #3fb950;
-            --accent-red: #f85149;
-            --accent-yellow: #d29922;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            min-height: 100vh;
-            padding: 0;
-            overflow-x: hidden;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-        
-        .header {
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border-color);
-            padding: 24px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 4px var(--shadow);
-            transition: all 0.3s ease;
-        }
-        
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-        
-        .header h1 {
-            color: var(--text-primary);
-            font-size: 1.4em;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .header h1::before {
-            content: '';
-            width: 4px;
-            height: 28px;
-            background: var(--accent-blue);
-            border-radius: 2px;
-        }
-        
-        .theme-toggle {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.9em;
-            font-weight: 500;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .theme-toggle:hover {
-            background: var(--bg-primary);
-            border-color: var(--accent-blue);
-        }
-        
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .status-indicator {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.85em;
-            color: var(--accent-green);
-            background: var(--bg-tertiary);
-            padding: 8px 16px;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-            transition: all 0.3s ease;
-        }
-        
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            background: var(--accent-green);
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 30px;
-        }
-        
-        .subtitle {
-            color: var(--text-secondary);
-            margin-bottom: 30px;
-            font-size: 0.95em;
-            font-weight: 400;
-        }
-        
-        .upload-area {
-            border: 2px dashed var(--border-light);
-            background: var(--bg-secondary);
-            padding: 40px;
-            text-align: center;
-            margin-bottom: 20px;
-            border-radius: 8px;
-            transition: all 0.3s;
-        }
-        
-        .upload-area:hover {
-            border-color: var(--accent-blue);
-            background: var(--bg-tertiary);
-        }
-        
-        input[type="file"] {
-            display: none;
-        }
-        
-        .file-label {
-            display: inline-block;
-            padding: 12px 32px;
-            background: var(--accent-blue);
-            color: #ffffff;
-            border: none;
-            cursor: pointer;
-            font-size: 0.95em;
-            font-weight: 500;
-            transition: all 0.2s;
-            border-radius: 6px;
-        }
-        
-        .file-label:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px var(--shadow-hover);
-        }
-        
-        .file-name {
-            margin-top: 15px;
-            color: var(--text-secondary);
-            font-size: 0.9em;
-            font-style: italic;
-        }
-        
-        button {
-            width: 100%;
-            padding: 14px;
-            background: var(--accent-green);
-            color: #ffffff;
-            border: none;
-            font-size: 1em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            border-radius: 6px;
-        }
-        
-        button:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px var(--shadow-hover);
-        }
-        
-        button:disabled {
-            background: var(--border-color);
-            color: var(--text-secondary);
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-            opacity: 0.6;
-        }
-        
-        .loading {
-            display: none;
-            text-align: center;
-            margin: 20px 0;
-        }
-        
-        .spinner {
-            border: 3px solid var(--border-color);
-            border-top: 3px solid var(--accent-blue);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .results {
-            display: none;
-            margin-top: 30px;
-        }
-        
-        .section {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            padding: 28px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px var(--shadow);
-            transition: all 0.3s ease;
-        }
-        
-        .section h2 {
-            color: var(--text-primary);
-            margin-bottom: 24px;
-            font-size: 1.15em;
-            font-weight: 600;
-            border-bottom: 2px solid var(--border-color);
-            padding-bottom: 12px;
-        }
-        
-        .stat-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-        
-        .stat-box {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            padding: 24px;
-            text-align: center;
-            transition: all 0.2s;
-            border-radius: 6px;
-        }
-        
-        .stat-box:hover {
-            border-color: var(--accent-blue);
-            box-shadow: 0 4px 12px var(--shadow-hover);
-            transform: translateY(-2px);
-        }
-        
-        .stat-value {
-            font-size: 2.5em;
-            font-weight: 700;
-            color: var(--accent-blue);
-        }
-        
-        .stat-label {
-            color: var(--text-secondary);
-            margin-top: 8px;
-            font-size: 0.85em;
-            font-weight: 500;
-        }
-        
-        .ip-list {
-            margin-top: 15px;
-        }
-        
-        .ip-item {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            padding: 16px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.2s;
-            border-radius: 6px;
-        }
-        
-        .ip-item:hover {
-            border-color: var(--border-light);
-            box-shadow: 0 2px 8px var(--shadow-hover);
-        }
-        
-        .risk-high { 
-            border-left: 4px solid var(--accent-red);
-        }
-        .risk-low { 
-            border-left: 4px solid var(--accent-green);
-        }
-        
-        .risk-badge {
-            padding: 6px 14px;
-            font-size: 0.8em;
-            font-weight: 600;
-            border-radius: 4px;
-        }
-        
-        .badge-high {
-            background: var(--accent-red);
-            color: #ffffff;
-        }
-        
-        .badge-medium {
-            background: var(--accent-yellow);
-            color: #1a1a1a;
-        }
-        
-        .badge-low {
-            background: var(--accent-green);
-            color: #ffffff;
-        }
-        
-        .alert {
-            padding: 16px;
-            margin-bottom: 20px;
-            border-radius: 6px;
-            border-left: 4px solid;
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            transition: all 0.3s ease;
-        }
-        
-        .alert-error {
-            border-color: var(--accent-red);
-        }
-        
-        /* Collapsible sections */
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            user-select: none;
-            padding: 4px 0;
-        }
-        
-        .section-header:hover h2 {
-            color: var(--accent-blue);
-        }
-        
-        .collapse-icon {
-            font-size: 1.2em;
-            transition: transform 0.3s ease;
-            color: var(--text-secondary);
-        }
-        
-        .collapse-icon.collapsed {
-            transform: rotate(-90deg);
-        }
-        
-        .section-content {
-            max-height: 2000px;
-            overflow: hidden;
-            transition: max-height 0.3s ease, opacity 0.3s ease;
-            opacity: 1;
-        }
-        
-        .section-content.collapsed {
-            max-height: 0;
-            opacity: 0;
-        }
-        
-        /* Summary cards */
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        
-        .summary-card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 20px;
-            text-align: center;
-            transition: all 0.2s;
-        }
-        
-        .summary-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px var(--shadow-hover);
-        }
-        
-        .summary-card-value {
-            font-size: 2.5em;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-        
-        .summary-card-label {
-            color: var(--text-secondary);
-            font-size: 0.9em;
-            font-weight: 500;
-        }
-        
-        /* Progress bars */
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: var(--bg-tertiary);
-            border-radius: 4px;
-            overflow: hidden;
-            margin-top: 8px;
-        }
-        
-        .progress-fill {
-            height: 100%;
-            transition: width 0.5s ease;
-            border-radius: 4px;
-        }
-        
-        /* Charts */
-        .chart-container {
-            margin: 20px 0;
-        }
-        
-        .bar-chart {
-            display: flex;
-            align-items: flex-end;
-            gap: 12px;
-            height: 200px;
-            padding: 10px 0;
-        }
-        
-        .bar {
-            flex: 1;
-            background: var(--accent-blue);
-            border-radius: 4px 4px 0 0;
-            min-height: 4px;
-            position: relative;
-            transition: all 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            align-items: center;
-        }
-        
-        .bar:hover {
-            opacity: 0.8;
-        }
-        
-        .bar-value {
-            position: absolute;
-            top: -25px;
-            font-size: 0.85em;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-        
-        .bar-label {
-            margin-top: 8px;
-            font-size: 0.75em;
-            color: var(--text-secondary);
-            text-align: center;
-            word-wrap: break-word;
-        }
-        
-        /* Donut chart */
-        .donut-chart {
-            display: flex;
-            align-items: center;
-            gap: 30px;
-            margin: 20px 0;
-        }
-        
-        .donut {
-            position: relative;
-            width: 150px;
-            height: 150px;
-        }
-        
-        .donut-legend {
-            flex: 1;
-        }
-        
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        
-        .legend-color {
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
-        }
-        
-        .legend-label {
-            flex: 1;
-            font-size: 0.9em;
-        }
-        
-        .legend-value {
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <div class="header-left">
-            <h1>Security Log Analyzer</h1>
-        </div>
-        <div class="header-right">
-            <button class="theme-toggle" id="theme-toggle">
-                <span id="theme-icon">🌙</span>
-                <span id="theme-text">Dark Mode</span>
-            </button>
-            <div class="status-indicator">
-                <div class="status-dot"></div>
-                <span>System Active</span>
-            </div>
-        </div>
-    </div>
-    
-    <div class="container">
-        <p class="subtitle">Enterprise Threat Detection & Analysis Platform</p>
-        
-        <div class="upload-area">
-            <label for="file-upload" class="file-label">
-                Select Log File
-            </label>
-            <input id="file-upload" type="file" accept=".txt,.log" />
-            <div class="file-name" id="file-name">No file selected</div>
-        </div>
-        
-        <button id="analyze-btn" disabled>Analyze Security Logs</button>
-        
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <p style="margin-top: 10px; color: #6c757d;">Analyzing security logs...</p>
-        </div>
-        
-        <div id="error-container"></div>
-        
-        <div class="results" id="results">
-            <!-- Quick Summary Dashboard -->
-            <div class="summary-grid">
-                <div class="summary-card" style="border-left: 4px solid var(--accent-red);">
-                    <div class="summary-card-value" style="color: var(--accent-red);" id="summary-threats">0</div>
-                    <div class="summary-card-label">Total Threats</div>
-                </div>
-                <div class="summary-card" style="border-left: 4px solid var(--accent-blue);">
-                    <div class="summary-card-value" style="color: var(--accent-blue);" id="summary-lines">0</div>
-                    <div class="summary-card-label">Lines Analyzed</div>
-                </div>
-                <div class="summary-card" style="border-left: 4px solid var(--accent-yellow);">
-                    <div class="summary-card-value" style="color: var(--accent-yellow);" id="summary-ips">0</div>
-                    <div class="summary-card-label">Unique IPs</div>
-                </div>
-                <div class="summary-card" style="border-left: 4px solid var(--accent-green);">
-                    <div class="summary-card-value" style="color: var(--accent-green);" id="summary-quality">0%</div>
-                    <div class="summary-card-label">Format Quality</div>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Cybersecurity Analysis Dashboard</title>
+        <style>
+            :root {
+                --neutral-50: #fafafa;
+                --neutral-100: #f5f5f5;
+                --neutral-200: #e5e5e5;
+                --neutral-300: #d4d4d4;
+                --neutral-500: #737373;
+                --neutral-600: #525252;
+                --neutral-700: #404040;
+                --neutral-900: #171717;
+                --red-50: #fef2f2;
+                --red-200: #fecaca;
+                --red-700: #b91c1c;
+                --orange-50: #fff7ed;
+                --orange-200: #fed7aa;
+                --orange-700: #c2410c;
+                --yellow-50: #fefce8;
+                --yellow-200: #fef08a;
+                --yellow-700: #a16207;
+                --green-50: #f0fdf4;
+                --green-200: #bbf7d0;
+                --green-700: #15803d;
+            }
+            
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            
+            body {
+                font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                background: var(--neutral-50);
+                color: var(--neutral-900);
+                line-height: 1.5;
+                font-size: 14px;
+                -webkit-font-smoothing: antialiased;
+            }
+            
+            .container {
+                max-width: 1400px;
+                margin: 0 auto;
+                padding: 24px;
+            }
+            
+            .header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 24px;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+                font-weight: 400;
+                color: var(--neutral-900);
+            }
+            
+            .risk-indicator {
+                display: none;
+                align-items: center;
+                gap: 12px;
+                padding: 8px 16px;
+                border: 1px solid;
+            }
+            
+            .risk-indicator.show {
+                display: flex;
+            }
+            
+            .risk-indicator.high {
+                background: var(--orange-50);
+                border-color: var(--orange-200);
+                color: var(--orange-700);
+            }
+            
+            .risk-indicator.medium {
+                background: var(--yellow-50);
+                border-color: var(--yellow-200);
+                color: var(--yellow-700);
+            }
+            
+            .risk-indicator.low {
+                background: var(--green-50);
+                border-color: var(--green-200);
+                color: var(--green-700);
+            }
+            
+            .risk-divider {
+                width: 1px;
+                height: 16px;
+                background: var(--neutral-300);
+            }
+            
+            .file-upload {
+                background: white;
+                border: 1px solid var(--neutral-200);
+                padding: 24px;
+                margin-bottom: 16px;
+            }
+            
+            .upload-content {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+            }
+            
+            .upload-button {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 8px 16px;
+                border: 1px solid var(--neutral-300);
+                background: var(--neutral-50);
+                cursor: pointer;
+                transition: background 0.15s;
+                color: var(--neutral-700);
+            }
+            
+            .upload-button:hover {
+                background: var(--neutral-100);
+            }
+            
+            .upload-status {
+                display: none;
+                align-items: center;
+                gap: 8px;
+                color: var(--green-700);
+            }
+            
+            .upload-status.show {
+                display: flex;
+            }
+            
+            .status-dot {
+                width: 8px;
+                height: 8px;
+                background: var(--green-700);
+                border-radius: 50%;
+            }
+            
+            .metrics-grid {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 16px;
+                margin-bottom: 16px;
+            }
+            
+            .metric-card {
+                background: white;
+                border: 1px solid var(--neutral-200);
+                padding: 16px;
+            }
+            
+            .metric-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: start;
+                margin-bottom: 8px;
+            }
+            
+            .metric-icon {
+                width: 16px;
+                height: 16px;
+                color: var(--neutral-500);
+            }
+            
+            .metric-change {
+                font-size: 0.75rem;
+                color: var(--neutral-600);
+                font-variant-numeric: tabular-nums;
+            }
+            
+            .metric-value {
+                font-size: 1.5rem;
+                font-weight: 400;
+                font-variant-numeric: tabular-nums;
+                color: var(--neutral-900);
+                margin-bottom: 4px;
+            }
+            
+            .metric-label {
+                font-size: 0.875rem;
+                color: var(--neutral-600);
+            }
+            
+            .section {
+                background: white;
+                border: 1px solid var(--neutral-200);
+                margin-bottom: 16px;
+            }
+            
+            .section-header {
+                display: flex;
+                align-items: center;
+                justify-between;
+                padding: 16px;
+                cursor: pointer;
+                transition: background 0.15s;
+            }
+            
+            .section-header:hover {
+                background: var(--neutral-50);
+            }
+            
+            .section-title {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                font-size: 1rem;
+                color: var(--neutral-900);
+            }
+            
+            .chevron {
+                width: 16px;
+                height: 16px;
+                color: var(--neutral-600);
+                transition: transform 0.2s;
+            }
+            
+            .chevron.expanded {
+                transform: rotate(90deg);
+            }
+            
+            .section-count {
+                color: var(--neutral-600);
+                font-size: 0.875rem;
+            }
+            
+            .section-content {
+                display: none;
+                border-top: 1px solid var(--neutral-200);
+                padding: 16px;
+            }
+            
+            .section-content.show {
+                display: block;
+            }
+            
+            .threat-grid {
+                display: grid;
+                grid-template-columns: repeat(7, 1fr);
+                gap: 12px;
+                margin-top: 16px;
+            }
+            
+            .threat-box {
+                border: 1px solid var(--neutral-200);
+                padding: 12px;
+            }
+            
+            .threat-value {
+                font-size: 1.25rem;
+                font-variant-numeric: tabular-nums;
+                color: var(--neutral-900);
+                margin-bottom: 4px;
+            }
+            
+            .threat-label {
+                font-size: 0.875rem;
+                color: var(--neutral-600);
+                margin-bottom: 8px;
+            }
+            
+            .threat-severity {
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+            
+            .severity-critical { color: var(--red-700); }
+            .severity-high { color: var(--orange-700); }
+            .severity-medium { color: var(--yellow-700); }
+            
+            .ip-table {
+                display: grid;
+                grid-template-columns: 2fr 1fr 1fr 1fr;
+                gap: 1px;
+                background: var(--neutral-200);
+            }
+            
+            .ip-table-header {
+                background: var(--neutral-100);
+                padding: 8px 16px;
+                font-size: 0.875rem;
+                color: var(--neutral-600);
+            }
+            
+            .ip-table-cell {
+                background: white;
+                padding: 12px 16px;
+                font-size: 0.875rem;
+            }
+            
+            .ip-address {
+                font-family: ui-monospace, 'SF Mono', Monaco, monospace;
+                color: var(--neutral-900);
+            }
+            
+            .ip-count {
+                font-variant-numeric: tabular-nums;
+                color: var(--neutral-900);
+            }
+            
+            .status-badge {
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+            
+            .status-blocked { color: var(--red-700); }
+            .status-high { color: var(--red-700); }
+            .status-low { color: var(--neutral-600); }
+            
+            .parsing-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 24px;
+            }
+            
+            .donut-container {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+            
+            .donut-wrapper {
+                position: relative;
+                width: 200px;
+                height: 200px;
+            }
+            
+            .donut-center {
+                position: absolute;
+                inset: 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .donut-percentage {
+                font-size: 1.5rem;
+                font-variant-numeric: tabular-nums;
+                color: var(--neutral-900);
+            }
+            
+            .donut-label {
+                font-size: 0.875rem;
+                color: var(--neutral-600);
+            }
+            
+            .stats-list {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .stat-item {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            
+            .stat-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .stat-label {
+                font-size: 0.875rem;
+                color: var(--neutral-700);
+            }
+            
+            .stat-value {
+                font-size: 0.875rem;
+                font-variant-numeric: tabular-nums;
+                color: var(--neutral-900);
+            }
+            
+            .progress-bar {
+                width: 100%;
+                height: 8px;
+                background: var(--neutral-200);
+            }
+            
+            .progress-fill {
+                height: 100%;
+                background: var(--neutral-900);
+                transition: width 0.3s;
+            }
+            
+            .loading {
+                display: none;
+                text-align: center;
+                padding: 40px;
+                color: var(--neutral-600);
+            }
+            
+            .loading.show {
+                display: block;
+            }
+            
+            .spinner {
+                width: 40px;
+                height: 40px;
+                border: 3px solid var(--neutral-200);
+                border-top-color: var(--neutral-900);
+                border-radius: 50%;
+                animation: spin 0.8s linear infinite;
+                margin: 0 auto 16px;
+            }
+            
+            @keyframes spin {
+                to { transform: rotate(360deg); }
+            }
+            
+            .hidden {
+                display: none;
+            }
+            
+            .bar-chart {
+                height: 240px;
+                display: flex;
+                align-items: flex-end;
+                gap: 8px;
+                padding: 16px 0;
+                margin-bottom: 16px;
+            }
+            
+            .bar {
+                flex: 1;
+                background: var(--neutral-900);
+                position: relative;
+                min-height: 4px;
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-end;
+                align-items: center;
+            }
+            
+            .bar-value {
+                position: absolute;
+                top: -20px;
+                font-size: 0.75rem;
+                font-variant-numeric: tabular-nums;
+                color: var(--neutral-900);
+            }
+            
+            .bar-labels {
+                display: flex;
+                gap: 8px;
+            }
+            
+            .bar-label {
+                flex: 1;
+                text-align: center;
+                font-size: 0.75rem;
+                color: var(--neutral-600);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Cybersecurity Analysis Dashboard</h1>
+                <div class="risk-indicator" id="risk-indicator">
+                    <span id="risk-icon">⚠</span>
+                    <span id="risk-label">HIGH RISK</span>
+                    <div class="risk-divider"></div>
+                    <span id="risk-score">78/100</span>
                 </div>
             </div>
             
-            <!-- Risk Assessment (Always Visible) -->
-            <div class="section">
-                <h2>Risk Assessment</h2>
-                <div id="risk-assessment"></div>
-            </div>
-            
-            <!-- Threat Statistics (Collapsible) -->
-            <div class="section">
-                <div class="section-header" onclick="toggleSection('threats')">
-                    <h2>Threat Statistics</h2>
-                    <span class="collapse-icon" id="threats-icon">▼</span>
-                </div>
-                <div class="section-content" id="threats-content">
-                    <div id="threats-chart" class="chart-container"></div>
-                    <div class="stat-grid" style="margin-top: 20px;">
-                        <div class="stat-box">
-                            <div class="stat-value" id="failed-logins">0</div>
-                            <div class="stat-label">Failed Logins</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-value" id="root-attempts">0</div>
-                            <div class="stat-label">Root Attempts</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-value" id="file-access">0</div>
-                            <div class="stat-label">File Access</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-value" id="critical-alerts">0</div>
-                            <div class="stat-label">Critical Alerts</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-value" id="sql-injection">0</div>
-                            <div class="stat-label">SQL Injection</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-value" id="port-scanning">0</div>
-                            <div class="stat-label">Port Scanning</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-value" id="malware">0</div>
-                            <div class="stat-label">Malware</div>
-                        </div>
+            <div class="file-upload">
+                <div class="upload-content">
+                    <label class="upload-button">
+                        <input type="file" id="file-input" accept=".log,.txt" style="display: none;">
+                        <span>↑</span>
+                        <span id="file-name">Upload Log File</span>
+                    </label>
+                    <div class="upload-status" id="upload-status">
+                        <div class="status-dot"></div>
+                        <span>Analyzed</span>
                     </div>
                 </div>
             </div>
             
-            <!-- IP Address Analysis (Collapsible) -->
-            <div class="section">
-                <div class="section-header" onclick="toggleSection('ips')">
-                    <h2>IP Address Analysis</h2>
-                    <span class="collapse-icon" id="ips-icon">▼</span>
-                </div>
-                <div class="section-content" id="ips-content">
-                    <div id="high-risk-ips"></div>
-                    <div id="all-ips"></div>
-                </div>
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Analyzing security logs...</p>
             </div>
             
-            <!-- Log Parsing Information (Collapsible) -->
-            <div class="section">
-                <div class="section-header" onclick="toggleSection('parsing')">
-                    <h2>Log Parsing Information</h2>
-                    <span class="collapse-icon" id="parsing-icon">▼</span>
+            <div id="results" class="hidden">
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-icon">📊</span>
+                            <span class="metric-change" id="metric-change-1">+8%</span>
+                        </div>
+                        <div class="metric-value" id="total-events">0</div>
+                        <div class="metric-label">Total Events</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-icon">⚠</span>
+                            <span class="metric-change" id="metric-change-2">+12%</span>
+                        </div>
+                        <div class="metric-value" id="threats-detected">0</div>
+                        <div class="metric-label">Threats Detected</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-icon">🛡</span>
+                            <span class="metric-change" id="metric-change-3">-3%</span>
+                        </div>
+                        <div class="metric-value" id="blocked-ips">0</div>
+                        <div class="metric-label">Blocked IPs</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-icon">✓</span>
+                            <span class="metric-change" id="metric-change-4">+5%</span>
+                        </div>
+                        <div class="metric-value" id="format-quality">0%</div>
+                        <div class="metric-label">Format Quality</div>
+                    </div>
                 </div>
-                <div class="section-content" id="parsing-content">
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
-                        <div style="text-align: center;">
-                            <div style="font-size: 2em; font-weight: 700; color: var(--accent-blue);" id="total-lines">0</div>
-                            <div style="color: var(--text-secondary); font-size: 0.85em; font-weight: 500;">Total Lines</div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="background: var(--accent-blue); width: 100%;"></div>
-                            </div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="font-size: 2em; font-weight: 700; color: var(--accent-green);" id="parsed-lines">0</div>
-                            <div style="color: var(--text-secondary); font-size: 0.85em; font-weight: 500;">Parsed Successfully</div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" id="parsed-progress" style="background: var(--accent-green);"></div>
-                            </div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="font-size: 2em; font-weight: 700; color: var(--accent-red);" id="skipped-lines">0</div>
-                            <div style="color: var(--text-secondary); font-size: 0.85em; font-weight: 500;">Skipped/Failed</div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" id="skipped-progress" style="background: var(--accent-red);"></div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <h3 style="color: var(--text-primary); font-size: 1em; font-weight: 600; margin: 20px 0 12px 0;">Format Quality Distribution</h3>
-                    <div class="donut-chart">
-                        <canvas id="format-donut" class="donut" width="150" height="150"></canvas>
-                        <div class="donut-legend">
-                            <div class="legend-item">
-                                <div class="legend-color" style="background: var(--accent-green);"></div>
-                                <div class="legend-label">Perfect Format</div>
-                                <div class="legend-value" id="perfect-format">0</div>
-                            </div>
-                            <div class="legend-item">
-                                <div class="legend-color" style="background: var(--accent-blue);"></div>
-                                <div class="legend-label">Alternative Format</div>
-                                <div class="legend-value" id="alternative-format">0</div>
-                            </div>
-                            <div class="legend-item">
-                                <div class="legend-color" style="background: var(--accent-yellow);"></div>
-                                <div class="legend-label">Fallback Format</div>
-                                <div class="legend-value" id="fallback-format">0</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div id="parsing-warning" style="margin-top: 20px;"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <script>
-        // Theme toggle functionality
-        const themeToggle = document.getElementById('theme-toggle');
-        const themeIcon = document.getElementById('theme-icon');
-        const themeText = document.getElementById('theme-text');
-        
-        // Check for saved theme preference or default to light mode
-        const currentTheme = localStorage.getItem('theme') || 'light';
-        if (currentTheme === 'dark') {
-            document.body.classList.add('dark-mode');
-            themeIcon.textContent = '☀️';
-            themeText.textContent = 'Light Mode';
-        }
-        
-        themeToggle.addEventListener('click', () => {
-            document.body.classList.toggle('dark-mode');
-            
-            if (document.body.classList.contains('dark-mode')) {
-                themeIcon.textContent = '☀️';
-                themeText.textContent = 'Light Mode';
-                localStorage.setItem('theme', 'dark');
-            } else {
-                themeIcon.textContent = '🌙';
-                themeText.textContent = 'Dark Mode';
-                localStorage.setItem('theme', 'light');
-            }
-        });
-        
-        // Collapsible section toggle
-        function toggleSection(sectionId) {
-            const content = document.getElementById(`${sectionId}-content`);
-            const icon = document.getElementById(`${sectionId}-icon`);
-            
-            content.classList.toggle('collapsed');
-            icon.classList.toggle('collapsed');
-        }
-        
-        // Draw bar chart for threats
-        function drawThreatsChart(data) {
-            const container = document.getElementById('threats-chart');
-            const threats = [
-                { label: 'Failed Logins', value: data.threat_statistics.failed_logins, color: 'var(--accent-red)' },
-                { label: 'Root Attempts', value: data.threat_statistics.root_attempts, color: 'var(--accent-red)' },
-                { label: 'File Access', value: data.threat_statistics.suspicious_file_access, color: 'var(--accent-yellow)' },
-                { label: 'Critical', value: data.threat_statistics.critical_alerts, color: 'var(--accent-red)' },
-                { label: 'SQL Injection', value: data.threat_statistics.sql_injection_attempts, color: 'var(--accent-red)' },
-                { label: 'Port Scan', value: data.threat_statistics.port_scanning_attempts, color: 'var(--accent-yellow)' },
-                { label: 'Malware', value: data.threat_statistics.malware_detections, color: 'var(--accent-red)' }
-            ];
-            
-            const maxValue = Math.max(...threats.map(t => t.value), 1);
-            
-            let chartHTML = '<div class="bar-chart">';
-            threats.forEach(threat => {
-                const height = (threat.value / maxValue) * 100;
-                chartHTML += `
-                    <div class="bar" style="height: ${height}%; background: ${threat.color};">
-                        <div class="bar-value">${threat.value}</div>
-                    </div>
-                `;
-            });
-            chartHTML += '</div>';
-            
-            chartHTML += '<div style="display: flex; gap: 12px; justify-content: space-around; margin-top: 10px;">';
-            threats.forEach(threat => {
-                chartHTML += `<div class="bar-label">${threat.label}</div>`;
-            });
-            chartHTML += '</div>';
-            
-            container.innerHTML = chartHTML;
-        }
-        
-        // Draw donut chart for format quality
-        function drawFormatDonut(perfect, alternative, fallback) {
-            const canvas = document.getElementById('format-donut');
-            const ctx = canvas.getContext('2d');
-            const total = perfect + alternative + fallback;
-            
-            if (total === 0) return;
-            
-            const centerX = 75;
-            const centerY = 75;
-            const radius = 60;
-            const innerRadius = 40;
-            
-            // Clear canvas
-            ctx.clearRect(0, 0, 150, 150);
-            
-            let currentAngle = -Math.PI / 2;
-            
-            // Draw perfect format
-            if (perfect > 0) {
-                const angle = (perfect / total) * 2 * Math.PI;
-                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-green');
-                drawDonutSegment(ctx, centerX, centerY, radius, innerRadius, currentAngle, currentAngle + angle);
-                currentAngle += angle;
-            }
-            
-            // Draw alternative format
-            if (alternative > 0) {
-                const angle = (alternative / total) * 2 * Math.PI;
-                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-blue');
-                drawDonutSegment(ctx, centerX, centerY, radius, innerRadius, currentAngle, currentAngle + angle);
-                currentAngle += angle;
-            }
-            
-            // Draw fallback format
-            if (fallback > 0) {
-                const angle = (fallback / total) * 2 * Math.PI;
-                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-yellow');
-                drawDonutSegment(ctx, centerX, centerY, radius, innerRadius, currentAngle, currentAngle + angle);
-            }
-        }
-        
-        function drawDonutSegment(ctx, x, y, radius, innerRadius, startAngle, endAngle) {
-            ctx.beginPath();
-            ctx.arc(x, y, radius, startAngle, endAngle);
-            ctx.arc(x, y, innerRadius, endAngle, startAngle, true);
-            ctx.closePath();
-            ctx.fill();
-        }
-        
-        // File upload functionality
-        const fileInput = document.getElementById('file-upload');
-        const fileName = document.getElementById('file-name');
-        const analyzeBtn = document.getElementById('analyze-btn');
-        const loading = document.getElementById('loading');
-        const results = document.getElementById('results');
-        const errorContainer = document.getElementById('error-container');
-        
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                fileName.textContent = e.target.files[0].name;
-                analyzeBtn.disabled = false;
-            } else {
-                fileName.textContent = 'No file selected';
-                analyzeBtn.disabled = true;
-            }
-        });
-        
-        analyzeBtn.addEventListener('click', async () => {
-            const file = fileInput.files[0];
-            if (!file) return;
-            
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            analyzeBtn.disabled = true;
-            loading.style.display = 'block';
-            results.style.display = 'none';
-            errorContainer.innerHTML = '';
-            
-            try {
-                const response = await fetch('/api/analyze', {
-                    method: 'POST',
-                    body: formData
-                });
                 
-                if (!response.ok) {
-                    throw new Error('Analysis failed');
+                <div class="section">
+                    <div class="section-header" onclick="toggleSection('threats')">
+                        <div class="section-title">
+                            <span class="chevron" id="threats-chevron">▶</span>
+                            <span>Threat Distribution</span>
+                            <span class="section-count" id="threats-count">0 Total</span>
+                        </div>
+                    </div>
+                    <div class="section-content" id="threats-content">
+                        <div class="bar-chart" id="threats-chart"></div>
+                        <div class="bar-labels" id="threats-labels"></div>
+                        <div class="threat-grid">
+                            <div class="threat-box">
+                                <div class="threat-value" id="failed-logins">0</div>
+                                <div class="threat-label">Failed Logins</div>
+                                <div class="threat-severity severity-critical">CRITICAL</div>
+                            </div>
+                            <div class="threat-box">
+                                <div class="threat-value" id="root-attempts">0</div>
+                                <div class="threat-label">Root Attempts</div>
+                                <div class="threat-severity severity-critical">CRITICAL</div>
+                            </div>
+                            <div class="threat-box">
+                                <div class="threat-value" id="file-access">0</div>
+                                <div class="threat-label">File Access</div>
+                                <div class="threat-severity severity-high">HIGH</div>
+                            </div>
+                            <div class="threat-box">
+                                <div class="threat-value" id="critical-alerts">0</div>
+                                <div class="threat-label">Critical</div>
+                                <div class="threat-severity severity-critical">CRITICAL</div>
+                            </div>
+                            <div class="threat-box">
+                                <div class="threat-value" id="sql-injection">0</div>
+                                <div class="threat-label">SQL Injection</div>
+                                <div class="threat-severity severity-critical">CRITICAL</div>
+                            </div>
+                            <div class="threat-box">
+                                <div class="threat-value" id="port-scanning">0</div>
+                                <div class="threat-label">Port Scan</div>
+                                <div class="threat-severity severity-high">HIGH</div>
+                            </div>
+                            <div class="threat-box">
+                                <div class="threat-value" id="malware">0</div>
+                                <div class="threat-label">Malware</div>
+                                <div class="threat-severity severity-critical">CRITICAL</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-header" onclick="toggleSection('ips')">
+                        <div class="section-title">
+                            <span class="chevron" id="ips-chevron">▶</span>
+                            <span>IP Analysis</span>
+                            <span class="section-count" id="ips-count">0 Blocked</span>
+                        </div>
+                    </div>
+                    <div class="section-content" id="ips-content">
+                        <div class="ip-table" id="ip-table"></div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-header" onclick="toggleSection('parsing')">
+                        <div class="section-title">
+                            <span class="chevron" id="parsing-chevron">▶</span>
+                            <span>Parsing Statistics</span>
+                        </div>
+                    </div>
+                    <div class="section-content" id="parsing-content">
+                        <div class="parsing-grid">
+                            <div class="donut-container">
+                                <div class="donut-wrapper">
+                                    <canvas id="donut-canvas" width="200" height="200"></canvas>
+                                    <div class="donut-center">
+                                        <div class="donut-percentage" id="success-rate">0%</div>
+                                        <div class="donut-label">Success Rate</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="stats-list">
+                                <div class="stat-item">
+                                    <div class="stat-header">
+                                        <span class="stat-label">Perfect Format</span>
+                                        <span class="stat-value" id="perfect-format">0</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" id="perfect-progress"></div>
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-header">
+                                        <span class="stat-label">Alternative Format</span>
+                                        <span class="stat-value" id="alternative-format">0</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" id="alternative-progress"></div>
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-header">
+                                        <span class="stat-label">Fallback Format</span>
+                                        <span class="stat-value" id="fallback-format">0</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" id="fallback-progress"></div>
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-header">
+                                        <span class="stat-label">Total Lines</span>
+                                        <span class="stat-value" id="total-lines">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <script>
+            function toggleSection(id) {
+                const content = document.getElementById(`${id}-content`);
+                const chevron = document.getElementById(`${id}-chevron`);
+                
+                content.classList.toggle('show');
+                chevron.classList.toggle('expanded');
+            }
+            
+            function drawDonut(perfect, alternative, fallback) {
+                const canvas = document.getElementById('donut-canvas');
+                const ctx = canvas.getContext('2d');
+                const total = perfect + alternative + fallback;
+                
+                if (total === 0) return;
+                
+                const centerX = 100;
+                const centerY = 100;
+                const radius = 80;
+                const innerRadius = 60;
+                
+                ctx.clearRect(0, 0, 200, 200);
+                
+                let currentAngle = -Math.PI / 2;
+                
+                // Perfect format (green)
+                if (perfect > 0) {
+                    const angle = (perfect / total) * 2 * Math.PI;
+                    ctx.fillStyle = '#15803d';
+                    drawDonutSegment(ctx, centerX, centerY, radius, innerRadius, currentAngle, currentAngle + angle);
+                    currentAngle += angle;
                 }
                 
-                const data = await response.json();
-                displayResults(data);
+                // Alternative format (neutral)
+                if (alternative > 0) {
+                    const angle = (alternative / total) * 2 * Math.PI;
+                    ctx.fillStyle = '#737373';
+                    drawDonutSegment(ctx, centerX, centerY, radius, innerRadius, currentAngle, currentAngle + angle);
+                    currentAngle += angle;
+                }
                 
-            } catch (error) {
-                errorContainer.innerHTML = `
-                    <div class="alert alert-error">
-                        <strong>Error:</strong> ${error.message}
-                    </div>
-                `;
-            } finally {
-                loading.style.display = 'none';
-                analyzeBtn.disabled = false;
-            }
-        });
-        
-        function displayResults(data) {
-            // Update summary cards
-            document.getElementById('summary-threats').textContent = data.risk_assessment.total_threats;
-            document.getElementById('summary-lines').textContent = data.parsing_info.total_lines;
-            document.getElementById('summary-ips').textContent = data.ip_analysis.all_ips.length;
-            
-            const formatQuality = ((data.parsing_info.format_quality.perfect_format / data.parsing_info.total_lines) * 100).toFixed(0);
-            document.getElementById('summary-quality').textContent = formatQuality + '%';
-            
-            // Update threat statistics
-            document.getElementById('failed-logins').textContent = data.threat_statistics.failed_logins;
-            document.getElementById('root-attempts').textContent = data.threat_statistics.root_attempts;
-            document.getElementById('file-access').textContent = data.threat_statistics.suspicious_file_access;
-            document.getElementById('critical-alerts').textContent = data.threat_statistics.critical_alerts;
-            document.getElementById('sql-injection').textContent = data.threat_statistics.sql_injection_attempts;
-            document.getElementById('port-scanning').textContent = data.threat_statistics.port_scanning_attempts;
-            document.getElementById('malware').textContent = data.threat_statistics.malware_detections;
-            
-            // Draw threats chart
-            drawThreatsChart(data);
-            
-            // Display parsing information
-            document.getElementById('total-lines').textContent = data.parsing_info.total_lines;
-            document.getElementById('parsed-lines').textContent = data.parsing_info.parsed_lines;
-            document.getElementById('skipped-lines').textContent = data.parsing_info.skipped_lines;
-            
-            // Update progress bars
-            const parsedPercent = (data.parsing_info.parsed_lines / data.parsing_info.total_lines * 100);
-            const skippedPercent = (data.parsing_info.skipped_lines / data.parsing_info.total_lines * 100);
-            document.getElementById('parsed-progress').style.width = parsedPercent + '%';
-            document.getElementById('skipped-progress').style.width = skippedPercent + '%';
-            
-            // Display format quality
-            document.getElementById('perfect-format').textContent = data.parsing_info.format_quality.perfect_format;
-            document.getElementById('alternative-format').textContent = data.parsing_info.format_quality.alternative_format;
-            document.getElementById('fallback-format').textContent = data.parsing_info.format_quality.fallback_format;
-            
-            // Draw format quality donut chart
-            drawFormatDonut(
-                data.parsing_info.format_quality.perfect_format,
-                data.parsing_info.format_quality.alternative_format,
-                data.parsing_info.format_quality.fallback_format
-            );
-            
-            // Show warning if many lines were skipped or used fallback format
-            const warningContainer = document.getElementById('parsing-warning');
-            let warningHtml = '';
-            
-            // Warning for fallback format usage
-            if (data.parsing_info.format_quality.fallback_format > 0) {
-                const fallbackPercentage = (data.parsing_info.format_quality.fallback_format / data.parsing_info.total_lines * 100).toFixed(1);
-                warningHtml += `
-                    <div style="background: var(--bg-tertiary); border: 1px solid var(--accent-yellow); border-left: 4px solid var(--accent-yellow); padding: 14px; margin-bottom: 15px; color: var(--text-primary); border-radius: 6px;">
-                        <strong>⚠️ Format Quality Notice:</strong> ${data.parsing_info.format_quality.fallback_format} lines (${fallbackPercentage}%) used fallback parsing.
-                        <br><small style="color: var(--text-secondary);">These lines lack proper timestamps or structure but were still processed for threats.</small>
-                        <br><small style="color: var(--text-secondary);">Recommended format: YYYY-MM-DD HH:MM:SS [LEVEL] message</small>
-                    </div>
-                `;
+                // Fallback format (light gray)
+                if (fallback > 0) {
+                    const angle = (fallback / total) * 2 * Math.PI;
+                    ctx.fillStyle = '#e5e5e5';
+                    drawDonutSegment(ctx, centerX, centerY, radius, innerRadius, currentAngle, currentAngle + angle);
+                }
             }
             
-            if (data.parsing_info.skipped_lines > 0) {
-                const percentage = (data.parsing_info.skipped_lines / data.parsing_info.total_lines * 100).toFixed(1);
-                let errorHtml = `
-                    <div style="background: #fff3cd; border: 1px solid #ffc107; border-left: 4px solid #ffc107; padding: 14px; margin-bottom: 15px; color: #856404; border-radius: 6px;">
-                        <strong>Warning:</strong> ${data.parsing_info.skipped_lines} lines (${percentage}%) could not be parsed.
-                        <br><small style="color: #6c757d;">The universal parser processed all lines - see details below</small>
-                    </div>
-                `;
+            function drawDonutSegment(ctx, x, y, radius, innerRadius, startAngle, endAngle) {
+                ctx.beginPath();
+                ctx.arc(x, y, radius, startAngle, endAngle);
+                ctx.arc(x, y, innerRadius, endAngle, startAngle, true);
+                ctx.closePath();
+                ctx.fill();
+            }
+            
+            function drawBarChart(data) {
+                const container = document.getElementById('threats-chart');
+                const labels = document.getElementById('threats-labels');
                 
-                // Display specific errors
-                if (data.parsing_info.errors && data.parsing_info.errors.length > 0) {
-                    errorHtml += '<div style="margin-top: 15px;"><h4 style="margin-bottom: 12px; color: #1a1a1a; font-weight: 600;">Parsing Details (first 10):</h4>';
-                    data.parsing_info.errors.forEach(error => {
-                        errorHtml += `
-                            <div style="background: #f8fafc; border: 1px solid #e1e8ed; border-left: 4px solid #dc3545; padding: 14px; margin-bottom: 10px; font-size: 0.9em; border-radius: 6px;">
-                                <div style="font-weight: 600; color: #dc3545; margin-bottom: 8px;">
-                                    Line ${error.line_number}: ${error.error_type}
-                                </div>
-                                <div style="background: #ffffff; border: 1px solid #e1e8ed; padding: 10px; margin: 8px 0; font-family: 'Courier New', monospace; font-size: 0.85em; overflow-x: auto; color: #495057; border-radius: 4px;">
-                                    ${error.line_content}
-                                </div>
-                                <div style="color: #28a745; margin-top: 8px;">
-                                    <strong>Suggestion:</strong> ${error.suggestion}
-                                </div>
-                            </div>
-                        `;
+                const threats = [
+                    { value: data.threat_statistics.failed_logins, label: 'Failed Logins' },
+                    { value: data.threat_statistics.root_attempts, label: 'Root' },
+                    { value: data.threat_statistics.suspicious_file_access, label: 'File Access' },
+                    { value: data.threat_statistics.critical_alerts, label: 'Critical' },
+                    { value: data.threat_statistics.sql_injection_attempts, label: 'SQL' },
+                    { value: data.threat_statistics.port_scanning_attempts, label: 'Port Scan' },
+                    { value: data.threat_statistics.malware_detections, label: 'Malware' }
+                ];
+                
+                const maxValue = Math.max(...threats.map(t => t.value), 1);
+                
+                container.innerHTML = '';
+                labels.innerHTML = '';
+                
+                threats.forEach(threat => {
+                    const height = (threat.value / maxValue) * 100;
+                    const bar = document.createElement('div');
+                    bar.className = 'bar';
+                    bar.style.height = `${height}%`;
+                    bar.innerHTML = `<div class="bar-value">${threat.value}</div>`;
+                    container.appendChild(bar);
+                    
+                    const label = document.createElement('div');
+                    label.className = 'bar-label';
+                    label.textContent = threat.label;
+                    labels.appendChild(label);
+                });
+            }
+            
+            const fileInput = document.getElementById('file-input');
+            const fileName = document.getElementById('file-name');
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            const uploadStatus = document.getElementById('upload-status');
+            const riskIndicator = document.getElementById('risk-indicator');
+            
+            fileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                fileName.textContent = file.name;
+                loading.classList.add('show');
+                results.classList.add('hidden');
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                try {
+                    const response = await fetch('/api/analyze', {
+                        method: 'POST',
+                        body: formData
                     });
                     
-                    if (data.parsing_info.skipped_lines > data.parsing_info.errors.length) {
-                        errorHtml += `<div style="color: #666; font-style: italic; margin-top: 10px;">
-                            ... and ${data.parsing_info.skipped_lines - data.parsing_info.errors.length} more errors
-                        </div>`;
-                    }
+                    const data = await response.json();
+                    displayResults(data);
                     
-                    errorHtml += '</div>';
+                    loading.classList.remove('show');
+                    results.classList.remove('hidden');
+                    uploadStatus.classList.add('show');
+                    riskIndicator.classList.add('show');
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                    loading.classList.remove('show');
                 }
-                
-                warningHtml += errorHtml;
-            }
-            
-            if (warningHtml) {
-                warningContainer.innerHTML = warningHtml;
-            } else {
-                warningContainer.innerHTML = '<div style="color: var(--accent-green); font-weight: 500;">✓ All lines in perfect format</div>';
-            }
-            
-            const highRiskContainer = document.getElementById('high-risk-ips');
-            if (data.ip_analysis.high_risk_ips.length > 0) {
-                highRiskContainer.innerHTML = '<h3 style="margin-bottom: 15px; color: #dc3545; font-weight: 600; font-size: 1em;">High-Risk IP Addresses (3+ occurrences)</h3>';
-                data.ip_analysis.high_risk_ips.forEach(ip => {
-                    highRiskContainer.innerHTML += `
-                        <div class="ip-item risk-high">
-                            <span><strong>${ip.ip}</strong> - ${ip.count} occurrences</span>
-                            <span class="risk-badge badge-high">HIGH RISK</span>
-                        </div>
-                    `;
-                });
-            } else {
-                highRiskContainer.innerHTML = '<p style="color: #28a745; font-weight: 500;">No high-risk IP addresses detected</p>';
-            }
-            
-            const allIpsContainer = document.getElementById('all-ips');
-            allIpsContainer.innerHTML = '<h3 style="margin: 20px 0 15px 0; color: #1a1a1a; font-weight: 600; font-size: 1em;">All IP Activity</h3>';
-            data.ip_analysis.all_ips.forEach(ip => {
-                const riskClass = ip.risk_level === 'high' ? 'risk-high' : 'risk-low';
-                allIpsContainer.innerHTML += `
-                    <div class="ip-item ${riskClass}">
-                        <span><strong>${ip.ip}</strong> - ${ip.count} occurrence${ip.count > 1 ? 's' : ''}</span>
-                    </div>
-                `;
             });
             
-            const riskContainer = document.getElementById('risk-assessment');
-            const badgeClass = data.risk_assessment.level === 'HIGH' ? 'badge-high' : 
-                               data.risk_assessment.level === 'MEDIUM' ? 'badge-medium' : 'badge-low';
-            riskContainer.innerHTML = `
-                <div style="text-align: center; padding: 20px;">
-                    <div style="margin-bottom: 20px;">
-                        <span class="risk-badge ${badgeClass}" style="font-size: 1.5em; padding: 15px 40px;">
-                            ${data.risk_assessment.level}
-                        </span>
-                    </div>
-                    <p style="margin-top: 15px; font-size: 1.05em; color: #6c757d;">${data.risk_assessment.description}</p>
-                    <p style="margin-top: 15px; color: #495057; font-size: 1.1em; font-weight: 600;">
-                        ${data.risk_assessment.total_threats} threat indicator${data.risk_assessment.total_threats !== 1 ? 's' : ''} detected
-                    </p>
-                </div>
-            `;
-            
-            results.style.display = 'block';
-        }
-    </script>
-</body>
-</html>
+            function displayResults(data) {
+                // Metrics
+                document.getElementById('total-events').textContent = data.parsing_info.total_lines.toLocaleString();
+                document.getElementById('threats-detected').textContent = data.risk_assessment.total_threats;
+                document.getElementById('blocked-ips').textContent = data.ip_analysis.high_risk_ips.length;
+                
+                const formatQuality = ((data.parsing_info.format_quality.perfect_format / data.parsing_info.total_lines) * 100).toFixed(0);
+                document.getElementById('format-quality').textContent = formatQuality + '%';
+                
+                // Risk indicator
+                const riskLevel = data.risk_assessment.level.toLowerCase();
+                riskIndicator.className = `risk-indicator show ${riskLevel}`;
+                document.getElementById('risk-label').textContent = data.risk_assessment.level + ' RISK';
+                document.getElementById('risk-score').textContent = data.risk_assessment.total_threats + '/100';
+                
+                if (riskLevel === 'high') {
+                    document.getElementById('risk-icon').textContent = '⚠';
+                } else if (riskLevel === 'medium') {
+                    document.getElementById('risk-icon').textContent = '⚠';
+                } else {
+                    document.getElementById('risk-icon').textContent = '🛡';
+                }
+                
+                // Threats
+                document.getElementById('threats-count').textContent = data.risk_assessment.total_threats + ' Total';
+                document.getElementById('failed-logins').textContent = data.threat_statistics.failed_logins;
+                document.getElementById('root-attempts').textContent = data.threat_statistics.root_attempts;
+                document.getElementById('file-access').textContent = data.threat_statistics.suspicious_file_access;
+                document.getElementById('critical-alerts').textContent = data.threat_statistics.critical_alerts;
+                document.getElementById('sql-injection').textContent = data.threat_statistics.sql_injection_attempts;
+                document.getElementById('port-scanning').textContent = data.threat_statistics.port_scanning_attempts;
+                document.getElementById('malware').textContent = data.threat_statistics.malware_detections;
+                
+                drawBarChart(data);
+                
+                // IPs
+                const highRiskCount = data.ip_analysis.high_risk_ips.length;
+                document.getElementById('ips-count').textContent = highRiskCount + ' Blocked';
+                
+                const ipTable = document.getElementById('ip-table');
+                ipTable.innerHTML = `
+                    <div class="ip-table-header">IP Address</div>
+                    <div class="ip-table-header">Attempts</div>
+                    <div class="ip-table-header">Risk</div>
+                    <div class="ip-table-header">Status</div>
+                `;
+                
+                data.ip_analysis.all_ips.slice(0, 8).forEach(ip => {
+                    ipTable.innerHTML += `
+                        <div class="ip-table-cell ip-address">${ip.ip}</div>
+                        <div class="ip-table-cell ip-count">${ip.count}</div>
+                        <div class="ip-table-cell"><span class="status-badge status-${ip.risk_level}">${ip.risk_level.toUpperCase()}</span></div>
+                        <div class="ip-table-cell"><span class="status-badge status-${ip.risk_level === 'high' ? 'blocked' : 'low'}">${ip.risk_level === 'high' ? 'BLOCKED' : 'MONITORED'}</span></div>
+                    `;
+                });
+                
+                // Parsing stats
+                const successRate = ((data.parsing_info.parsed_lines / data.parsing_info.total_lines) * 100).toFixed(1);
+                document.getElementById('success-rate').textContent = successRate + '%';
+                document.getElementById('perfect-format').textContent = data.parsing_info.format_quality.perfect_format;
+                document.getElementById('alternative-format').textContent = data.parsing_info.format_quality.alternative_format;
+                document.getElementById('fallback-format').textContent = data.parsing_info.format_quality.fallback_format;
+                document.getElementById('total-lines').textContent = data.parsing_info.total_lines;
+                
+                const total = data.parsing_info.total_lines;
+                document.getElementById('perfect-progress').style.width = ((data.parsing_info.format_quality.perfect_format / total) * 100) + '%';
+                document.getElementById('alternative-progress').style.width = ((data.parsing_info.format_quality.alternative_format / total) * 100) + '%';
+                document.getElementById('fallback-progress').style.width = ((data.parsing_info.format_quality.fallback_format / total) * 100) + '%';
+                
+                drawDonut(
+                    data.parsing_info.format_quality.perfect_format,
+                    data.parsing_info.format_quality.alternative_format,
+                    data.parsing_info.format_quality.fallback_format
+                );
+            }
+        </script>
+    </body>
+    </html>
     "#)
 }
 
