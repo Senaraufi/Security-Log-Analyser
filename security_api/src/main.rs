@@ -104,54 +104,64 @@ async fn serve_frontend() -> Html<&'static str> {
         }
         
         body {
-            font-family: 'Courier New', 'Consolas', 'Monaco', monospace;
-            background: #0a0e27;
-            color: #00ff41;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f7fa;
+            color: #2c3e50;
             min-height: 100vh;
             padding: 0;
             overflow-x: hidden;
         }
         
         .header {
-            background: #0d1117;
-            border-bottom: 2px solid #1f6feb;
-            padding: 20px 40px;
+            background: #ffffff;
+            border-bottom: 1px solid #e1e8ed;
+            padding: 24px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 4px 20px rgba(31, 111, 235, 0.3);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
         }
         
         .header h1 {
-            color: #1f6feb;
-            font-size: 1.5em;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 2px;
+            color: #1a1a1a;
+            font-size: 1.4em;
+            font-weight: 600;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+        }
+        
+        .header h1::before {
+            content: '';
+            width: 4px;
+            height: 28px;
+            background: #0066cc;
+            border-radius: 2px;
         }
         
         .status-indicator {
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 0.9em;
-            color: #00ff41;
+            font-size: 0.85em;
+            color: #28a745;
+            background: #f0f9f4;
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: 1px solid #d4edda;
         }
         
         .status-dot {
-            width: 10px;
-            height: 10px;
-            background: #00ff41;
+            width: 8px;
+            height: 8px;
+            background: #28a745;
             border-radius: 50%;
             animation: pulse 2s infinite;
         }
         
         @keyframes pulse {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            50% { opacity: 0.6; }
         }
         
         .container {
@@ -161,36 +171,25 @@ async fn serve_frontend() -> Html<&'static str> {
         }
         
         .subtitle {
-            color: #8b949e;
+            color: #6c757d;
             margin-bottom: 30px;
             font-size: 0.95em;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            font-weight: 400;
         }
         
         .upload-area {
-            border: 2px solid #1f6feb;
-            background: #0d1117;
+            border: 2px dashed #cbd5e0;
+            background: #ffffff;
             padding: 40px;
             text-align: center;
             margin-bottom: 20px;
-            position: relative;
-            overflow: hidden;
+            border-radius: 8px;
+            transition: all 0.3s;
         }
         
-        .upload-area::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(31, 111, 235, 0.1), transparent);
-            transition: 0.5s;
-        }
-        
-        .upload-area:hover::before {
-            left: 100%;
+        .upload-area:hover {
+            border-color: #0066cc;
+            background: #f8fafc;
         }
         
         input[type="file"] {
@@ -199,56 +198,54 @@ async fn serve_frontend() -> Html<&'static str> {
         
         .file-label {
             display: inline-block;
-            padding: 12px 30px;
-            background: #1f6feb;
+            padding: 12px 32px;
+            background: #0066cc;
             color: #ffffff;
-            border: 1px solid #1f6feb;
+            border: none;
             cursor: pointer;
             font-size: 0.95em;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.3s;
-            font-family: 'Courier New', monospace;
+            font-weight: 500;
+            transition: all 0.2s;
+            border-radius: 6px;
         }
         
         .file-label:hover {
-            background: transparent;
-            color: #1f6feb;
-            box-shadow: 0 0 20px rgba(31, 111, 235, 0.5);
+            background: #0052a3;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
         }
         
         .file-name {
             margin-top: 15px;
-            color: #00ff41;
+            color: #6c757d;
             font-size: 0.9em;
+            font-style: italic;
         }
         
         button {
             width: 100%;
-            padding: 15px;
-            background: #238636;
+            padding: 14px;
+            background: #28a745;
             color: #ffffff;
-            border: 1px solid #238636;
+            border: none;
             font-size: 1em;
-            font-weight: bold;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-family: 'Courier New', monospace;
+            transition: all 0.2s;
+            border-radius: 6px;
         }
         
         button:hover {
-            background: transparent;
-            color: #238636;
-            box-shadow: 0 0 20px rgba(35, 134, 54, 0.5);
+            background: #218838;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
         }
         
         button:disabled {
-            background: #21262d;
-            border-color: #21262d;
-            color: #484f58;
+            background: #e9ecef;
+            color: #adb5bd;
             cursor: not-allowed;
+            transform: none;
             box-shadow: none;
         }
         
@@ -259,8 +256,8 @@ async fn serve_frontend() -> Html<&'static str> {
         }
         
         .spinner {
-            border: 3px solid #21262d;
-            border-top: 3px solid #1f6feb;
+            border: 3px solid #e9ecef;
+            border-top: 3px solid #0066cc;
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -279,22 +276,21 @@ async fn serve_frontend() -> Html<&'static str> {
         }
         
         .section {
-            background: #0d1117;
-            border: 1px solid #30363d;
-            padding: 25px;
+            background: #ffffff;
+            border: 1px solid #e1e8ed;
+            padding: 28px;
             margin-bottom: 20px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
         }
         
         .section h2 {
-            color: #1f6feb;
-            margin-bottom: 20px;
-            font-size: 1.1em;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            border-bottom: 1px solid #30363d;
-            padding-bottom: 10px;
-            font-size: 1.5em;
+            color: #1a1a1a;
+            margin-bottom: 24px;
+            font-size: 1.15em;
+            font-weight: 600;
+            border-bottom: 2px solid #e1e8ed;
+            padding-bottom: 12px;
         }
         
         .stat-grid {
@@ -305,31 +301,31 @@ async fn serve_frontend() -> Html<&'static str> {
         }
         
         .stat-box {
-            background: #161b22;
-            border: 1px solid #30363d;
-            padding: 20px;
+            background: #f8fafc;
+            border: 1px solid #e1e8ed;
+            padding: 24px;
             text-align: center;
-            transition: all 0.3s;
+            transition: all 0.2s;
+            border-radius: 6px;
         }
         
         .stat-box:hover {
-            border-color: #1f6feb;
-            box-shadow: 0 0 15px rgba(31, 111, 235, 0.3);
+            border-color: #0066cc;
+            box-shadow: 0 4px 12px rgba(0, 102, 204, 0.1);
+            transform: translateY(-2px);
         }
         
         .stat-value {
             font-size: 2.5em;
-            font-weight: bold;
-            color: #00ff41;
-            font-family: 'Courier New', monospace;
+            font-weight: 700;
+            color: #0066cc;
         }
         
         .stat-label {
-            color: #8b949e;
+            color: #6c757d;
             margin-top: 8px;
             font-size: 0.85em;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            font-weight: 500;
         }
         
         .ip-list {
@@ -337,103 +333,97 @@ async fn serve_frontend() -> Html<&'static str> {
         }
         
         .ip-item {
-            background: #161b22;
-            border: 1px solid #30363d;
-            padding: 15px;
+            background: #f8fafc;
+            border: 1px solid #e1e8ed;
+            padding: 16px;
             margin-bottom: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-family: 'Courier New', monospace;
-            transition: all 0.3s;
+            transition: all 0.2s;
+            border-radius: 6px;
         }
         
         .ip-item:hover {
-            border-color: #1f6feb;
-            box-shadow: 0 0 10px rgba(31, 111, 235, 0.2);
+            border-color: #cbd5e0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
         
         .risk-high { 
-            border-left: 3px solid #da3633;
+            border-left: 4px solid #dc3545;
         }
         .risk-low { 
-            border-left: 3px solid #238636;
+            border-left: 4px solid #28a745;
         }
         
         .risk-badge {
-            padding: 6px 16px;
-            font-size: 0.85em;
-            font-weight: bold;
-            border: 1px solid;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-family: 'Courier New', monospace;
+            padding: 6px 14px;
+            font-size: 0.8em;
+            font-weight: 600;
+            border-radius: 4px;
         }
         
         .badge-high {
-            background: rgba(218, 54, 51, 0.1);
-            color: #ff6b6b;
-            border-color: #da3633;
+            background: #dc3545;
+            color: #ffffff;
         }
         
         .badge-medium {
-            background: rgba(217, 119, 6, 0.1);
-            color: #ffa94d;
-            border-color: #d97706;
+            background: #ffc107;
+            color: #1a1a1a;
         }
         
         .badge-low {
-            background: rgba(35, 134, 54, 0.1);
-            color: #51cf66;
-            border-color: #238636;
+            background: #28a745;
+            color: #ffffff;
         }
         
         .alert {
-            padding: 15px;
+            padding: 16px;
             margin-bottom: 20px;
-            border: 1px solid;
-            font-family: 'Courier New', monospace;
+            border-radius: 6px;
+            border-left: 4px solid;
         }
         
         .alert-error {
-            background: rgba(218, 54, 51, 0.1);
-            color: #ff6b6b;
-            border-color: #da3633;
+            background: #f8d7da;
+            color: #721c24;
+            border-color: #dc3545;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>⚡ SECURITY LOG ANALYZER</h1>
+        <h1>Security Log Analyzer</h1>
         <div class="status-indicator">
             <div class="status-dot"></div>
-            <span>SYSTEM ONLINE</span>
+            <span>System Active</span>
         </div>
     </div>
     
     <div class="container">
-        <p class="subtitle">▸ THREAT DETECTION SYSTEM v0.5.0</p>
+        <p class="subtitle">Enterprise Threat Detection & Analysis Platform</p>
         
         <div class="upload-area">
             <label for="file-upload" class="file-label">
-                ▸ SELECT LOG FILE
+                Select Log File
             </label>
             <input id="file-upload" type="file" accept=".txt,.log" />
-            <div class="file-name" id="file-name">// NO FILE SELECTED</div>
+            <div class="file-name" id="file-name">No file selected</div>
         </div>
         
-        <button id="analyze-btn" disabled>▸ INITIATE THREAT SCAN</button>
+        <button id="analyze-btn" disabled>Analyze Security Logs</button>
         
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p style="margin-top: 10px; color: #1f6feb; font-family: 'Courier New', monospace;">> SCANNING FOR THREATS...</p>
+            <p style="margin-top: 10px; color: #6c757d;">Analyzing security logs...</p>
         </div>
         
         <div id="error-container"></div>
         
         <div class="results" id="results">
             <div class="section">
-                <h2>▸ THREAT STATISTICS</h2>
+                <h2>Threat Statistics</h2>
                 <div class="stat-grid">
                     <div class="stat-box">
                         <div class="stat-value" id="failed-logins">0</div>
@@ -467,30 +457,30 @@ async fn serve_frontend() -> Html<&'static str> {
             </div>
             
             <div class="section">
-                <h2>▸ IP ADDRESS ANALYSIS</h2>
+                <h2>IP Address Analysis</h2>
                 <div id="high-risk-ips"></div>
                 <div id="all-ips"></div>
             </div>
             
             <div class="section">
-                <h2>▸ RISK ASSESSMENT</h2>
+                <h2>Risk Assessment</h2>
                 <div id="risk-assessment"></div>
             </div>
             
             <div class="section">
-                <h2>▸ PARSING INFORMATION</h2>
+                <h2>Log Parsing Information</h2>
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
                     <div style="text-align: center;">
-                        <div style="font-size: 2em; font-weight: bold; color: #1f6feb; font-family: 'Courier New', monospace;" id="total-lines">0</div>
-                        <div style="color: #8b949e; font-size: 0.85em; text-transform: uppercase; letter-spacing: 1px;">Total Lines</div>
+                        <div style="font-size: 2em; font-weight: 700; color: #0066cc;" id="total-lines">0</div>
+                        <div style="color: #6c757d; font-size: 0.85em; font-weight: 500;">Total Lines</div>
                     </div>
                     <div style="text-align: center;">
-                        <div style="font-size: 2em; font-weight: bold; color: #238636; font-family: 'Courier New', monospace;" id="parsed-lines">0</div>
-                        <div style="color: #8b949e; font-size: 0.85em; text-transform: uppercase; letter-spacing: 1px;">Parsed Successfully</div>
+                        <div style="font-size: 2em; font-weight: 700; color: #28a745;" id="parsed-lines">0</div>
+                        <div style="color: #6c757d; font-size: 0.85em; font-weight: 500;">Parsed Successfully</div>
                     </div>
                     <div style="text-align: center;">
-                        <div style="font-size: 2em; font-weight: bold; color: #da3633; font-family: 'Courier New', monospace;" id="skipped-lines">0</div>
-                        <div style="color: #8b949e; font-size: 0.85em; text-transform: uppercase; letter-spacing: 1px;">Skipped/Failed</div>
+                        <div style="font-size: 2em; font-weight: 700; color: #dc3545;" id="skipped-lines">0</div>
+                        <div style="color: #6c757d; font-size: 0.85em; font-weight: 500;">Skipped/Failed</div>
                     </div>
                 </div>
                 <div id="parsing-warning" style="margin-top: 15px;"></div>
@@ -544,7 +534,7 @@ async fn serve_frontend() -> Html<&'static str> {
             } catch (error) {
                 errorContainer.innerHTML = `
                     <div class="alert alert-error">
-                        ▸ ERROR: ${error.message}
+                        <strong>Error:</strong> ${error.message}
                     </div>
                 `;
             } finally {
@@ -572,26 +562,26 @@ async fn serve_frontend() -> Html<&'static str> {
             if (data.parsing_info.skipped_lines > 0) {
                 const percentage = (data.parsing_info.skipped_lines / data.parsing_info.total_lines * 100).toFixed(1);
                 let errorHtml = `
-                    <div style="background: rgba(217, 119, 6, 0.1); border: 1px solid #d97706; padding: 12px; margin-bottom: 15px; color: #ffa94d; font-family: 'Courier New', monospace;">
-                        <strong>▸ WARNING:</strong> ${data.parsing_info.skipped_lines} lines (${percentage}%) could not be parsed.
-                        <br><small style="color: #8b949e;">// Universal parser processed all lines - see details below</small>
+                    <div style="background: #fff3cd; border: 1px solid #ffc107; border-left: 4px solid #ffc107; padding: 14px; margin-bottom: 15px; color: #856404; border-radius: 6px;">
+                        <strong>Warning:</strong> ${data.parsing_info.skipped_lines} lines (${percentage}%) could not be parsed.
+                        <br><small style="color: #6c757d;">The universal parser processed all lines - see details below</small>
                     </div>
                 `;
                 
                 // Display specific errors
                 if (data.parsing_info.errors && data.parsing_info.errors.length > 0) {
-                    errorHtml += '<div style="margin-top: 15px;"><h4 style="margin-bottom: 10px; color: #1f6feb; text-transform: uppercase; letter-spacing: 1px;">▸ PARSING DETAILS (FIRST 10):</h4>';
+                    errorHtml += '<div style="margin-top: 15px;"><h4 style="margin-bottom: 12px; color: #1a1a1a; font-weight: 600;">Parsing Details (first 10):</h4>';
                     data.parsing_info.errors.forEach(error => {
                         errorHtml += `
-                            <div style="background: #161b22; border: 1px solid #30363d; border-left: 3px solid #da3633; padding: 12px; margin-bottom: 10px; font-size: 0.9em;">
-                                <div style="font-weight: bold; color: #ff6b6b; margin-bottom: 8px; font-family: 'Courier New', monospace;">
-                                    [LINE ${error.line_number}] ${error.error_type}
+                            <div style="background: #f8fafc; border: 1px solid #e1e8ed; border-left: 4px solid #dc3545; padding: 14px; margin-bottom: 10px; font-size: 0.9em; border-radius: 6px;">
+                                <div style="font-weight: 600; color: #dc3545; margin-bottom: 8px;">
+                                    Line ${error.line_number}: ${error.error_type}
                                 </div>
-                                <div style="background: #0d1117; border: 1px solid #30363d; padding: 10px; margin: 8px 0; font-family: 'Courier New', monospace; font-size: 0.85em; overflow-x: auto; color: #8b949e;">
+                                <div style="background: #ffffff; border: 1px solid #e1e8ed; padding: 10px; margin: 8px 0; font-family: 'Courier New', monospace; font-size: 0.85em; overflow-x: auto; color: #495057; border-radius: 4px;">
                                     ${error.line_content}
                                 </div>
-                                <div style="color: #51cf66; margin-top: 8px; font-family: 'Courier New', monospace;">
-                                    ▸ <strong>FIX:</strong> ${error.suggestion}
+                                <div style="color: #28a745; margin-top: 8px;">
+                                    <strong>Suggestion:</strong> ${error.suggestion}
                                 </div>
                             </div>
                         `;
@@ -608,12 +598,12 @@ async fn serve_frontend() -> Html<&'static str> {
                 
                 warningContainer.innerHTML = errorHtml;
             } else {
-                warningContainer.innerHTML = '<div style="color: #51cf66; font-family: \'Courier New\', monospace;">▸ ALL LINES PROCESSED SUCCESSFULLY</div>';
+                warningContainer.innerHTML = '<div style="color: #28a745; font-weight: 500;">All lines processed successfully</div>';
             }
             
             const highRiskContainer = document.getElementById('high-risk-ips');
             if (data.ip_analysis.high_risk_ips.length > 0) {
-                highRiskContainer.innerHTML = '<h3 style="margin-bottom: 15px; color: #ff6b6b; text-transform: uppercase; letter-spacing: 1px; font-size: 1em;">▸ HIGH-RISK IPS (3+ OCCURRENCES)</h3>';
+                highRiskContainer.innerHTML = '<h3 style="margin-bottom: 15px; color: #dc3545; font-weight: 600; font-size: 1em;">High-Risk IP Addresses (3+ occurrences)</h3>';
                 data.ip_analysis.high_risk_ips.forEach(ip => {
                     highRiskContainer.innerHTML += `
                         <div class="ip-item risk-high">
@@ -623,18 +613,16 @@ async fn serve_frontend() -> Html<&'static str> {
                     `;
                 });
             } else {
-                highRiskContainer.innerHTML = '<p style="color: #51cf66; font-family: \'Courier New\', monospace;">▸ NO HIGH-RISK IPS DETECTED</p>';
+                highRiskContainer.innerHTML = '<p style="color: #28a745; font-weight: 500;">No high-risk IP addresses detected</p>';
             }
             
             const allIpsContainer = document.getElementById('all-ips');
-            allIpsContainer.innerHTML = '<h3 style="margin: 20px 0 15px 0; color: #1f6feb; text-transform: uppercase; letter-spacing: 1px; font-size: 1em;">▸ ALL IP ACTIVITY</h3>';
+            allIpsContainer.innerHTML = '<h3 style="margin: 20px 0 15px 0; color: #1a1a1a; font-weight: 600; font-size: 1em;">All IP Activity</h3>';
             data.ip_analysis.all_ips.forEach(ip => {
                 const riskClass = ip.risk_level === 'high' ? 'risk-high' : 'risk-low';
-                const indicator = ip.risk_level === 'high' ? '[!]' : '[✓]';
                 allIpsContainer.innerHTML += `
                     <div class="ip-item ${riskClass}">
-                        <span style="color: ${ip.risk_level === 'high' ? '#ff6b6b' : '#51cf66'}">${indicator}</span>
-                        <span style="flex: 1; margin-left: 10px;"><strong>${ip.ip}</strong> - ${ip.count} occurrences</span>
+                        <span><strong>${ip.ip}</strong> - ${ip.count} occurrence${ip.count > 1 ? 's' : ''}</span>
                     </div>
                 `;
             });
@@ -649,9 +637,9 @@ async fn serve_frontend() -> Html<&'static str> {
                             ${data.risk_assessment.level}
                         </span>
                     </div>
-                    <p style="margin-top: 15px; font-size: 1.1em; color: #8b949e; font-family: 'Courier New', monospace;">${data.risk_assessment.description.toUpperCase()}</p>
-                    <p style="margin-top: 15px; color: #1f6feb; font-family: 'Courier New', monospace; font-size: 1.2em;">
-                        <strong>${data.risk_assessment.total_threats}</strong> THREAT INDICATORS DETECTED
+                    <p style="margin-top: 15px; font-size: 1.05em; color: #6c757d;">${data.risk_assessment.description}</p>
+                    <p style="margin-top: 15px; color: #495057; font-size: 1.1em; font-weight: 600;">
+                        ${data.risk_assessment.total_threats} threat indicator${data.risk_assessment.total_threats !== 1 ? 's' : ''} detected
                     </p>
                 </div>
             `;
@@ -717,8 +705,8 @@ fn process_logs(content: &str) -> AnalysisResult {
             }
             
             if entry.message.contains("/etc/passwd") || 
-               entry.message.contains("/etc/shadow") ||
-               entry.message.contains("Suspicious file") {
+                entry.message.contains("/etc/shadow") ||
+                entry.message.contains("Suspicious file") {
                 suspicious_file_access += 1;
             }
             
@@ -727,20 +715,20 @@ fn process_logs(content: &str) -> AnalysisResult {
             }
             
             if entry.message.contains("SELECT") ||
-               entry.message.contains("DROP TABLE") ||
-               entry.message.contains("UNION SELECT") {
+                entry.message.contains("DROP TABLE") ||
+                entry.message.contains("UNION SELECT") {
                 sql_injection_attempts += 1;
             }
             
             if entry.message.contains("port scan") ||
-               entry.message.contains("nmap") {
+                entry.message.contains("nmap") {
                 port_scanning_attempts += 1;
             }
             
             if entry.message.contains("malware") ||
-               entry.message.contains("trojan") ||
-               entry.message.contains("virus") ||
-               entry.message.contains("ransomware") {
+                entry.message.contains("trojan") ||
+                entry.message.contains("virus") ||
+                entry.message.contains("ransomware") {
                 malware_detections += 1;
             }
         } else {
