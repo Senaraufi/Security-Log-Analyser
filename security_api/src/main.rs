@@ -97,6 +97,38 @@ async fn serve_frontend() -> Html<&'static str> {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Security Log Analyzer</title>
     <style>
+        :root {
+            --bg-primary: #f5f7fa;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f8fafc;
+            --text-primary: #2c3e50;
+            --text-secondary: #6c757d;
+            --border-color: #e1e8ed;
+            --border-light: #cbd5e0;
+            --shadow: rgba(0, 0, 0, 0.08);
+            --shadow-hover: rgba(0, 0, 0, 0.12);
+            --accent-blue: #0066cc;
+            --accent-green: #28a745;
+            --accent-red: #dc3545;
+            --accent-yellow: #ffc107;
+        }
+        
+        body.dark-mode {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #1c2128;
+            --text-primary: #c9d1d9;
+            --text-secondary: #8b949e;
+            --border-color: #30363d;
+            --border-light: #21262d;
+            --shadow: rgba(0, 0, 0, 0.3);
+            --shadow-hover: rgba(0, 0, 0, 0.5);
+            --accent-blue: #58a6ff;
+            --accent-green: #3fb950;
+            --accent-red: #f85149;
+            --accent-yellow: #d29922;
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -105,25 +137,33 @@ async fn serve_frontend() -> Html<&'static str> {
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-            background: #f5f7fa;
-            color: #2c3e50;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             min-height: 100vh;
             padding: 0;
             overflow-x: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
         
         .header {
-            background: #ffffff;
-            border-bottom: 1px solid #e1e8ed;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
             padding: 24px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 2px 4px var(--shadow);
+            transition: all 0.3s ease;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
         }
         
         .header h1 {
-            color: #1a1a1a;
+            color: var(--text-primary);
             font-size: 1.4em;
             font-weight: 600;
             display: flex;
@@ -135,8 +175,34 @@ async fn serve_frontend() -> Html<&'static str> {
             content: '';
             width: 4px;
             height: 28px;
-            background: #0066cc;
+            background: var(--accent-blue);
             border-radius: 2px;
+        }
+        
+        .theme-toggle {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .theme-toggle:hover {
+            background: var(--bg-primary);
+            border-color: var(--accent-blue);
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
         
         .status-indicator {
@@ -144,17 +210,18 @@ async fn serve_frontend() -> Html<&'static str> {
             align-items: center;
             gap: 8px;
             font-size: 0.85em;
-            color: #28a745;
-            background: #f0f9f4;
+            color: var(--accent-green);
+            background: var(--bg-tertiary);
             padding: 8px 16px;
             border-radius: 6px;
-            border: 1px solid #d4edda;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
         }
         
         .status-dot {
             width: 8px;
             height: 8px;
-            background: #28a745;
+            background: var(--accent-green);
             border-radius: 50%;
             animation: pulse 2s infinite;
         }
@@ -171,15 +238,15 @@ async fn serve_frontend() -> Html<&'static str> {
         }
         
         .subtitle {
-            color: #6c757d;
+            color: var(--text-secondary);
             margin-bottom: 30px;
             font-size: 0.95em;
             font-weight: 400;
         }
         
         .upload-area {
-            border: 2px dashed #cbd5e0;
-            background: #ffffff;
+            border: 2px dashed var(--border-light);
+            background: var(--bg-secondary);
             padding: 40px;
             text-align: center;
             margin-bottom: 20px;
@@ -188,8 +255,8 @@ async fn serve_frontend() -> Html<&'static str> {
         }
         
         .upload-area:hover {
-            border-color: #0066cc;
-            background: #f8fafc;
+            border-color: var(--accent-blue);
+            background: var(--bg-tertiary);
         }
         
         input[type="file"] {
@@ -199,7 +266,7 @@ async fn serve_frontend() -> Html<&'static str> {
         .file-label {
             display: inline-block;
             padding: 12px 32px;
-            background: #0066cc;
+            background: var(--accent-blue);
             color: #ffffff;
             border: none;
             cursor: pointer;
@@ -210,14 +277,14 @@ async fn serve_frontend() -> Html<&'static str> {
         }
         
         .file-label:hover {
-            background: #0052a3;
+            opacity: 0.9;
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
+            box-shadow: 0 4px 12px var(--shadow-hover);
         }
         
         .file-name {
             margin-top: 15px;
-            color: #6c757d;
+            color: var(--text-secondary);
             font-size: 0.9em;
             font-style: italic;
         }
@@ -225,7 +292,7 @@ async fn serve_frontend() -> Html<&'static str> {
         button {
             width: 100%;
             padding: 14px;
-            background: #28a745;
+            background: var(--accent-green);
             color: #ffffff;
             border: none;
             font-size: 1em;
@@ -236,17 +303,18 @@ async fn serve_frontend() -> Html<&'static str> {
         }
         
         button:hover {
-            background: #218838;
+            opacity: 0.9;
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+            box-shadow: 0 4px 12px var(--shadow-hover);
         }
         
         button:disabled {
-            background: #e9ecef;
-            color: #adb5bd;
+            background: var(--border-color);
+            color: var(--text-secondary);
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
+            opacity: 0.6;
         }
         
         .loading {
@@ -256,8 +324,8 @@ async fn serve_frontend() -> Html<&'static str> {
         }
         
         .spinner {
-            border: 3px solid #e9ecef;
-            border-top: 3px solid #0066cc;
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--accent-blue);
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -276,20 +344,21 @@ async fn serve_frontend() -> Html<&'static str> {
         }
         
         .section {
-            background: #ffffff;
-            border: 1px solid #e1e8ed;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
             padding: 28px;
             margin-bottom: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 2px 4px var(--shadow);
+            transition: all 0.3s ease;
         }
         
         .section h2 {
-            color: #1a1a1a;
+            color: var(--text-primary);
             margin-bottom: 24px;
             font-size: 1.15em;
             font-weight: 600;
-            border-bottom: 2px solid #e1e8ed;
+            border-bottom: 2px solid var(--border-color);
             padding-bottom: 12px;
         }
         
@@ -301,8 +370,8 @@ async fn serve_frontend() -> Html<&'static str> {
         }
         
         .stat-box {
-            background: #f8fafc;
-            border: 1px solid #e1e8ed;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
             padding: 24px;
             text-align: center;
             transition: all 0.2s;
@@ -310,19 +379,19 @@ async fn serve_frontend() -> Html<&'static str> {
         }
         
         .stat-box:hover {
-            border-color: #0066cc;
-            box-shadow: 0 4px 12px rgba(0, 102, 204, 0.1);
+            border-color: var(--accent-blue);
+            box-shadow: 0 4px 12px var(--shadow-hover);
             transform: translateY(-2px);
         }
         
         .stat-value {
             font-size: 2.5em;
             font-weight: 700;
-            color: #0066cc;
+            color: var(--accent-blue);
         }
         
         .stat-label {
-            color: #6c757d;
+            color: var(--text-secondary);
             margin-top: 8px;
             font-size: 0.85em;
             font-weight: 500;
@@ -333,8 +402,8 @@ async fn serve_frontend() -> Html<&'static str> {
         }
         
         .ip-item {
-            background: #f8fafc;
-            border: 1px solid #e1e8ed;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
             padding: 16px;
             margin-bottom: 10px;
             display: flex;
@@ -345,15 +414,15 @@ async fn serve_frontend() -> Html<&'static str> {
         }
         
         .ip-item:hover {
-            border-color: #cbd5e0;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            border-color: var(--border-light);
+            box-shadow: 0 2px 8px var(--shadow-hover);
         }
         
         .risk-high { 
-            border-left: 4px solid #dc3545;
+            border-left: 4px solid var(--accent-red);
         }
         .risk-low { 
-            border-left: 4px solid #28a745;
+            border-left: 4px solid var(--accent-green);
         }
         
         .risk-badge {
@@ -364,17 +433,17 @@ async fn serve_frontend() -> Html<&'static str> {
         }
         
         .badge-high {
-            background: #dc3545;
+            background: var(--accent-red);
             color: #ffffff;
         }
         
         .badge-medium {
-            background: #ffc107;
+            background: var(--accent-yellow);
             color: #1a1a1a;
         }
         
         .badge-low {
-            background: #28a745;
+            background: var(--accent-green);
             color: #ffffff;
         }
         
@@ -383,21 +452,30 @@ async fn serve_frontend() -> Html<&'static str> {
             margin-bottom: 20px;
             border-radius: 6px;
             border-left: 4px solid;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
         }
         
         .alert-error {
-            background: #f8d7da;
-            color: #721c24;
-            border-color: #dc3545;
+            border-color: var(--accent-red);
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>Security Log Analyzer</h1>
-        <div class="status-indicator">
-            <div class="status-dot"></div>
-            <span>System Active</span>
+        <div class="header-left">
+            <h1>Security Log Analyzer</h1>
+        </div>
+        <div class="header-right">
+            <button class="theme-toggle" id="theme-toggle">
+                <span id="theme-icon">🌙</span>
+                <span id="theme-text">Dark Mode</span>
+            </button>
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>System Active</span>
+            </div>
         </div>
     </div>
     
@@ -489,6 +567,34 @@ async fn serve_frontend() -> Html<&'static str> {
     </div>
     
     <script>
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+        const themeText = document.getElementById('theme-text');
+        
+        // Check for saved theme preference or default to light mode
+        const currentTheme = localStorage.getItem('theme') || 'light';
+        if (currentTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+            themeIcon.textContent = '☀️';
+            themeText.textContent = 'Light Mode';
+        }
+        
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            
+            if (document.body.classList.contains('dark-mode')) {
+                themeIcon.textContent = '☀️';
+                themeText.textContent = 'Light Mode';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                themeIcon.textContent = '🌙';
+                themeText.textContent = 'Dark Mode';
+                localStorage.setItem('theme', 'light');
+            }
+        });
+        
+        // File upload functionality
         const fileInput = document.getElementById('file-upload');
         const fileName = document.getElementById('file-name');
         const analyzeBtn = document.getElementById('analyze-btn');
