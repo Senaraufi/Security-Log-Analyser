@@ -31,6 +31,14 @@ struct ParsingInfo {
     parsed_lines: usize,
     skipped_lines: usize,
     errors: Vec<ParseError>,
+    format_quality: FormatQuality,
+}
+
+#[derive(Serialize)]
+struct FormatQuality {
+    perfect_format: usize,      // Format 1 (standard)
+    alternative_format: usize,  // Formats 2-6 (valid alternatives)
+    fallback_format: usize,     // Format 7+ (no timestamp/minimal structure)
 }
 
 #[derive(Serialize)]
@@ -547,21 +555,38 @@ async fn serve_frontend() -> Html<&'static str> {
             
             <div class="section">
                 <h2>Log Parsing Information</h2>
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
                     <div style="text-align: center;">
-                        <div style="font-size: 2em; font-weight: 700; color: #0066cc;" id="total-lines">0</div>
-                        <div style="color: #6c757d; font-size: 0.85em; font-weight: 500;">Total Lines</div>
+                        <div style="font-size: 2em; font-weight: 700; color: var(--accent-blue);" id="total-lines">0</div>
+                        <div style="color: var(--text-secondary); font-size: 0.85em; font-weight: 500;">Total Lines</div>
                     </div>
                     <div style="text-align: center;">
-                        <div style="font-size: 2em; font-weight: 700; color: #28a745;" id="parsed-lines">0</div>
-                        <div style="color: #6c757d; font-size: 0.85em; font-weight: 500;">Parsed Successfully</div>
+                        <div style="font-size: 2em; font-weight: 700; color: var(--accent-green);" id="parsed-lines">0</div>
+                        <div style="color: var(--text-secondary); font-size: 0.85em; font-weight: 500;">Parsed Successfully</div>
                     </div>
                     <div style="text-align: center;">
-                        <div style="font-size: 2em; font-weight: 700; color: #dc3545;" id="skipped-lines">0</div>
-                        <div style="color: #6c757d; font-size: 0.85em; font-weight: 500;">Skipped/Failed</div>
+                        <div style="font-size: 2em; font-weight: 700; color: var(--accent-red);" id="skipped-lines">0</div>
+                        <div style="color: var(--text-secondary); font-size: 0.85em; font-weight: 500;">Skipped/Failed</div>
                     </div>
                 </div>
-                <div id="parsing-warning" style="margin-top: 15px;"></div>
+                
+                <h3 style="color: var(--text-primary); font-size: 1em; font-weight: 600; margin-bottom: 12px;">Format Quality</h3>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.8em; font-weight: 700; color: var(--accent-green);" id="perfect-format">0</div>
+                        <div style="color: var(--text-secondary); font-size: 0.85em; font-weight: 500;">Perfect Format</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.8em; font-weight: 700; color: var(--accent-blue);" id="alternative-format">0</div>
+                        <div style="color: var(--text-secondary); font-size: 0.85em; font-weight: 500;">Alternative Format</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.8em; font-weight: 700; color: var(--accent-yellow);" id="fallback-format">0</div>
+                        <div style="color: var(--text-secondary); font-size: 0.85em; font-weight: 500;">Fallback Format</div>
+                    </div>
+                </div>
+                
+                <div id="parsing-warning" style="margin-top: 20px;"></div>
             </div>
         </div>
     </div>
@@ -663,8 +688,27 @@ async fn serve_frontend() -> Html<&'static str> {
             document.getElementById('parsed-lines').textContent = data.parsing_info.parsed_lines;
             document.getElementById('skipped-lines').textContent = data.parsing_info.skipped_lines;
             
-            // Show warning if many lines were skipped
+            // Display format quality
+            document.getElementById('perfect-format').textContent = data.parsing_info.format_quality.perfect_format;
+            document.getElementById('alternative-format').textContent = data.parsing_info.format_quality.alternative_format;
+            document.getElementById('fallback-format').textContent = data.parsing_info.format_quality.fallback_format;
+            
+            // Show warning if many lines were skipped or used fallback format
             const warningContainer = document.getElementById('parsing-warning');
+            let warningHtml = '';
+            
+            // Warning for fallback format usage
+            if (data.parsing_info.format_quality.fallback_format > 0) {
+                const fallbackPercentage = (data.parsing_info.format_quality.fallback_format / data.parsing_info.total_lines * 100).toFixed(1);
+                warningHtml += `
+                    <div style="background: var(--bg-tertiary); border: 1px solid var(--accent-yellow); border-left: 4px solid var(--accent-yellow); padding: 14px; margin-bottom: 15px; color: var(--text-primary); border-radius: 6px;">
+                        <strong>⚠️ Format Quality Notice:</strong> ${data.parsing_info.format_quality.fallback_format} lines (${fallbackPercentage}%) used fallback parsing.
+                        <br><small style="color: var(--text-secondary);">These lines lack proper timestamps or structure but were still processed for threats.</small>
+                        <br><small style="color: var(--text-secondary);">Recommended format: YYYY-MM-DD HH:MM:SS [LEVEL] message</small>
+                    </div>
+                `;
+            }
+            
             if (data.parsing_info.skipped_lines > 0) {
                 const percentage = (data.parsing_info.skipped_lines / data.parsing_info.total_lines * 100).toFixed(1);
                 let errorHtml = `
@@ -702,9 +746,13 @@ async fn serve_frontend() -> Html<&'static str> {
                     errorHtml += '</div>';
                 }
                 
-                warningContainer.innerHTML = errorHtml;
+                warningHtml += errorHtml;
+            }
+            
+            if (warningHtml) {
+                warningContainer.innerHTML = warningHtml;
             } else {
-                warningContainer.innerHTML = '<div style="color: #28a745; font-weight: 500;">All lines processed successfully</div>';
+                warningContainer.innerHTML = '<div style="color: var(--accent-green); font-weight: 500;">✓ All lines in perfect format</div>';
             }
             
             const highRiskContainer = document.getElementById('high-risk-ips');
@@ -785,6 +833,9 @@ fn process_logs(content: &str) -> AnalysisResult {
     let mut total_lines = 0;
     let mut parsed_lines = 0;
     let mut parse_errors: Vec<ParseError> = Vec::new();
+    let mut perfect_format = 0;
+    let mut alternative_format = 0;
+    let mut fallback_format = 0;
     
     for line in content.lines() {
         total_lines += 1;
@@ -792,6 +843,14 @@ fn process_logs(content: &str) -> AnalysisResult {
         // Skip empty lines
         if line.trim().is_empty() {
             continue;
+        }
+        
+        // Check format quality
+        let format_type = check_format_quality(line);
+        match format_type {
+            1 => perfect_format += 1,
+            2..=6 => alternative_format += 1,
+            _ => fallback_format += 1,
         }
         
         if let Some(entry) = parse_log_line(line) {
@@ -910,8 +969,55 @@ fn process_logs(content: &str) -> AnalysisResult {
             parsed_lines,
             skipped_lines: total_lines - parsed_lines,
             errors: parse_errors,
+            format_quality: FormatQuality {
+                perfect_format,
+                alternative_format,
+                fallback_format,
+            },
         },
     }
+}
+
+fn check_format_quality(line: &str) -> u8 {
+    use regex::Regex;
+    
+    // Format 1: YYYY-MM-DD HH:MM:SS [LEVEL] message (PERFECT)
+    if Regex::new(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \[\w+\] .*").unwrap().is_match(line) {
+        return 1;
+    }
+    
+    // Format 2: [YYYY-MM-DD HH:MM:SS] LEVEL: message
+    if Regex::new(r"^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] \w+: .*").unwrap().is_match(line) {
+        return 2;
+    }
+    
+    // Format 3: YYYY/MM/DD HH:MM:SS [LEVEL] message
+    if Regex::new(r"^\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[\w+\] .*").unwrap().is_match(line) {
+        return 3;
+    }
+    
+    // Format 4: MM/DD/YYYY HH:MM:SS [LEVEL] message
+    if Regex::new(r"^\d{2}/\d{2}/\d{4} \d{2}:\d{2}:\d{2} \[\w+\] .*").unwrap().is_match(line) {
+        return 4;
+    }
+    
+    // Format 5: YYYY-MM-DD HH:MM:SS LEVEL message (no brackets)
+    if Regex::new(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} (ERROR|WARN|INFO|CRITICAL|DEBUG|FATAL)\s+.*").unwrap().is_match(line) {
+        return 5;
+    }
+    
+    // Format 6: Syslog style
+    if Regex::new(r"^\w{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2} \S+ \w+: .*").unwrap().is_match(line) {
+        return 6;
+    }
+    
+    // Format 7: Has timestamp but not perfect format
+    if Regex::new(r"\d{4}[-/]\d{2}[-/]\d{2}").unwrap().is_match(line) {
+        return 7;
+    }
+    
+    // Format 8+: Fallback (no proper timestamp)
+    8
 }
 
 fn parse_log_line(line: &str) -> Option<LogEntry> {
