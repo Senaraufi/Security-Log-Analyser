@@ -739,7 +739,12 @@
                 const bar = document.createElement('div');
                 bar.className = 'bar';
                 bar.style.height = `${height}%`;
-                bar.innerHTML = `<div class="bar-value">${threat.value}</div>`;
+                
+                const barValue = document.createElement('div');
+                barValue.className = 'bar-value';
+                barValue.textContent = threat.value;
+                bar.appendChild(barValue);
+                
                 container.appendChild(bar);
                 
                 const label = document.createElement('div');
@@ -835,12 +840,35 @@
             `;
             
             data.ip_analysis.all_ips.slice(0, 8).forEach(ip => {
-                ipTable.innerHTML += `
-                    <div class="ip-table-cell ip-address">${ip.ip}</div>
-                    <div class="ip-table-cell ip-count">${ip.count}</div>
-                    <div class="ip-table-cell"><span class="status-badge status-${ip.risk_level}">${ip.risk_level.toUpperCase()}</span></div>
-                    <div class="ip-table-cell"><span class="status-badge status-${ip.risk_level === 'high' ? 'blocked' : 'low'}">${ip.risk_level === 'high' ? 'BLOCKED' : 'MONITORED'}</span></div>
-                `;
+                // IP Address cell
+                const ipCell = document.createElement('div');
+                ipCell.className = 'ip-table-cell ip-address';
+                ipCell.textContent = ip.ip;
+                ipTable.appendChild(ipCell);
+                
+                // Count cell
+                const countCell = document.createElement('div');
+                countCell.className = 'ip-table-cell ip-count';
+                countCell.textContent = ip.count;
+                ipTable.appendChild(countCell);
+                
+                // Risk cell
+                const riskCell = document.createElement('div');
+                riskCell.className = 'ip-table-cell';
+                const riskBadge = document.createElement('span');
+                riskBadge.className = `status-badge status-${ip.risk_level}`;
+                riskBadge.textContent = ip.risk_level.toUpperCase();
+                riskCell.appendChild(riskBadge);
+                ipTable.appendChild(riskCell);
+                
+                // Status cell
+                const statusCell = document.createElement('div');
+                statusCell.className = 'ip-table-cell';
+                const statusBadge = document.createElement('span');
+                statusBadge.className = `status-badge status-${ip.risk_level === 'high' ? 'blocked' : 'low'}`;
+                statusBadge.textContent = ip.risk_level === 'high' ? 'BLOCKED' : 'MONITORED';
+                statusCell.appendChild(statusBadge);
+                ipTable.appendChild(statusCell);
             });
             
             // Parsing stats
