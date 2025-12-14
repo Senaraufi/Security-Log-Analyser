@@ -414,7 +414,7 @@ async fn serve_frontend() -> Html<&'static str> {
             
             .ip-table {
                 display: grid;
-                grid-template-columns: 2fr 1fr 1fr 1fr;
+                grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
                 gap: 1px;
                 background: var(--neutral-200);
             }
@@ -560,6 +560,108 @@ async fn serve_frontend() -> Html<&'static str> {
                 display: none;
             }
             
+            /* Alert Styles */
+            .alert-item {
+                background: white;
+                border-left: 4px solid;
+                padding: 12px 16px;
+                margin-bottom: 12px;
+            }
+            
+            .alert-item.critical {
+                border-left-color: var(--red-700);
+                background: var(--red-50);
+            }
+            
+            .alert-item.high {
+                border-left-color: var(--orange-700);
+                background: var(--orange-50);
+            }
+            
+            .alert-item.medium {
+                border-left-color: var(--yellow-700);
+                background: var(--yellow-50);
+            }
+            
+            .alert-header {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 8px;
+            }
+            
+            .alert-badge {
+                font-size: 0.75rem;
+                font-weight: 500;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                padding: 2px 8px;
+                border-radius: 2px;
+            }
+            
+            .alert-badge.critical {
+                background: var(--red-700);
+                color: white;
+            }
+            
+            .alert-badge.high {
+                background: var(--orange-700);
+                color: white;
+            }
+            
+            .alert-badge.medium {
+                background: var(--yellow-700);
+                color: white;
+            }
+            
+            .alert-title {
+                font-weight: 500;
+                color: var(--neutral-900);
+            }
+            
+            .alert-description {
+                font-size: 0.875rem;
+                color: var(--neutral-700);
+                margin-bottom: 4px;
+            }
+            
+            .alert-meta {
+                font-size: 0.75rem;
+                color: var(--neutral-500);
+            }
+            
+            .export-button {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 16px;
+                background: var(--neutral-900);
+                color: white;
+                border: none;
+                cursor: pointer;
+                font-size: 0.875rem;
+                transition: background 0.15s;
+                margin-bottom: 16px;
+            }
+            
+            .export-button:hover {
+                background: var(--neutral-700);
+            }
+            
+            .export-button:disabled {
+                background: var(--neutral-300);
+                cursor: not-allowed;
+            }
+            
+            .vpn-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                font-size: 0.75rem;
+                color: var(--orange-700);
+                font-weight: 500;
+            }
+            
             .bar-chart {
                 height: 240px;
                 display: flex;
@@ -665,6 +767,24 @@ async fn serve_frontend() -> Html<&'static str> {
                         </div>
                         <div class="metric-value" id="format-quality">0%</div>
                         <div class="metric-label">Format Quality</div>
+                    </div>
+                </div>
+                
+                <button class="export-button" id="export-csv" onclick="exportToCSV()">
+                    <span>↓</span>
+                    <span>Export to CSV</span>
+                </button>
+                
+                <div class="section" id="alerts-section" style="display: none;">
+                    <div class="section-header" onclick="toggleSection('alerts')">
+                        <div class="section-title">
+                            <span class="chevron" id="alerts-chevron">▶</span>
+                            <span>Security Alerts</span>
+                            <span class="section-count" id="alerts-count">0 Alerts</span>
+                        </div>
+                    </div>
+                    <div class="section-content" id="alerts-content">
+                        <div id="alerts-list"></div>
                     </div>
                 </div>
                 
@@ -1008,6 +1128,7 @@ async fn serve_frontend() -> Html<&'static str> {
                     <div class="ip-table-header">IP Address</div>
                     <div class="ip-table-header">Attempts</div>
                     <div class="ip-table-header">Risk</div>
+                    <div class="ip-table-header">VPN</div>
                     <div class="ip-table-header">Status</div>
                 `;
                 
@@ -1032,6 +1153,19 @@ async fn serve_frontend() -> Html<&'static str> {
                     riskBadge.textContent = ip.risk_level.toUpperCase();
                     riskCell.appendChild(riskBadge);
                     ipTable.appendChild(riskCell);
+                    
+                    // VPN cell
+                    const vpnCell = document.createElement('div');
+                    vpnCell.className = 'ip-table-cell';
+                    if (ip.is_vpn) {
+                        const vpnBadge = document.createElement('span');
+                        vpnBadge.className = 'vpn-badge';
+                        vpnBadge.textContent = 'VPN';
+                        vpnCell.appendChild(vpnBadge);
+                    } else {
+                        vpnCell.textContent = '—';
+                    }
+                    ipTable.appendChild(vpnCell);
                     
                     // Status cell
                     const statusCell = document.createElement('div');
@@ -1061,6 +1195,88 @@ async fn serve_frontend() -> Html<&'static str> {
                     data.parsing_info.format_quality.alternative_format,
                     data.parsing_info.format_quality.fallback_format
                 );
+                
+                // Display Alerts
+                if (data.alerts && data.alerts.length > 0) {
+                    document.getElementById('alerts-section').style.display = 'block';
+                    document.getElementById('alerts-count').textContent = data.alerts.length + ' Alerts';
+                    
+                    const alertsList = document.getElementById('alerts-list');
+                    alertsList.innerHTML = '';
+                    
+                    data.alerts.forEach(alert => {
+                        const alertItem = document.createElement('div');
+                        alertItem.className = `alert-item ${alert.severity.toLowerCase()}`;
+                        
+                        alertItem.innerHTML = `
+                            <div class="alert-header">
+                                <span class="alert-badge ${alert.severity.toLowerCase()}">${alert.severity}</span>
+                                <span class="alert-title">${alert.title}</span>
+                            </div>
+                            <div class="alert-description">${alert.description}</div>
+                            <div class="alert-meta">
+                                Triggered by: ${alert.triggered_by} | ${new Date(alert.timestamp).toLocaleString()}
+                            </div>
+                        `;
+                        
+                        alertsList.appendChild(alertItem);
+                    });
+                } else {
+                    document.getElementById('alerts-section').style.display = 'none';
+                }
+                
+                // Store data globally for CSV export
+                window.analysisData = data;
+            }
+            
+            // CSV Export Function
+            function exportToCSV() {
+                if (!window.analysisData) return;
+                
+                const data = window.analysisData;
+                let csv = 'Category,Metric,Value\n';
+                
+                // Threat Statistics
+                csv += `Threats,Failed Logins,${data.threat_statistics.failed_logins}\n`;
+                csv += `Threats,Root Attempts,${data.threat_statistics.root_attempts}\n`;
+                csv += `Threats,Suspicious File Access,${data.threat_statistics.suspicious_file_access}\n`;
+                csv += `Threats,Critical Alerts,${data.threat_statistics.critical_alerts}\n`;
+                csv += `Threats,SQL Injection,${data.threat_statistics.sql_injection_attempts}\n`;
+                csv += `Threats,Port Scanning,${data.threat_statistics.port_scanning_attempts}\n`;
+                csv += `Threats,Malware,${data.threat_statistics.malware_detections}\n`;
+                
+                // IP Analysis
+                csv += '\nIP Address,Count,Risk Level,VPN,Status\n';
+                data.ip_analysis.all_ips.forEach(ip => {
+                    csv += `${ip.ip},${ip.count},${ip.risk_level},${ip.is_vpn ? 'Yes' : 'No'},${ip.risk_level === 'high' ? 'BLOCKED' : 'MONITORED'}\n`;
+                });
+                
+                // Alerts
+                if (data.alerts && data.alerts.length > 0) {
+                    csv += '\nAlert ID,Severity,Title,Description,Timestamp,Triggered By\n';
+                    data.alerts.forEach(alert => {
+                        csv += `${alert.id},${alert.severity},"${alert.title}","${alert.description}",${alert.timestamp},${alert.triggered_by}\n`;
+                    });
+                }
+                
+                // Parsing Info
+                csv += `\nParsing,Total Lines,${data.parsing_info.total_lines}\n`;
+                csv += `Parsing,Parsed Lines,${data.parsing_info.parsed_lines}\n`;
+                csv += `Parsing,Skipped Lines,${data.parsing_info.skipped_lines}\n`;
+                csv += `Parsing,Perfect Format,${data.parsing_info.format_quality.perfect_format}\n`;
+                csv += `Parsing,Alternative Format,${data.parsing_info.format_quality.alternative_format}\n`;
+                csv += `Parsing,Fallback Format,${data.parsing_info.format_quality.fallback_format}\n`;
+                
+                // Download
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `security_analysis_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
             }
         </script>
     </body>
