@@ -139,26 +139,43 @@ async fn serve_frontend() -> Html<&'static str> {
         <title>Cybersecurity Analysis Dashboard</title>
         <style>
             :root {
-                --neutral-50: #fafafa;
-                --neutral-100: #f5f5f5;
-                --neutral-200: #e5e5e5;
-                --neutral-300: #d4d4d4;
-                --neutral-500: #737373;
-                --neutral-600: #525252;
-                --neutral-700: #404040;
-                --neutral-900: #171717;
-                --red-50: #fef2f2;
-                --red-200: #fecaca;
-                --red-700: #b91c1c;
-                --orange-50: #fff7ed;
-                --orange-200: #fed7aa;
-                --orange-700: #c2410c;
-                --yellow-50: #fefce8;
-                --yellow-200: #fef08a;
-                --yellow-700: #a16207;
-                --green-50: #f0fdf4;
-                --green-200: #bbf7d0;
-                --green-700: #15803d;
+                /* Dark Theme Colors */
+                --bg-primary: #0f172a;
+                --bg-secondary: #1e293b;
+                --bg-tertiary: #334155;
+                --bg-card: #1e293b;
+                --bg-hover: #334155;
+                
+                /* Text Colors */
+                --text-primary: #f1f5f9;
+                --text-secondary: #cbd5e1;
+                --text-muted: #94a3b8;
+                
+                /* Border Colors */
+                --border-primary: #334155;
+                --border-secondary: #475569;
+                
+                /* Accent Colors */
+                --accent-blue: #3b82f6;
+                --accent-blue-hover: #2563eb;
+                --accent-purple: #8b5cf6;
+                --accent-cyan: #06b6d4;
+                
+                /* Status Colors */
+                --success: #10b981;
+                --success-bg: #064e3b;
+                --warning: #f59e0b;
+                --warning-bg: #78350f;
+                --danger: #ef4444;
+                --danger-bg: #7f1d1d;
+                --critical: #dc2626;
+                --critical-bg: #991b1b;
+                
+                /* Shadows */
+                --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+                --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+                --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+                --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
             }
             
             * {
@@ -168,31 +185,62 @@ async fn serve_frontend() -> Html<&'static str> {
             }
             
             body {
-                font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-                background: var(--neutral-50);
-                color: var(--neutral-900);
-                line-height: 1.5;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                background: var(--bg-primary);
+                color: var(--text-primary);
+                line-height: 1.6;
                 font-size: 14px;
                 -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
             }
             
-            .container {
-                max-width: 1400px;
-                margin: 0 auto;
-                padding: 24px;
-            }
-            
-            .header {
+            /* Dashboard Header */
+            .dashboard-header {
+                background: var(--bg-secondary);
+                border-bottom: 1px solid var(--border-primary);
+                padding: 16px 32px;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: 24px;
+                box-shadow: var(--shadow-md);
+            }
+            
+            .dashboard-title {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            
+            .dashboard-logo {
+                width: 32px;
+                height: 32px;
+                background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 18px;
+                font-weight: 700;
+                color: white;
             }
             
             h1 {
-                font-size: 1.5rem;
+                font-size: 1.25rem;
+                font-weight: 600;
+                color: var(--text-primary);
+                letter-spacing: -0.025em;
+            }
+            
+            .dashboard-subtitle {
+                font-size: 0.875rem;
+                color: var(--text-muted);
                 font-weight: 400;
-                color: var(--neutral-900);
+            }
+            
+            .container {
+                max-width: 1600px;
+                margin: 0 auto;
+                padding: 32px;
             }
             
             .risk-indicator {
@@ -208,34 +256,42 @@ async fn serve_frontend() -> Html<&'static str> {
             }
             
             .risk-indicator.high {
-                background: var(--orange-50);
-                border-color: var(--orange-200);
-                color: var(--orange-700);
+                background: var(--danger-bg);
+                border-color: var(--danger);
+                color: var(--danger);
             }
             
             .risk-indicator.medium {
-                background: var(--yellow-50);
-                border-color: var(--yellow-200);
-                color: var(--yellow-700);
+                background: var(--warning-bg);
+                border-color: var(--warning);
+                color: var(--warning);
             }
             
             .risk-indicator.low {
-                background: var(--green-50);
-                border-color: var(--green-200);
-                color: var(--green-700);
+                background: var(--success-bg);
+                border-color: var(--success);
+                color: var(--success);
+            }
+            
+            .risk-indicator.critical {
+                background: var(--critical-bg);
+                border-color: var(--critical);
+                color: var(--critical);
             }
             
             .risk-divider {
                 width: 1px;
                 height: 16px;
-                background: var(--neutral-300);
+                background: var(--border-primary);
             }
             
             .file-upload {
-                background: white;
-                border: 1px solid var(--neutral-200);
+                background: var(--bg-card);
+                border: 1px solid var(--border-primary);
+                border-radius: 12px;
                 padding: 24px;
-                margin-bottom: 16px;
+                margin-bottom: 24px;
+                box-shadow: var(--shadow-lg);
             }
             
             .upload-content {
@@ -249,23 +305,28 @@ async fn serve_frontend() -> Html<&'static str> {
                 display: flex;
                 align-items: center;
                 gap: 12px;
-                padding: 8px 16px;
-                border: 1px solid var(--neutral-300);
-                background: var(--neutral-50);
+                padding: 12px 20px;
+                border: 2px dashed var(--border-secondary);
+                background: var(--bg-tertiary);
+                border-radius: 8px;
                 cursor: pointer;
-                transition: background 0.15s;
-                color: var(--neutral-700);
+                transition: all 0.2s;
+                color: var(--text-secondary);
+                font-weight: 500;
             }
             
             .upload-button:hover {
-                background: var(--neutral-100);
+                background: var(--bg-hover);
+                border-color: var(--accent-blue);
+                color: var(--accent-blue);
             }
             
             .upload-status {
                 display: none;
                 align-items: center;
                 gap: 8px;
-                color: var(--green-700);
+                color: var(--success);
+                font-weight: 500;
             }
             
             .upload-status.show {
@@ -275,72 +336,87 @@ async fn serve_frontend() -> Html<&'static str> {
             .status-dot {
                 width: 8px;
                 height: 8px;
-                background: var(--green-700);
+                background: var(--success);
                 border-radius: 50%;
+                animation: pulse 2s infinite;
+            }
+            
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.5; }
             }
             
             .metrics-grid {
                 display: grid;
-                grid-template-columns: repeat(4, 1fr);
-                gap: 16px;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 20px;
                 margin-bottom: 16px;
             }
             
             .metric-card {
-                background: white;
-                border: 1px solid var(--neutral-200);
-                padding: 16px;
+                background: var(--bg-card);
+                border: 1px solid var(--border-primary);
+                border-radius: 12px;
+                padding: 20px;
+                position: relative;
+                overflow: hidden;
+                transition: all 0.3s;
+                box-shadow: var(--shadow-md);
+            }
+            
+            .metric-card:hover {
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-xl);
+                border-color: var(--accent-blue);
+            }
+            
+            .metric-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 3px;
+                background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
             }
             
             .metric-header {
                 display: flex;
                 justify-content: space-between;
                 align-items: start;
-                margin-bottom: 8px;
+                margin-bottom: 12px;
             }
             
             .metric-icon {
-                width: 16px;
-                height: 16px;
-                color: var(--neutral-500);
+                font-size: 24px;
+                opacity: 0.8;
             }
             
             .metric-change {
                 font-size: 0.75rem;
-                color: var(--neutral-600);
+                color: var(--success);
                 font-variant-numeric: tabular-nums;
+                font-weight: 600;
+                padding: 2px 8px;
+                background: var(--success-bg);
+                border-radius: 4px;
             }
             
             .metric-value {
-                font-size: 1.5rem;
-                font-weight: 400;
+                font-size: 2rem;
+                font-weight: 700;
                 font-variant-numeric: tabular-nums;
-                color: var(--neutral-900);
+                color: var(--text-primary);
                 margin-bottom: 4px;
+                letter-spacing: -0.025em;
             }
             
             .metric-label {
                 font-size: 0.875rem;
-                color: var(--neutral-600);
-            }
-            
-            .section {
-                background: white;
-                border: 1px solid var(--neutral-200);
-                margin-bottom: 16px;
-            }
-            
-            .section-header {
-                display: flex;
-                align-items: center;
-                justify-between;
-                padding: 16px;
-                cursor: pointer;
-                transition: background 0.15s;
-            }
-            
-            .section-header:hover {
-                background: var(--neutral-50);
+                color: var(--text-muted);
+                font-weight: 500;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
             }
             
             .section-title {
@@ -348,13 +424,14 @@ async fn serve_frontend() -> Html<&'static str> {
                 align-items: center;
                 gap: 12px;
                 font-size: 1rem;
-                color: var(--neutral-900);
+                color: var(--text-primary);
+                font-weight: 600;
             }
             
             .chevron {
                 width: 16px;
                 height: 16px;
-                color: var(--neutral-600);
+                color: var(--text-muted);
                 transition: transform 0.2s;
             }
             
@@ -363,14 +440,18 @@ async fn serve_frontend() -> Html<&'static str> {
             }
             
             .section-count {
-                color: var(--neutral-600);
+                color: var(--text-muted);
                 font-size: 0.875rem;
+                padding: 4px 12px;
+                background: var(--bg-tertiary);
+                border-radius: 12px;
+                font-weight: 500;
             }
             
             .section-content {
                 display: none;
-                border-top: 1px solid var(--neutral-200);
-                padding: 16px;
+                padding: 20px;
+                background: var(--bg-primary);
             }
             
             .section-content.show {
@@ -379,78 +460,110 @@ async fn serve_frontend() -> Html<&'static str> {
             
             .threat-grid {
                 display: grid;
-                grid-template-columns: repeat(7, 1fr);
-                gap: 12px;
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                gap: 16px;
                 margin-top: 16px;
             }
             
             .threat-box {
-                border: 1px solid var(--neutral-200);
-                padding: 12px;
+                border: 1px solid var(--border-primary);
+                background: var(--bg-card);
+                border-radius: 8px;
+                padding: 16px;
+                transition: all 0.2s;
+            }
+            
+            .threat-box:hover {
+                border-color: var(--accent-blue);
+                transform: translateY(-2px);
             }
             
             .threat-value {
-                font-size: 1.25rem;
+                font-size: 1.5rem;
                 font-variant-numeric: tabular-nums;
-                color: var(--neutral-900);
+                color: var(--text-primary);
                 margin-bottom: 4px;
+                font-weight: 700;
             }
             
             .threat-label {
-                font-size: 0.875rem;
-                color: var(--neutral-600);
+                font-size: 0.75rem;
+                color: var(--text-muted);
                 margin-bottom: 8px;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
             }
             
             .threat-severity {
                 font-size: 0.75rem;
                 text-transform: uppercase;
                 letter-spacing: 0.05em;
+                font-weight: 600;
             }
             
-            .severity-critical { color: var(--red-700); }
-            .severity-high { color: var(--orange-700); }
-            .severity-medium { color: var(--yellow-700); }
+            .severity-critical { color: var(--critical); }
+            .severity-high { color: var(--danger); }
+            .severity-medium { color: var(--warning); }
             
             .ip-table {
                 display: grid;
                 grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
                 gap: 1px;
-                background: var(--neutral-200);
+                background: var(--border-primary);
+                border-radius: 8px;
+                overflow: hidden;
             }
             
             .ip-table-header {
-                background: var(--neutral-100);
-                padding: 8px 16px;
-                font-size: 0.875rem;
-                color: var(--neutral-600);
+                background: var(--bg-tertiary);
+                padding: 12px 16px;
+                font-size: 0.75rem;
+                color: var(--text-muted);
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
             }
             
             .ip-table-cell {
-                background: white;
+                background: var(--bg-card);
                 padding: 12px 16px;
                 font-size: 0.875rem;
+                color: var(--text-secondary);
             }
             
             .ip-address {
                 font-family: ui-monospace, 'SF Mono', Monaco, monospace;
-                color: var(--neutral-900);
+                color: var(--accent-cyan);
+                font-weight: 500;
             }
             
             .ip-count {
                 font-variant-numeric: tabular-nums;
-                color: var(--neutral-900);
+                color: var(--text-primary);
+                font-weight: 600;
             }
             
             .status-badge {
                 font-size: 0.75rem;
                 text-transform: uppercase;
                 letter-spacing: 0.05em;
+                padding: 2px 8px;
+                border-radius: 4px;
+                font-weight: 600;
             }
             
-            .status-blocked { color: var(--red-700); }
-            .status-high { color: var(--red-700); }
-            .status-low { color: var(--neutral-600); }
+            .status-blocked { 
+                color: var(--critical); 
+                background: var(--critical-bg);
+            }
+            .status-high { 
+                color: var(--danger); 
+                background: var(--danger-bg);
+            }
+            .status-low { 
+                color: var(--text-muted); 
+                background: var(--bg-tertiary);
+            }
             
             .parsing-grid {
                 display: grid;
@@ -480,14 +593,17 @@ async fn serve_frontend() -> Html<&'static str> {
             }
             
             .donut-percentage {
-                font-size: 1.5rem;
+                font-size: 2rem;
                 font-variant-numeric: tabular-nums;
-                color: var(--neutral-900);
+                color: var(--text-primary);
+                font-weight: 700;
             }
             
             .donut-label {
                 font-size: 0.875rem;
-                color: var(--neutral-600);
+                color: var(--text-muted);
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
             }
             
             .stats-list {
@@ -510,32 +626,37 @@ async fn serve_frontend() -> Html<&'static str> {
             
             .stat-label {
                 font-size: 0.875rem;
-                color: var(--neutral-700);
+                color: var(--text-muted);
+                font-weight: 500;
             }
             
             .stat-value {
                 font-size: 0.875rem;
                 font-variant-numeric: tabular-nums;
-                color: var(--neutral-900);
+                color: var(--text-primary);
+                font-weight: 600;
             }
             
             .progress-bar {
                 width: 100%;
                 height: 8px;
-                background: var(--neutral-200);
+                background: var(--bg-tertiary);
+                border-radius: 4px;
+                overflow: hidden;
             }
             
             .progress-fill {
                 height: 100%;
-                background: var(--neutral-900);
+                background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
                 transition: width 0.3s;
+                border-radius: 4px;
             }
             
             .loading {
                 display: none;
                 text-align: center;
-                padding: 40px;
-                color: var(--neutral-600);
+                padding: 60px;
+                color: var(--text-muted);
             }
             
             .loading.show {
@@ -543,10 +664,10 @@ async fn serve_frontend() -> Html<&'static str> {
             }
             
             .spinner {
-                width: 40px;
-                height: 40px;
-                border: 3px solid var(--neutral-200);
-                border-top-color: var(--neutral-900);
+                width: 48px;
+                height: 48px;
+                border: 4px solid var(--bg-tertiary);
+                border-top-color: var(--accent-blue);
                 border-radius: 50%;
                 animation: spin 0.8s linear infinite;
                 margin: 0 auto 16px;
@@ -562,25 +683,35 @@ async fn serve_frontend() -> Html<&'static str> {
             
             /* Alert Styles */
             .alert-item {
-                background: white;
+                background: var(--bg-card);
+                border: 1px solid;
                 border-left: 4px solid;
-                padding: 12px 16px;
+                border-radius: 8px;
+                padding: 16px;
                 margin-bottom: 12px;
+                transition: all 0.2s;
+            }
+            
+            .alert-item:hover {
+                transform: translateX(4px);
             }
             
             .alert-item.critical {
-                border-left-color: var(--red-700);
-                background: var(--red-50);
+                border-color: var(--critical);
+                border-left-color: var(--critical);
+                background: var(--critical-bg);
             }
             
             .alert-item.high {
-                border-left-color: var(--orange-700);
-                background: var(--orange-50);
+                border-color: var(--danger);
+                border-left-color: var(--danger);
+                background: var(--danger-bg);
             }
             
             .alert-item.medium {
-                border-left-color: var(--yellow-700);
-                background: var(--yellow-50);
+                border-color: var(--warning);
+                border-left-color: var(--warning);
+                background: var(--warning-bg);
             }
             
             .alert-header {
@@ -600,57 +731,67 @@ async fn serve_frontend() -> Html<&'static str> {
             }
             
             .alert-badge.critical {
-                background: var(--red-700);
+                background: var(--critical);
                 color: white;
             }
             
             .alert-badge.high {
-                background: var(--orange-700);
+                background: var(--danger);
                 color: white;
             }
             
             .alert-badge.medium {
-                background: var(--yellow-700);
+                background: var(--warning);
                 color: white;
             }
             
             .alert-title {
-                font-weight: 500;
-                color: var(--neutral-900);
+                font-weight: 600;
+                color: var(--text-primary);
             }
             
             .alert-description {
                 font-size: 0.875rem;
-                color: var(--neutral-700);
-                margin-bottom: 4px;
+                color: var(--text-secondary);
+                margin-bottom: 8px;
+                line-height: 1.5;
             }
             
             .alert-meta {
                 font-size: 0.75rem;
-                color: var(--neutral-500);
+                color: var(--text-muted);
             }
             
             .export-button {
                 display: inline-flex;
                 align-items: center;
                 gap: 8px;
-                padding: 8px 16px;
-                background: var(--neutral-900);
+                padding: 10px 20px;
+                background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
                 color: white;
                 border: none;
+                border-radius: 8px;
                 cursor: pointer;
                 font-size: 0.875rem;
-                transition: background 0.15s;
-                margin-bottom: 16px;
+                font-weight: 600;
+                transition: all 0.2s;
+                margin-bottom: 24px;
+                box-shadow: var(--shadow-md);
             }
             
             .export-button:hover {
-                background: var(--neutral-700);
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-lg);
+            }
+            
+            .export-button:active {
+                transform: translateY(0);
             }
             
             .export-button:disabled {
-                background: var(--neutral-300);
+                background: var(--bg-tertiary);
                 cursor: not-allowed;
+                opacity: 0.5;
             }
             
             .vpn-badge {
@@ -658,8 +799,11 @@ async fn serve_frontend() -> Html<&'static str> {
                 align-items: center;
                 gap: 4px;
                 font-size: 0.75rem;
-                color: var(--orange-700);
-                font-weight: 500;
+                color: var(--warning);
+                background: var(--warning-bg);
+                padding: 2px 8px;
+                border-radius: 4px;
+                font-weight: 600;
             }
             
             .bar-chart {
@@ -704,16 +848,23 @@ async fn serve_frontend() -> Html<&'static str> {
         </style>
     </head>
     <body>
-        <div class="container">
-            <div class="header">
-                <h1>Cybersecurity Analysis Dashboard</h1>
-                <div class="risk-indicator" id="risk-indicator">
-                    <span id="risk-icon">⚠</span>
-                    <span id="risk-label">HIGH RISK</span>
-                    <div class="risk-divider"></div>
-                    <span id="risk-score">78/100</span>
+        <div class="dashboard-header">
+            <div class="dashboard-title">
+                <div class="dashboard-logo">S</div>
+                <div>
+                    <h1>Security Operations Center</h1>
+                    <div class="dashboard-subtitle">Real-time Threat Analysis & Monitoring</div>
                 </div>
             </div>
+            <div class="risk-indicator" id="risk-indicator">
+                <span id="risk-icon">⚠</span>
+                <span id="risk-label">HIGH RISK</span>
+                <div class="risk-divider"></div>
+                <span id="risk-score">78/100</span>
+            </div>
+        </div>
+        
+        <div class="container">
             
             <div class="file-upload">
                 <div class="upload-content">
