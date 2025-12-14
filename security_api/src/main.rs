@@ -912,6 +912,46 @@ async fn serve_frontend() -> Html<&'static str> {
                     });
                     
                     const data = await response.json();
+                    
+                    // ===== LOG NEW FEATURES TO CONSOLE =====
+                    console.log('🎉 ===== ANALYSIS COMPLETE ===== 🎉');
+                    console.log('\n📊 Full Response:', data);
+                    
+                    // Log Alerts
+                    if (data.alerts && data.alerts.length > 0) {
+                        console.log('\n🚨 ===== ALERTS DETECTED ===== 🚨');
+                        console.log(`Total Alerts: ${data.alerts.length}`);
+                        console.table(data.alerts);
+                        
+                        data.alerts.forEach((alert, i) => {
+                            console.log(`\n🔔 Alert ${i + 1}:`);
+                            console.log(`  Severity: ${alert.severity}`);
+                            console.log(`  Title: ${alert.title}`);
+                            console.log(`  Description: ${alert.description}`);
+                            console.log(`  Triggered by: ${alert.triggered_by}`);
+                        });
+                    } else {
+                        console.log('\n✅ No alerts triggered');
+                    }
+                    
+                    // Log VPN Detection
+                    const vpnIps = data.ip_analysis.all_ips.filter(ip => ip.is_vpn);
+                    if (vpnIps.length > 0) {
+                        console.log('\n🔒 ===== VPN/PROXY DETECTED ===== 🔒');
+                        console.log(`VPN IPs found: ${vpnIps.length}`);
+                        console.table(vpnIps);
+                    } else {
+                        console.log('\n✅ No VPN/Proxy IPs detected');
+                    }
+                    
+                    // Log IP Analysis
+                    console.log('\n🌍 ===== IP ANALYSIS ===== 🌍');
+                    console.table(data.ip_analysis.all_ips);
+                    
+                    // Log Threat Statistics
+                    console.log('\n⚠️ ===== THREAT STATISTICS ===== ⚠️');
+                    console.table(data.threat_statistics);
+                    
                     displayResults(data);
                     
                     loading.classList.remove('show');
@@ -920,7 +960,7 @@ async fn serve_frontend() -> Html<&'static str> {
                     riskIndicator.classList.add('show');
                     
                 } catch (error) {
-                    console.error('Error:', error);
+                    console.error('❌ Error:', error);
                     loading.classList.remove('show');
                 }
             });

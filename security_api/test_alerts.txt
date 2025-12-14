@@ -1,0 +1,32 @@
+2024-12-14 10:00:00 [ERROR] Failed login attempt from 192.168.1.100 user: admin
+2024-12-14 10:00:05 [ERROR] Failed login attempt from 192.168.1.100 user: admin
+2024-12-14 10:00:10 [ERROR] Failed login attempt from 192.168.1.100 user: admin
+2024-12-14 10:00:15 [ERROR] Failed login attempt from 192.168.1.100 user: admin
+2024-12-14 10:00:20 [ERROR] Failed login attempt from 192.168.1.100 user: admin
+2024-12-14 10:00:25 [ERROR] Failed login attempt from 192.168.1.100 user: admin
+2024-12-14 10:01:00 [ERROR] Access attempt for user: root from 185.220.101.5
+2024-12-14 10:01:05 [ERROR] Access attempt for user: root from 185.220.101.5
+2024-12-14 10:01:10 [ERROR] Access attempt for user: root from 185.220.101.5
+2024-12-14 10:01:15 [ERROR] Access attempt for user: root from 185.220.101.5
+2024-12-14 10:02:00 [CRITICAL] SQL injection detected: SELECT * FROM users WHERE id=1 OR 1=1
+2024-12-14 10:02:05 [CRITICAL] SQL injection detected: DROP TABLE users
+2024-12-14 10:03:00 [ERROR] Suspicious file access: /etc/passwd from 45.142.120.10
+2024-12-14 10:03:05 [ERROR] Suspicious file access: /etc/shadow from 45.142.120.10
+2024-12-14 10:04:00 [CRITICAL] Malware detected: trojan.exe in download folder
+2024-12-14 10:05:00 [ERROR] Port scan detected from 104.28.5.100
+2024-12-14 10:05:01 [ERROR] Port scan detected from 104.28.5.100 targeting port 22
+2024-12-14 10:05:02 [ERROR] Port scan detected from 104.28.5.100 targeting port 80
+2024-12-14 10:06:00 [ERROR] Request from 10.0.0.50
+2024-12-14 10:06:01 [ERROR] Request from 10.0.0.50
+2024-12-14 10:06:02 [ERROR] Request from 10.0.0.50
+2024-12-14 10:06:03 [ERROR] Request from 10.0.0.50
+2024-12-14 10:06:04 [ERROR] Request from 10.0.0.50
+2024-12-14 10:06:05 [ERROR] Request from 10.0.0.50
+2024-12-14 10:06:06 [ERROR] Request from 10.0.0.50
+2024-12-14 10:06:07 [ERROR] Request from 10.0.0.50
+2024-12-14 10:06:08 [ERROR] Request from 10.0.0.50
+2024-12-14 10:06:09 [ERROR] Request from 10.0.0.50
+2024-12-14 10:06:10 [ERROR] Request from 10.0.0.50
+2024-12-14 10:06:11 [ERROR] Request from 10.0.0.50
+2024-12-14 10:07:00 [INFO] Normal activity from 172.16.0.100
+2024-12-14 10:08:00 [INFO] System check completed successfully
