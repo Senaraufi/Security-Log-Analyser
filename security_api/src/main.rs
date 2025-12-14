@@ -138,30 +138,26 @@ async fn serve_frontend() -> Html<&'static str> {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Cybersecurity Analysis Dashboard</title>
         <style>
+            /* Dark Theme (Default) */
             :root {
-                /* Dark Theme Colors */
                 --bg-primary: #0f172a;
                 --bg-secondary: #1e293b;
                 --bg-tertiary: #334155;
                 --bg-card: #1e293b;
                 --bg-hover: #334155;
                 
-                /* Text Colors */
                 --text-primary: #f1f5f9;
                 --text-secondary: #cbd5e1;
                 --text-muted: #94a3b8;
                 
-                /* Border Colors */
                 --border-primary: #334155;
                 --border-secondary: #475569;
                 
-                /* Accent Colors */
                 --accent-blue: #3b82f6;
                 --accent-blue-hover: #2563eb;
                 --accent-purple: #8b5cf6;
                 --accent-cyan: #06b6d4;
                 
-                /* Status Colors */
                 --success: #10b981;
                 --success-bg: #064e3b;
                 --warning: #f59e0b;
@@ -171,7 +167,41 @@ async fn serve_frontend() -> Html<&'static str> {
                 --critical: #dc2626;
                 --critical-bg: #991b1b;
                 
-                /* Shadows */
+                --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+                --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+                --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+                --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+            }
+            
+            /* Light Theme */
+            [data-theme="light"] {
+                --bg-primary: #f8fafc;
+                --bg-secondary: #ffffff;
+                --bg-tertiary: #f1f5f9;
+                --bg-card: #ffffff;
+                --bg-hover: #f1f5f9;
+                
+                --text-primary: #0f172a;
+                --text-secondary: #334155;
+                --text-muted: #64748b;
+                
+                --border-primary: #e2e8f0;
+                --border-secondary: #cbd5e1;
+                
+                --accent-blue: #3b82f6;
+                --accent-blue-hover: #2563eb;
+                --accent-purple: #8b5cf6;
+                --accent-cyan: #06b6d4;
+                
+                --success: #10b981;
+                --success-bg: #d1fae5;
+                --warning: #f59e0b;
+                --warning-bg: #fef3c7;
+                --danger: #ef4444;
+                --danger-bg: #fee2e2;
+                --critical: #dc2626;
+                --critical-bg: #fecaca;
+                
                 --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
                 --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
                 --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
@@ -192,6 +222,32 @@ async fn serve_frontend() -> Html<&'static str> {
                 font-size: 14px;
                 -webkit-font-smoothing: antialiased;
                 -moz-osx-font-smoothing: grayscale;
+                transition: background-color 0.3s ease, color 0.3s ease;
+            }
+            
+            /* Theme Toggle Button */
+            .theme-toggle {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 16px;
+                background: var(--bg-tertiary);
+                border: 1px solid var(--border-primary);
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.2s;
+                color: var(--text-secondary);
+                font-size: 0.875rem;
+                font-weight: 500;
+            }
+            
+            .theme-toggle:hover {
+                background: var(--bg-hover);
+                border-color: var(--accent-blue);
+            }
+            
+            .theme-icon {
+                font-size: 18px;
             }
             
             /* Dashboard Header */
@@ -856,11 +912,17 @@ async fn serve_frontend() -> Html<&'static str> {
                     <div class="dashboard-subtitle">Real-time Threat Analysis & Monitoring</div>
                 </div>
             </div>
-            <div class="risk-indicator" id="risk-indicator">
-                <span id="risk-icon">⚠</span>
-                <span id="risk-label">HIGH RISK</span>
-                <div class="risk-divider"></div>
-                <span id="risk-score">78/100</span>
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">
+                    <span class="theme-icon" id="theme-icon">☀️</span>
+                    <span id="theme-text">Light</span>
+                </button>
+                <div class="risk-indicator" id="risk-indicator">
+                    <span id="risk-icon">⚠</span>
+                    <span id="risk-label">HIGH RISK</span>
+                    <div class="risk-divider"></div>
+                    <span id="risk-score">78/100</span>
+                </div>
             </div>
         </div>
         
@@ -1063,6 +1125,45 @@ async fn serve_frontend() -> Html<&'static str> {
         </div>
         
         <script>
+            // Theme Toggle
+            function toggleTheme() {
+                const html = document.documentElement;
+                const currentTheme = html.getAttribute('data-theme');
+                const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                
+                html.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                
+                // Update button
+                const icon = document.getElementById('theme-icon');
+                const text = document.getElementById('theme-text');
+                
+                if (newTheme === 'light') {
+                    icon.textContent = '☀️';
+                    text.textContent = 'Light';
+                } else {
+                    icon.textContent = '🌙';
+                    text.textContent = 'Dark';
+                }
+            }
+            
+            // Load saved theme on page load
+            (function() {
+                const savedTheme = localStorage.getItem('theme') || 'dark';
+                document.documentElement.setAttribute('data-theme', savedTheme);
+                
+                const icon = document.getElementById('theme-icon');
+                const text = document.getElementById('theme-text');
+                
+                if (savedTheme === 'light') {
+                    icon.textContent = '☀️';
+                    text.textContent = 'Light';
+                } else {
+                    icon.textContent = '🌙';
+                    text.textContent = 'Dark';
+                }
+            })();
+            
             function toggleSection(id) {
                 const content = document.getElementById(`${id}-content`);
                 const chevron = document.getElementById(`${id}-chevron`);
