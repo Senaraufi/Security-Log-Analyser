@@ -7,6 +7,7 @@ use axum::{
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use chrono::Utc;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct LogEntry {
@@ -23,6 +24,7 @@ struct AnalysisResult {
     ip_analysis: IpAnalysis,
     risk_assessment: RiskAssessment,
     parsing_info: ParsingInfo,
+    alerts: Vec<Alert>,
 }
 
 #[derive(Serialize)]
@@ -66,11 +68,42 @@ struct IpAnalysis {
     all_ips: Vec<IpInfo>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 struct IpInfo {
     ip: String,
     count: usize,
     risk_level: String,
+    country: Option<String>,
+    city: Option<String>,
+    is_vpn: bool,
+}
+
+#[derive(Serialize, Deserialize)]
+struct GeoLocation {
+    country: String,
+    city: String,
+    region: String,
+    timezone: String,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+struct Alert {
+    id: String,
+    severity: String,
+    title: String,
+    description: String,
+    timestamp: String,
+    ip_address: Option<String>,
+    triggered_by: String,
+}
+
+#[derive(Serialize)]
+struct AlertRule {
+    name: String,
+    condition: String,
+    threshold: usize,
+    timeframe_minutes: u32,
+    severity: String,
 }
 
 #[derive(Serialize)]
@@ -1010,6 +1043,132 @@ async fn analyze_logs(mut multipart: Multipart) -> impl IntoResponse {
     Json(result)
 }
 
+// Geolocation lookup using IP-API (free, no API key needed)
+async fn get_geolocation(ip: &str) -> Option<(String, String)> {
+    // Skip private IPs
+    if ip.starts_with("192.168.") || ip.starts_with("10.") || ip.starts_with("172.") {
+        return Some(("Local Network".to_string(), "Private IP".to_string()));
+    }
+    
+    let url = format!("http://ip-api.com/json/{}?fields=status,country,city", ip);
+    
+    match reqwest::get(&url).await {
+        Ok(response) => {
+            if let Ok(data) = response.json::<serde_json::Value>().await {
+                if data["status"] == "success" {
+                    let country = data["country"].as_str().unwrap_or("Unknown").to_string();
+                    let city = data["city"].as_str().unwrap_or("Unknown").to_string();
+                    return Some((country, city));
+                }
+            }
+        }
+        Err(_) => {}
+    }
+    
+    None
+}
+
+// Check if IP is likely a VPN/Proxy (simple heuristic)
+fn is_vpn_ip(ip: &str) -> bool {
+    // Simple check: known VPN ranges or patterns
+    // In production, use a proper VPN detection service
+    ip.starts_with("185.") || // Common VPN range
+    ip.starts_with("45.") ||   // Common VPN range
+    ip.starts_with("104.")     // Common cloud/VPN range
+}
+
+// Alert Rules Engine
+fn check_alert_rules(
+    threat_stats: &ThreatStats,
+    ip_analysis: &IpAnalysis,
+    total_threats: usize,
+) -> Vec<Alert> {
+    let mut alerts = Vec::new();
+    let now = Utc::now().to_rfc3339();
+    
+    // Rule 1: High number of failed logins
+    if threat_stats.failed_logins >= 5 {
+        alerts.push(Alert {
+            id: format!("ALERT-{}", uuid::Uuid::new_v4().to_string()[..8].to_string()),
+            severity: "HIGH".to_string(),
+            title: "Multiple Failed Login Attempts".to_string(),
+            description: format!("{} failed login attempts detected. Possible brute force attack.", threat_stats.failed_logins),
+            timestamp: now.clone(),
+            ip_address: None,
+            triggered_by: "Failed Login Threshold".to_string(),
+        });
+    }
+    
+    // Rule 2: Root access attempts
+    if threat_stats.root_attempts >= 3 {
+        alerts.push(Alert {
+            id: format!("ALERT-{}", uuid::Uuid::new_v4().to_string()[..8].to_string()),
+            severity: "CRITICAL".to_string(),
+            title: "Root Access Attempts".to_string(),
+            description: format!("{} attempts to access root account detected.", threat_stats.root_attempts),
+            timestamp: now.clone(),
+            ip_address: None,
+            triggered_by: "Root Attempt Threshold".to_string(),
+        });
+    }
+    
+    // Rule 3: SQL Injection detected
+    if threat_stats.sql_injection_attempts > 0 {
+        alerts.push(Alert {
+            id: format!("ALERT-{}", uuid::Uuid::new_v4().to_string()[..8].to_string()),
+            severity: "CRITICAL".to_string(),
+            title: "SQL Injection Attempt".to_string(),
+            description: format!("{} SQL injection patterns detected in logs.", threat_stats.sql_injection_attempts),
+            timestamp: now.clone(),
+            ip_address: None,
+            triggered_by: "SQL Injection Detection".to_string(),
+        });
+    }
+    
+    // Rule 4: Malware detection
+    if threat_stats.malware_detections > 0 {
+        alerts.push(Alert {
+            id: format!("ALERT-{}", uuid::Uuid::new_v4().to_string()[..8].to_string()),
+            severity: "CRITICAL".to_string(),
+            title: "Malware Detected".to_string(),
+            description: format!("{} malware signatures found.", threat_stats.malware_detections),
+            timestamp: now.clone(),
+            ip_address: None,
+            triggered_by: "Malware Signature Match".to_string(),
+        });
+    }
+    
+    // Rule 5: High-risk IP with many attempts
+    for ip_info in &ip_analysis.high_risk_ips {
+        if ip_info.count >= 10 {
+            alerts.push(Alert {
+                id: format!("ALERT-{}", uuid::Uuid::new_v4().to_string()[..8].to_string()),
+                severity: "HIGH".to_string(),
+                title: "Suspicious IP Activity".to_string(),
+                description: format!("IP {} made {} requests. Possible attack source.", ip_info.ip, ip_info.count),
+                timestamp: now.clone(),
+                ip_address: Some(ip_info.ip.clone()),
+                triggered_by: "High Request Count".to_string(),
+            });
+        }
+    }
+    
+    // Rule 6: Overall threat level
+    if total_threats >= 15 {
+        alerts.push(Alert {
+            id: format!("ALERT-{}", uuid::Uuid::new_v4().to_string()[..8].to_string()),
+            severity: "CRITICAL".to_string(),
+            title: "High Threat Level".to_string(),
+            description: format!("Total of {} threats detected. System under attack.", total_threats),
+            timestamp: now,
+            ip_address: None,
+            triggered_by: "Threat Level Threshold".to_string(),
+        });
+    }
+    
+    alerts
+}
+
 fn process_logs(content: &str) -> AnalysisResult {
     let mut failed_logins = 0;
     let mut root_attempts = 0;
@@ -1110,10 +1269,17 @@ fn process_logs(content: &str) -> AnalysisResult {
     
     let high_risk_ips: Vec<IpInfo> = ip_vec.iter()
         .filter(|(_, count)| **count >= 3)
-        .map(|(ip, count)| IpInfo {
-            ip: ip.to_string(),
-            count: **count,
-            risk_level: "high".to_string(),
+        .map(|(ip, count)| {
+            // Note: Geolocation is async, so we'll add placeholder for now
+            // In production, you'd want to batch these or cache results
+            IpInfo {
+                ip: ip.to_string(),
+                count: **count,
+                risk_level: "high".to_string(),
+                country: None, // Will be populated by frontend or async process
+                city: None,
+                is_vpn: is_vpn_ip(ip),
+            }
         })
         .collect();
     
@@ -1122,6 +1288,9 @@ fn process_logs(content: &str) -> AnalysisResult {
             ip: ip.to_string(),
             count: **count,
             risk_level: if **count >= 3 { "high" } else { "low" }.to_string(),
+            country: None,
+            city: None,
+            is_vpn: is_vpn_ip(ip),
         })
         .collect();
     
@@ -1135,20 +1304,27 @@ fn process_logs(content: &str) -> AnalysisResult {
         ("LOW", "Normal activity")
     };
     
+    let threat_stats = ThreatStats {
+        failed_logins,
+        root_attempts,
+        suspicious_file_access,
+        critical_alerts,
+        sql_injection_attempts,
+        port_scanning_attempts,
+        malware_detections,
+    };
+    
+    let ip_analysis = IpAnalysis {
+        high_risk_ips: high_risk_ips.clone(),
+        all_ips,
+    };
+    
+    // Generate alerts based on rules
+    let alerts = check_alert_rules(&threat_stats, &ip_analysis, total_threats);
+    
     AnalysisResult {
-        threat_statistics: ThreatStats {
-            failed_logins,
-            root_attempts,
-            suspicious_file_access,
-            critical_alerts,
-            sql_injection_attempts,
-            port_scanning_attempts,
-            malware_detections,
-        },
-        ip_analysis: IpAnalysis {
-            high_risk_ips,
-            all_ips,
-        },
+        threat_statistics: threat_stats,
+        ip_analysis,
         risk_assessment: RiskAssessment {
             level: level.to_string(),
             total_threats,
@@ -1165,6 +1341,7 @@ fn process_logs(content: &str) -> AnalysisResult {
                 fallback_format,
             },
         },
+        alerts,
     }
 }
 
