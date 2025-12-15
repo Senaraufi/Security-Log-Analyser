@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use chrono::Utc;
 
+mod parsers;
+
 #[derive(Debug, Serialize, Deserialize)]
 struct LogEntry {
     timestamp: String,
