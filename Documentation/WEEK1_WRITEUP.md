@@ -1,14 +1,14 @@
 # Week 1: Apache Log Parser - Technical Writeup
 
-## 🎯 Executive Summary
+##  Executive Summary
 
-We built a **production-grade Apache log parser** using Rust and the `nom` parser combinator library. This replaces simple regex-based parsing with structured, type-safe parsing that automatically detects 6 types of security threats in real-time.
+I built a **production-grade Apache log parser** using Rust and the `nom` parser combinator library. This replaces simple regex-based parsing with structured, type-safe parsing that automatically detects 6 types of security threats in real-time.
 
 **Key Achievement:** 100% parse success rate with automatic threat detection on 20 test logs, identifying 10 security threats including SQL injection, XSS, and command injection.
 
 ---
 
-## 📋 What We Built
+##  What We Built
 
 ### 1. **Structured Log Parser** (`src/parsers/apache.rs`)
 
@@ -59,7 +59,7 @@ pub struct ApacheLog {
 
 ---
 
-## 🔍 How It Works
+##  How It Works
 
 ### **Step 1: Parsing with nom**
 
@@ -148,7 +148,7 @@ impl ApacheLog {
 
 ---
 
-## 🛡️ Security Threats Detected
+##  Security Threats Detected
 
 ### **1. SQL Injection (Critical)**
 **Pattern:** `UNION SELECT`, `OR 1=1`, `' OR '1'='1`
@@ -222,7 +222,7 @@ POST /api/login HTTP/1.1" 401
 
 ---
 
-## 🧪 Testing
+##  Testing
 
 ### **Unit Tests**
 
@@ -258,7 +258,7 @@ mod tests {
 cargo test
 ```
 
-**Result:** ✅ All 4 tests passed
+**Result:**  All 4 tests passed
 
 ---
 
@@ -277,11 +277,11 @@ cargo run --example test_parser
 
 **Result:**
 ```
-✅ Successfully parsed: 20/20 (100%)
-❌ Failed to parse: 0/20
-🚨 Suspicious entries: 10/20 (50%)
+Successfully parsed: 20/20 (100%)
+Failed to parse: 0/20
+Suspicious entries: 10/20 (50%)
 
-🎯 THREATS BY TYPE:
+THREATS BY TYPE:
    SQL Injection - 2 occurrences (Critical)
    Path Traversal - 1 occurrence (High)
    Cross-Site Scripting - 1 occurrence (High)
@@ -292,7 +292,7 @@ cargo run --example test_parser
 
 ---
 
-## 📦 Dependencies Added
+##  Dependencies Added
 
 ### **1. nom = "7.1"**
 **Purpose:** Parser combinator library
@@ -340,26 +340,26 @@ use chrono::{DateTime, NaiveDateTime, Utc};
 
 ---
 
-## 📁 Files Created
+##  Files Created
 
 ```
 security_api/
 ├── src/
 │   ├── main.rs                    (updated - added mod parsers)
 │   └── parsers/
-│       ├── mod.rs                 ✨ NEW - module declaration
-│       └── apache.rs              ✨ NEW - 300+ lines of parser code
+│       ├── mod.rs                 NEW - module declaration
+│       └── apache.rs              NEW - 300+ lines of parser code
 │
 ├── examples/
-│   └── test_parser.rs             ✨ NEW - test program
+│   └── test_parser.rs             NEW - test program
 │
-├── apache_combined_test.log       ✨ NEW - 20 test log entries
+├── apache_combined_test.log       NEW - 20 test log entries
 └── Cargo.toml                     (updated - added nom, chrono)
 ```
 
 ---
 
-## 🚀 How to Run
+##  How to Run
 
 ### **Option 1: Run Unit Tests**
 
@@ -400,13 +400,13 @@ cargo run --example test_parser
 
 **Expected output:**
 ```
-🔍 Testing Apache Log Parser
+ Testing Apache Log Parser
 
 ============================================================
-📄 Total lines: 20
+ Total lines: 20
 ============================================================
 
-🚨 THREAT DETECTED (Line 4):
+ THREAT DETECTED (Line 4):
    Type: SQL Injection
    Severity: Critical
    IP: 172.16.0.25
@@ -417,13 +417,13 @@ cargo run --example test_parser
 [... more threats ...]
 
 ============================================================
-📊 PARSING SUMMARY
+ PARSING SUMMARY
 ============================================================
-✅ Successfully parsed: 20/20
-❌ Failed to parse: 0/20
-🚨 Suspicious entries: 10
+Successfully parsed: 20/20
+Failed to parse: 0/20
+Suspicious entries: 10
 
-🎯 THREATS BY TYPE:
+THREATS BY TYPE:
    SQL Injection - 2 occurrences
    Path Traversal - 1 occurrences
    Cross-Site Scripting - 1 occurrences
@@ -432,7 +432,7 @@ cargo run --example test_parser
    Unauthorized Access Attempt - 4 occurrences
 
 ============================================================
-✨ Parser test complete!
+ Parser test complete!
 ```
 
 ---
@@ -464,7 +464,7 @@ fn main() {
 
 ---
 
-## 🎯 What This Update Does
+##  What This Update Does
 
 ### **Before (Old System):**
 
@@ -474,11 +474,11 @@ let re = Regex::new(r"(\d+\.\d+\.\d+\.\d+)").unwrap();
 let ip = re.captures(line).unwrap()[0];
 
 // Problems:
-// ❌ No structure
-// ❌ No type safety
-// ❌ No validation
-// ❌ No threat detection
-// ❌ Fragile (crashes on bad input)
+//  No structure
+//  No type safety
+//  No validation
+//  No threat detection
+//  Fragile (crashes on bad input)
 ```
 
 ### **After (New System):**
@@ -488,37 +488,37 @@ let ip = re.captures(line).unwrap()[0];
 let log = parse_apache_combined(line)?;
 
 // Benefits:
-// ✅ Structured data (ApacheLog struct)
-// ✅ Type-safe (DateTime, u16, u64)
-// ✅ Validated (proper error handling)
-// ✅ Automatic threat detection (6 types)
-// ✅ Robust (returns Result, doesn't crash)
+//  Structured data (ApacheLog struct)
+//  Type-safe (DateTime, u16, u64)
+//  Validated (proper error handling)
+//  Automatic threat detection (6 types)
+//  Robust (returns Result, doesn't crash)
 ```
 
 ---
 
-## 📊 Performance & Quality
+##  Performance & Quality
 
 ### **Parse Success Rate**
-- ✅ **100%** on valid Apache Combined Log Format
-- ✅ **Graceful errors** on invalid format
-- ✅ **No crashes** on malformed input
+-  **100%** on valid Apache Combined Log Format
+-  **Graceful errors** on invalid format
+-  **No crashes** on malformed input
 
 ### **Threat Detection Accuracy**
-- ✅ **10/10** threats detected in test file
-- ✅ **0 false negatives** (missed threats)
-- ✅ **0 false positives** (normal traffic flagged)
+-  **10/10** threats detected in test file
+-  **0 false negatives** (missed threats)
+-  **0 false positives** (normal traffic flagged)
 
 ### **Code Quality**
-- ✅ **Type-safe** (Rust's type system)
-- ✅ **Memory-safe** (no buffer overflows)
-- ✅ **Well-tested** (4 unit tests)
-- ✅ **Documented** (inline comments)
-- ✅ **Modular** (separate parsers module)
+-  **Type-safe** (Rust's type system)
+-  **Memory-safe** (no buffer overflows)
+-  **Well-tested** (4 unit tests)
+-  **Documented** (inline comments)
+-  **Modular** (separate parsers module)
 
 ---
 
-## 🔮 Next Steps (Week 2)
+##  Next Steps (Week 2)
 
 This parser is the **foundation** for LLM-powered analysis. Next week:
 
@@ -557,29 +557,29 @@ Identify:
 
 ---
 
-## 💡 Why This Matters
+## Why This Matters
 
 ### **Traditional Approach:**
 ```
 Logs → Regex → Basic stats → Manual review
 ```
-- ❌ Time-consuming
-- ❌ Error-prone
-- ❌ No intelligence
-- ❌ Misses patterns
+-  Time-consuming
+-  Error-prone
+-  No intelligence
+-  Misses patterns
 
 ### **Your Approach:**
 ```
 Logs → Structured Parser → Threat Detection → LLM Analysis → Actionable Report
 ```
-- ✅ Automated
-- ✅ Accurate
-- ✅ Intelligent
-- ✅ Finds patterns
+-  Automated
+-  Accurate
+-  Intelligent
+-  Finds patterns
 
 ---
 
-## 🎓 Technical Concepts Explained
+## Technical Concepts Explained
 
 ### **Parser Combinators**
 Small functions that combine to parse complex formats:

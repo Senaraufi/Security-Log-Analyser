@@ -113,3 +113,209 @@ frontend flow
 │                                                 │
 │  [ Download Report ]  [ Analyze with AI ]       │
 └─────────────────────────────────────────────────┘
+
+
+
+
+Phase 1: Pick Your Log Types (Week 1-2)
+Start with 2 common formats:
+
+Option A: Web Server Logs
+Apache Combined Log Format:
+192.168.1.1 - - [15/Dec/2025:17:19:00 +0000] "GET /admin HTTP/1.1" 200 1234
+
+Nginx Access Log:
+192.168.1.1 - - [15/Dec/2025:17:19:00 +0000] "POST /api/login HTTP/1.1" 401 0
+Why?
+
+✅ Common in every company
+✅ Easy to find samples
+✅ Clear security patterns (SQL injection, path traversal, brute force)
+Option B: Syslog
+Dec 15 17:19:00 server sshd[1234]: Failed password for root from 192.168.1.1 port 22
+Dec 15 17:19:05 server sshd[1234]: Accepted publickey for admin from 10.0.0.1 port 22
+Why?
+
+✅ Universal standard
+✅ Used by firewalls, routers, servers
+✅ Rich security events
+Phase 2: Build Proper Parsers (Week 2-3)
+Replace your current regex with structured parsers:
+
+rust
+// Use nom crate for parsing
+use nom::{
+    bytes::complete::{tag, take_until},
+    character::complete::{digit1, space1},
+    IResult,
+};
+
+// Apache Combined Log Parser
+fn parse_apache_log(input: &str) -> IResult<&str, ApacheLog> {
+    let (input, ip) = take_until(" ")(input)?;
+    let (input, _) = space1(input)?;
+    // ... proper parsing
+    Ok((input, ApacheLog { ip, method, path, status, ... }))
+}
+
+// Structured output
+struct ApacheLog {
+    ip: String,
+    timestamp: DateTime<Utc>,
+    method: String,
+    path: String,
+    status: u16,
+    size: u64,
+    user_agent: String,
+}
+Phase 3: Integrate Claude API (Week 3-4)
+This is where the magic happens:
+
+rust
+use anthropic_sdk::Client;
+
+async fn analyze_with_claude(logs: Vec<ApacheLog>) -> SecurityReport {
+    let client = Client::new(env::var("ANTHROPIC_API_KEY")?);
+    
+    // THIS IS YOUR COMPETITIVE ADVANTAGE
+    let prompt = format!(r#"
+You are a senior SOC analyst with 10 years of experience.
+Analyze these web server logs for security threats:
+
+{}
+
+Focus on:
+1. SQL injection attempts (UNION, SELECT, OR 1=1)
+2. Path traversal (../, etc.)
+3. Brute force patterns (repeated 401s)
+4. Suspicious user agents (scanners, bots)
+5. Data exfiltration (large responses)
+
+Provide:
+- Severity (Critical/High/Medium/Low)
+- Attack type
+- Affected resources
+- Recommended actions
+- IOCs (Indicators of Compromise)
+"#, format_logs_for_llm(&logs));
+
+    let response = client.complete(prompt).await?;
+    parse_claude_response(response)
+}
+Your prompts are your moat! 🏰
+
+Phase 4: Multi-Source Correlation (Week 5-6)
+This is the really hard stuff:
+
+rust
+struct CorrelationEngine {
+    web_logs: Vec<ApacheLog>,
+    syslog: Vec<SyslogEntry>,
+    firewall: Vec<FirewallLog>,
+}
+
+impl CorrelationEngine {
+    fn find_attack_chains(&self) -> Vec<AttackChain> {
+        // Example: SQL injection attempt + SSH brute force from same IP
+        let suspicious_ips = self.web_logs
+            .iter()
+            .filter(|log| log.is_sql_injection())
+            .map(|log| log.ip)
+            .collect::<HashSet<_>>();
+            
+        let ssh_attacks = self.syslog
+            .iter()
+            .filter(|log| suspicious_ips.contains(&log.ip))
+            .collect();
+            
+        // Use Claude to analyze the correlation
+        self.analyze_attack_chain_with_llm(suspicious_ips, ssh_attacks)
+    }
+}
+💡 Your Competitive Advantages
+1. Parser Quality ⭐⭐⭐
+rust
+// Bad (what you have now)
+let re = Regex::new(r"(\d+\.\d+\.\d+\.\d+)").unwrap();
+
+// Good (what you need)
+struct LogParser {
+    apache: ApacheParser,
+    nginx: NginxParser,
+    syslog: SyslogParser,
+}
+
+impl LogParser {
+    fn parse(&self, line: &str) -> Result<LogEntry, ParseError> {
+        // Structured, typed, validated
+    }
+}
+2. Security Domain Expertise ⭐⭐⭐⭐⭐
+Your prompts should encode:
+- MITRE ATT&CK framework
+- OWASP Top 10
+- Common attack patterns
+- False positive reduction
+- Context-aware analysis
+3. Correlation Intelligence ⭐⭐⭐⭐
+Connect the dots:
+- Same IP across multiple services
+- Time-based patterns
+- Geographic anomalies
+- Behavioral analysis
+4. SOC Workflow ⭐⭐⭐
+Your UI should support:
+- Triage queue
+- Incident timeline
+- Playbook automation
+- Team collaboration
+- Case management
+🎯 Recommended Architecture Pivot
+Current:
+User → Upload Log → Regex Parse → Display Results
+Target:
+User → Upload Log → Detect Format → Structured Parse → 
+  ↓
+Store in DB → Correlate → Claude Analysis → 
+  ↓
+Generate Report → SOC Workflow → Actions
+📋 Concrete Next Steps
+Week 1: Choose & Parse
+bash
+# 1. Pick Apache logs
+cargo add nom
+cargo add chrono
+
+# 2. Write parser
+// src/parsers/apache.rs
+pub fn parse_apache_combined(line: &str) -> Result<ApacheLog, ParseError>
+
+# 3. Test with real logs
+wget https://github.com/logpai/loghub/raw/master/Apache/Apache_2k.log
+Week 2: Claude Integration
+bash
+# 1. Get API key
+# Apply at anthropic.com
+
+# 2. Add SDK
+cargo add anthropic-sdk
+cargo add tokio
+
+# 3. Build analyzer
+// src/llm/analyzer.rs
+pub async fn analyze_logs(logs: Vec<ApacheLog>) -> SecurityReport
+Week 3: Build CLI First
+bash
+# Don't touch the web UI yet!
+cargo new log-analyzer-cli
+
+# Simple interface:
+./log-analyzer analyze apache.log
+./log-analyzer analyze --format syslog system.log
+Week 4: Refine Prompts
+Test with real SOC analysts:
+- Are the alerts useful?
+- Too many false positives?
+- Missing critical threats?
+
+Iterate on prompts until they're gold!
