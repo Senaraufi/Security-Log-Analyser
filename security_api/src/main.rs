@@ -10,6 +10,7 @@ use std::collections::HashMap;
 use chrono::Utc;
 
 mod parsers;
+mod llm;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct LogEntry {
