@@ -4,6 +4,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
+use tower_http::services::ServeDir;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -118,9 +119,14 @@ struct RiskAssessment {
 
 #[tokio::main]
 async fn main() {
+    dotenv::dotenv().ok();
+    
+    let static_files = ServeDir::new("static");
+    
     let app = Router::new()
-        .route("/", get(serve_frontend))
-        .route("/api/analyze", post(analyze_logs));
+        .route("/api/analyze", post(analyze_logs))
+        .route("/api/analyze-with-ai", post(analyze_logs_with_ai))
+        .nest_service("/", static_files);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await
@@ -2063,4 +2069,87 @@ fn diagnose_parse_error(line: &str) -> (String, String) {
         "Unstructured log line".to_string(),
         "Line was processed but may lack timestamp or level. Threats will still be detected.".to_string()
     )
+}
+
+// New endpoint: Analyze logs with Claude AI
+async fn analyze_logs_with_ai(mut multipart: Multipart) -> impl IntoResponse {
+    use llm::{LLMAnalyzer, analyzer::ClaudeAnalyzer, mock::MockAnalyzer};
+    
+    let mut log_content = String::new();
+    
+    // Extract file content
+    while let Some(field) = multipart.next_field().await.unwrap() {
+        if field.name() == Some("file") {
+            let data = field.bytes().await.unwrap();
+            log_content = String::from_utf8_lossy(&data).to_string();
+        }
+    }
+    
+    // Parse logs using the new Apache parser
+    let mut logs = Vec::new();
+    let mut parse_errors = 0;
+    
+    for line in log_content.lines() {
+        if line.trim().is_empty() {
+            continue;
+        }
+        match parsers::apache::parse_apache_combined(line) {
+            Ok(log) => logs.push(log),
+            Err(_) => parse_errors += 1,
+        }
+    }
+    
+    // If no logs parsed, return more helpful error
+    if logs.is_empty() {
+        return Json(serde_json::json!({
+            "error": format!("No valid Apache Combined Log Format entries found. Parsed 0 logs, {} parse errors. Please ensure the file is in Apache Combined Log Format.", parse_errors),
+            "parse_errors": parse_errors,
+            "total_lines": log_content.lines().count(),
+            "suggestion": "Try using the Standard Analysis mode for non-Apache Combined format logs, or use apache_combined_test.log for testing."
+        }));
+    }
+    
+    // Check if mock mode is enabled
+    let use_mock = std::env::var("USE_MOCK_ANALYZER")
+        .unwrap_or_else(|_| "false".to_string())
+        .to_lowercase() == "true";
+    
+    // Analyze with Claude AI or Mock
+    let result = if use_mock {
+        let analyzer = MockAnalyzer::new();
+        analyzer.analyze_logs(logs.clone()).await
+    } else {
+        let analyzer = ClaudeAnalyzer::new();
+        analyzer.analyze_logs(logs.clone()).await
+    };
+    
+    match result {
+        Ok(report) => {
+            Json(serde_json::json!({
+                "success": true,
+                "analysis_type": if use_mock { "mock_ai" } else { "claude_ai" },
+                "total_logs": logs.len(),
+                "suspicious_logs": logs.iter().filter(|l| l.is_suspicious).count(),
+                "parse_errors": parse_errors,
+                "report": {
+                    "summary": report.summary,
+                    "threat_level": format!("{:?}", report.threat_level),
+                    "findings": report.findings,
+                    "attack_chains": report.attack_chains,
+                    "recommendations": report.recommendations,
+                    "iocs": report.iocs
+                }
+            }))
+        }
+        Err(e) => {
+            Json(serde_json::json!({
+                "error": format!("Claude API error: {}", e),
+                "fallback_info": {
+                    "total_logs": logs.len(),
+                    "suspicious_logs": logs.iter().filter(|l| l.is_suspicious).count(),
+                    "suggestion": "Check your API key in .env file or use mock mode"
+                }
+            }))
+        }
+    }
 }
