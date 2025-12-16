@@ -1,7 +1,7 @@
 use crate::parsers::apache::ApacheLog;
 
 /// Prompt builder for security analysis
-/// This is your competitive advantage - these prompts encode security expertise
+/// This is competitive advantage - these prompts encode security expertise
 pub struct PromptBuilder {
     logs: Vec<ApacheLog>,
     context: String,
