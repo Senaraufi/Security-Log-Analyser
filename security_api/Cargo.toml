@@ -20,3 +20,6 @@ nom = "7.1"
 # LLM Integration
 dotenv = "0.15"
 async-trait = "0.1"
+
+# Database Integration
+sqlx = { version = "0.7", features = ["runtime-tokio-native-tls", "mysql", "chrono", "macros"], default-features = false }

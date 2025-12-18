@@ -608,6 +608,19 @@
         let currentMode = null;
         let currentFile = null;
 
+        // Security: Sanitize HTML to prevent XSS attacks
+        function escapeHtml(unsafe) {
+            if (typeof unsafe !== 'string') {
+                return unsafe;
+            }
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
         function selectMode(mode) {
             currentMode = mode;
             document.getElementById('landing-page').classList.add('hidden');
@@ -739,9 +752,9 @@
                     <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                     </svg>
-                    <span>${data.risk_assessment.level.toUpperCase()} RISK</span>
+                    <span>${escapeHtml(data.risk_assessment.level.toUpperCase())} RISK</span>
                     <div style="width: 1px; height: 1rem; background: var(--neutral-700);"></div>
-                    <span>${data.risk_assessment.total_threats}/100</span>
+                    <span>${escapeHtml(data.risk_assessment.total_threats.toString())}/100</span>
                 </div>
             `;
             
@@ -797,13 +810,13 @@
             let html = `
                 <div style="background: var(--neutral-900); border: 1px solid var(--neutral-800); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
                     <h3 style="color: var(--purple-400); margin-bottom: 0.75rem; font-size: 1rem;">📋 Executive Summary</h3>
-                    <p style="color: var(--neutral-300); line-height: 1.6;">${data.report.summary}</p>
+                    <p style="color: var(--neutral-300); line-height: 1.6;">${escapeHtml(data.report.summary)}</p>
                     <div style="margin-top: 0.75rem; padding: 0.75rem; background: var(--neutral-800); border-radius: 0.375rem;">
                         <strong style="color: var(--neutral-100);">Threat Level:</strong> 
-                        <span style="color: var(--red-400); font-weight: 600; font-size: 1.1rem;">${data.report.threat_level}</span>
+                        <span style="color: var(--red-400); font-weight: 600; font-size: 1.1rem;">${escapeHtml(data.report.threat_level)}</span>
                     </div>
                     <div style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--neutral-400);">
-                        📊 Analyzed ${data.total_logs} logs | 🚨 ${data.suspicious_logs} suspicious
+                        📊 Analyzed ${escapeHtml(data.total_logs.toString())} logs | 🚨 ${escapeHtml(data.suspicious_logs.toString())} suspicious
                     </div>
                 </div>
             `;

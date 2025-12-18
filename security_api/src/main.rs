@@ -1,5 +1,5 @@
 use axum::{
-    extract::Multipart,
+    extract::{Multipart, Extension},
     response::{Html, IntoResponse, Json},
     routing::{get, post},
     Router,
@@ -9,9 +9,11 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use chrono::Utc;
+use database::{init_db, test_connection, DbPool};
 
 mod parsers;
 mod llm;
+mod database;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct LogEntry {
@@ -119,21 +121,46 @@ struct RiskAssessment {
 
 #[tokio::main]
 async fn main() {
+    // Load environment variables
     dotenv::dotenv().ok();
+    
+    // Initialize database connection
+    println!("Starting Security API Server...");
+    let db_pool = match init_db().await {
+        Ok(pool) => {
+            // Test the connection
+            if let Err(e) = test_connection(&pool).await {
+                eprintln!("  Database connection test failed: {}", e);
+                eprintln!("  Server will run but database features will be unavailable");
+            }
+            Some(pool)
+        }
+        Err(e) => {
+            eprintln!("Failed to connect to database: {}", e);
+            eprintln!("Server will run but database features will be unavailable");
+            eprintln!("Check your DATABASE_URL in .env file");
+            None
+        }
+    };
     
     let static_files = ServeDir::new("static");
     
-    let app = Router::new()
+    let mut app = Router::new()
         .route("/api/analyze", post(analyze_logs))
         .route("/api/analyze-with-ai", post(analyze_logs_with_ai))
         .nest_service("/", static_files);
+    
+    // Add database pool to app state if available
+    if let Some(pool) = db_pool {
+        app = app.layer(Extension(pool));
+    }
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await
         .unwrap();
     
-    println!("Security API Server running on http://localhost:3000");
-    println!("Upload logs at: http://localhost:3000");
+    println!(" Security API Server running on http://localhost:3000");
+    println!(" Upload logs at: http://localhost:3000");
     
     axum::serve(listener, app).await.unwrap();
 }
@@ -1545,17 +1572,77 @@ async fn serve_frontend() -> Html<&'static str> {
     "#)
 }
 
-async fn analyze_logs(mut multipart: Multipart) -> impl IntoResponse {
+async fn analyze_logs(
+    Extension(db_pool): Extension<DbPool>,
+    mut multipart: Multipart,
+) -> impl IntoResponse {
+    use database::{queries, models::*};
+    use std::time::Instant;
+    
+    let start_time = Instant::now();
     let mut log_content = String::new();
+    let mut filename = String::from("unknown.log");
+    let mut file_size: usize = 0;
     
     while let Some(field) = multipart.next_field().await.unwrap() {
         if field.name() == Some("file") {
+            if let Some(name) = field.file_name() {
+                filename = name.to_string();
+            }
             let data = field.bytes().await.unwrap();
+            file_size = data.len();
             log_content = String::from_utf8_lossy(&data).to_string();
         }
     }
     
     let result = process_logs(&log_content);
+    let processing_time = start_time.elapsed().as_millis() as i32;
+    
+    // Save to database
+    let total_lines = log_content.lines().count();
+    let upload = NewLogUpload {
+        filename: filename.clone(),
+        file_size_bytes: file_size as i64,
+        total_lines: total_lines as i32,
+        parsed_lines: result.parsing_info.parsed_lines as i32,
+        failed_lines: result.parsing_info.skipped_lines as i32,
+        analysis_mode: "standard".to_string(),
+        processing_time_ms: processing_time,
+        user_ip: None,
+    };
+    
+    match queries::save_log_upload(&db_pool, &upload).await {
+        Ok(upload_id) => {
+            println!("✅ Log upload saved to database (ID: {})", upload_id);
+            
+            // Save analysis results
+            let analysis = NewAnalysisResult {
+                upload_id,
+                risk_level: result.risk_assessment.level.clone(),
+                total_threats: result.risk_assessment.total_threats as i32,
+                threat_score: result.risk_assessment.total_threats as i32,
+                sql_injection_count: result.threat_statistics.sql_injection_attempts as i32,
+                xss_count: 0, // Not tracked in current ThreatStats
+                path_traversal_count: 0, // Not tracked in current ThreatStats
+                command_injection_count: 0, // Not tracked in current ThreatStats
+                suspicious_patterns_count: result.threat_statistics.suspicious_file_access as i32,
+                format_quality_percentage: (result.parsing_info.format_quality.perfect_format as f32 / total_lines as f32 * 100.0),
+                perfect_format_count: result.parsing_info.format_quality.perfect_format as i32,
+                minor_issues_count: result.parsing_info.format_quality.alternative_format as i32,
+                major_issues_count: result.parsing_info.format_quality.fallback_format as i32,
+            };
+            
+            if let Err(e) = queries::save_analysis_result(&db_pool, &analysis).await {
+                eprintln!("⚠️  Failed to save analysis result: {}", e);
+            } else {
+                println!("✅ Analysis result saved to database");
+            }
+        }
+        Err(e) => {
+            eprintln!("⚠️  Failed to save log upload: {}", e);
+        }
+    }
+    
     Json(result)
 }
 
@@ -2072,15 +2159,27 @@ fn diagnose_parse_error(line: &str) -> (String, String) {
 }
 
 // New endpoint: Analyze logs with Claude AI
-async fn analyze_logs_with_ai(mut multipart: Multipart) -> impl IntoResponse {
+async fn analyze_logs_with_ai(
+    Extension(db_pool): Extension<DbPool>,
+    mut multipart: Multipart,
+) -> impl IntoResponse {
     use llm::{LLMAnalyzer, analyzer::ClaudeAnalyzer, mock::MockAnalyzer};
+    use database::{queries, models::*};
+    use std::time::Instant;
     
+    let start_time = Instant::now();
     let mut log_content = String::new();
+    let mut filename = String::from("unknown.log");
+    let mut file_size: usize = 0;
     
     // Extract file content
     while let Some(field) = multipart.next_field().await.unwrap() {
         if field.name() == Some("file") {
+            if let Some(name) = field.file_name() {
+                filename = name.to_string();
+            }
             let data = field.bytes().await.unwrap();
+            file_size = data.len();
             log_content = String::from_utf8_lossy(&data).to_string();
         }
     }
@@ -2125,11 +2224,49 @@ async fn analyze_logs_with_ai(mut multipart: Multipart) -> impl IntoResponse {
     
     match result {
         Ok(report) => {
+            let processing_time = start_time.elapsed().as_millis() as i32;
+            let total_lines = log_content.lines().count();
+            let suspicious_count = logs.iter().filter(|l| l.is_suspicious).count();
+            
+            // Save to database
+            let upload = NewLogUpload {
+                filename: filename.clone(),
+                file_size_bytes: file_size as i64,
+                total_lines: total_lines as i32,
+                parsed_lines: logs.len() as i32,
+                failed_lines: parse_errors as i32,
+                analysis_mode: "ai".to_string(),
+                processing_time_ms: processing_time,
+                user_ip: None,
+            };
+            
+            if let Ok(upload_id) = queries::save_log_upload(&db_pool, &upload).await {
+                println!(" AI log upload saved to database (ID: {})", upload_id);
+                
+                // Save AI analysis
+                let ai_analysis = NewAIAnalysis {
+                    upload_id,
+                    threat_level: format!("{:?}", report.threat_level),
+                    summary: report.summary.clone(),
+                    total_logs_analyzed: logs.len() as i32,
+                    suspicious_logs_count: suspicious_count as i32,
+                    confidence_score: 85.0, // You can calculate this based on findings
+                    processing_time_ms: processing_time,
+                    tokens_used: None, // Can be extracted from Claude response if available
+                };
+                
+                if let Err(e) = queries::save_ai_analysis(&db_pool, &ai_analysis).await {
+                    eprintln!("  Failed to save AI analysis: {}", e);
+                } else {
+                    println!(" AI analysis saved to database");
+                }
+            }
+            
             Json(serde_json::json!({
                 "success": true,
                 "analysis_type": if use_mock { "mock_ai" } else { "claude_ai" },
                 "total_logs": logs.len(),
-                "suspicious_logs": logs.iter().filter(|l| l.is_suspicious).count(),
+                "suspicious_logs": suspicious_count,
                 "parse_errors": parse_errors,
                 "report": {
                     "summary": report.summary,
