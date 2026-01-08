@@ -19,7 +19,7 @@ pub async fn init_db() -> Result<DbPool, sqlx::Error> {
         .connect(&database_url)
         .await?;
     
-    println!("✅ Database connected successfully!");
+    println!(" Database connected successfully!");
     Ok(pool)
 }
 
@@ -29,6 +29,6 @@ pub async fn test_connection(pool: &DbPool) -> Result<(), sqlx::Error> {
         .fetch_one(pool)
         .await?;
     
-    println!("✅ Database connection test passed!");
+    println!(" Database connection test passed!");
     Ok(())
 }
