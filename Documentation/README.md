@@ -1,159 +1,223 @@
-# Security API - Web Interface for Log Analysis
+# Security Log Analyzer with AI-Powered Threat Intelligence
 
-A Rust-based web API that provides a beautiful frontend for analyzing security logs.
+> **Production-grade security log analysis powered by Claude AI and Rust**
 
-## 🚀 Features
+A comprehensive security log analyzer that combines pattern-based threat detection with AI-powered analysis to provide expert-level security insights.
 
-- **File Upload** - Drag and drop or select log files
-- **Real-time Analysis** - Instant threat detection
-- **Beautiful UI** - Modern, responsive design
-- **JSON API** - RESTful endpoints for programmatic access
-- **Fast** - Rust-powered performance
+---
+
+## 🚀 Quick Start
+
+### 1. Start the Server
+
+```bash
+cd /Users/senaraufi/Desktop/Startup/security_api
+cargo run --release
+```
+
+You should see:
+```
+🚀 Security API Server running on http://localhost:3000
+📊 Upload logs at: http://localhost:3000
+```
+
+### 2. Open Web Interface
+
+Navigate to: **http://localhost:3000**
+
+### 3. Analyze Logs
+
+1. Click **"📁 Choose Log File"**
+2. Select your log file (`.txt` or `.log`)
+3. Choose analysis mode:
+   - **Standard Analysis** - Fast pattern-based detection
+   - **AI Analysis** - Claude-powered expert analysis
+4. View comprehensive security report
+
+---
+
+## ✨ Features
+
+### Core Capabilities
+- **🔍 Multi-Format Parser** - Apache Combined, Common, and custom formats
+- **🤖 AI-Powered Analysis** - Claude 3.5 Sonnet integration
+- **⚡ Real-time Detection** - Instant threat identification
+- **🗄️ Database Integration** - MySQL storage for historical analysis
+- **📊 Beautiful Web UI** - Modern, responsive dashboard
+- **🔌 RESTful API** - Programmatic access
+
+### Threat Detection (7 Types)
+1. **SQL Injection** - UNION SELECT, OR 1=1, DROP TABLE
+2. **XSS Attacks** - `<script>`, `javascript:`
+3. **Path Traversal** - `../`, `/etc/passwd`
+4. **Scanner Activity** - nmap, port scans
+5. **Failed Logins** - Brute force indicators
+6. **Root Access Attempts** - Privilege escalation
+7. **Suspicious File Access** - Sensitive system files
+
+### AI Analysis Features
+- **Executive Summary** - High-level threat overview
+- **Attack Chain Detection** - Correlates related events
+- **MITRE ATT&CK Mapping** - Industry-standard framework
+- **Confidence Scoring** - Reliability indicators
+- **Actionable Recommendations** - Specific remediation steps
+
+---
 
 ## 🛠️ Tech Stack
 
-- **Backend:** Axum (Rust web framework)
-- **Frontend:** Vanilla HTML/CSS/JavaScript
-- **Parsing:** Regex-based log analysis
-- **Async:** Tokio runtime
+- **Backend:** Rust (Axum framework)
+- **AI:** Claude 3.5 Sonnet (Anthropic API)
+- **Database:** MySQL with SQLx
+- **Parser:** Universal log parser with regex
+- **Frontend:** HTML/CSS/JavaScript
+- **Async Runtime:** Tokio
 
-## 📦 Installation
+---
 
+## 📊 API Endpoints
+
+### `GET /`
+Web interface (HTML dashboard)
+
+### `POST /api/analyze`
+Analyze uploaded log file
+
+**Request:**
 ```bash
-cd security_api
-cargo build --release
-```
-
-## 🎯 Usage
-
-### Start the Server
-
-```bash
-cargo run
-```
-
-The server will start on `http://localhost:3000`
-
-### Using the Web Interface
-
-1. Open `http://localhost:3000` in your browser
-2. Click "Choose Log File" and select a `.txt` or `.log` file
-3. Click "Analyze Logs"
-4. View the results:
-   - Threat statistics
-   - IP address analysis
-   - Risk assessment
-
-### Using the API Programmatically
-
-```bash
-# Upload and analyze logs
 curl -X POST http://localhost:3000/api/analyze \
-  -F "file=@sample_logs.txt"
+  -F "file=@apache_logs.txt" \
+  -F "mode=standard"  # or "ai"
 ```
 
 **Response:**
 ```json
 {
   "threat_statistics": {
+    "sql_injection": 5,
+    "xss_attempts": 3,
+    "path_traversal": 2,
+    "scanner_activity": 1,
     "failed_logins": 10,
-    "root_attempts": 5,
-    "suspicious_file_access": 1,
-    "critical_alerts": 4
+    "root_attempts": 2,
+    "suspicious_file_access": 1
   },
   "ip_analysis": {
     "high_risk_ips": [
-      {
-        "ip": "192.168.1.100",
-        "count": 11,
-        "risk_level": "high"
-      }
-    ],
-    "all_ips": [...]
+      {"ip": "192.168.1.100", "count": 15, "risk_level": "high"}
+    ]
   },
   "risk_assessment": {
     "level": "HIGH",
-    "total_threats": 20,
-    "description": "Immediate action required"
+    "total_threats": 24,
+    "threat_score": 85
+  },
+  "ai_analysis": {
+    "summary": "Multiple critical threats detected...",
+    "threat_level": "Critical",
+    "findings": [...],
+    "recommendations": [...]
   }
 }
 ```
 
-## 🔍 Detection Rules
+---
 
-The API detects 4 types of security threats:
+## 🎯 Risk Levels
 
-1. **Failed Login Attempts** - ERROR level + "Failed login" in message
-2. **Root User Access** - Any log containing "user: root"
-3. **Suspicious File Access** - Access to `/etc/passwd`, `/etc/shadow`
-4. **Critical Alerts** - CRITICAL severity level
+| Threat Score | Risk Level | Action Required |
+|-------------|------------|------------------|
+| 80-100 | 🔴 **CRITICAL** | Immediate action required |
+| 60-79 | 🟠 **HIGH** | Urgent attention needed |
+| 40-59 | 🟡 **MEDIUM** | Monitor closely |
+| 20-39 | 🟢 **LOW** | Routine monitoring |
+| 0-19 | ⚪ **MINIMAL** | Normal activity |
 
-## 📊 Risk Levels
-
-- **HIGH** (🔴) - 10+ threat indicators
-- **MEDIUM** (🟡) - 5-9 threat indicators
-- **LOW** (🟢) - 0-4 threat indicators
-
-## 🎨 API Endpoints
-
-### `GET /`
-Returns the web interface (HTML)
-
-### `POST /api/analyze`
-Analyzes uploaded log file
-
-**Request:**
-- Content-Type: `multipart/form-data`
-- Field: `file` (log file)
-
-**Response:**
-- Content-Type: `application/json`
-- Body: `AnalysisResult` object
-
-## 🧪 Testing
-
-Test with the sample logs from the `log_parser` project:
-
-```bash
-# Copy sample logs
-cp ../log_parser/sample_logs.txt .
-
-# Start server
-cargo run
-
-# Upload via web interface at http://localhost:3000
-```
+---
 
 ## 📁 Project Structure
 
 ```
-security_api/
-├── src/
-│   └── main.rs          # Axum server + embedded HTML
-├── Cargo.toml           # Dependencies
-└── README.md            # This file
+Startup/
+├── security_api/          # Main application
+│   ├── src/
+│   │   ├── main.rs       # Web server & routes
+│   │   ├── database/     # MySQL integration
+│   │   ├── llm/          # Claude AI integration
+│   │   └── parsers/      # Log parsing engines
+│   ├── examples/         # Test programs
+│   ├── static/           # Web UI
+│   └── .env              # Configuration
+├── log_parser/           # Original parser project
+└── Documentation/        # This folder
 ```
 
-## 🔧 Dependencies
+---
 
-```toml
-axum = "0.7"              # Web framework
-tokio = "1"               # Async runtime
-serde = "1.0"             # JSON serialization
-regex = "1.10"            # Log parsing
-tower-http = "0.5"        # HTTP utilities
+## 🔧 Configuration
+
+Create `.env` file in `security_api/`:
+
+```bash
+# Claude AI (Required for AI analysis)
+ANTHROPIC_API_KEY=sk-ant-...
+
+# Database (Optional - app works without it)
+DATABASE_URL=mysql://root:password@localhost:3306/security_LogsDB
+
+# Server
+RUST_LOG=info
 ```
 
-## 🚀 Next Steps
+---
 
-- [ ] Add AI integration (OpenAI/Claude)
-- [ ] Real-time log streaming
-- [ ] Database storage (PostgreSQL)
-- [ ] User authentication
-- [ ] Export reports (PDF/CSV)
-- [ ] Dashboard with charts
-- [ ] WebSocket for live updates
+## 🧪 Testing
+
+See **SETUP_AND_TESTING.md** for comprehensive testing guide.
+
+**Quick Test:**
+```bash
+# Interactive demo
+cargo run --example demo_analyzer
+
+# Test with sample logs
+cargo run --example test_llm_analyzer
+```
+
+---
+
+## 📚 Documentation
+
+- **README.md** (this file) - Project overview and quick start
+- **TECHNICAL_GUIDE.md** - Architecture and implementation details
+- **SETUP_AND_TESTING.md** - Setup, testing, and troubleshooting
+
+---
+
+## 🎓 Learning Resources
+
+This project demonstrates:
+- ✅ Production Rust web development
+- ✅ AI/LLM integration patterns
+- ✅ Database design and queries
+- ✅ Security analysis techniques
+- ✅ RESTful API design
+- ✅ Async programming with Tokio
+
+---
+
+## 🚀 Development Status
+
+- ✅ **Week 1** - Production-grade parser with threat detection
+- ✅ **Week 2** - Claude API integration and AI analysis
+- 🔄 **Week 3-4** - Full integration and enhanced UI
+
+---
 
 ## 📝 License
 
 Private project - All rights reserved
+
+---
+
+**Built with Rust 🦀 | Powered by Claude AI 🤖 | Secured by Design 🔒**
