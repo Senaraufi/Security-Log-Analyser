@@ -824,6 +824,10 @@
         }
 
         function displayResults(data) {
+            // Debug: Log the received data
+            console.log('Received data:', data);
+            console.log('Risk assessment:', data.risk_assessment);
+            
             // Display metrics
             const metricsGrid = document.getElementById('metrics-grid');
             metricsGrid.innerHTML = `
@@ -872,24 +876,26 @@
                         <svg class="icon" fill="none" stroke="var(--neutral-500)" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                         </svg>
-                        <span class="metric-change" style="color: ${getCVSSColor(data.risk_assessment.cvss_aggregate_score)}">${data.risk_assessment.cvss_severity}</span>
+                        <span class="metric-change" style="color: ${getCVSSColor(data.risk_assessment.cvss_aggregate_score || 0)}">${data.risk_assessment.cvss_severity || 'None'}</span>
                     </div>
-                    <div class="metric-value" style="color: ${getCVSSColor(data.risk_assessment.cvss_aggregate_score)}">${data.risk_assessment.cvss_aggregate_score.toFixed(1)}</div>
+                    <div class="metric-value" style="color: ${getCVSSColor(data.risk_assessment.cvss_aggregate_score || 0)}">${(data.risk_assessment.cvss_aggregate_score || 0).toFixed(1)}</div>
                     <div class="metric-label">CVSS Score</div>
                 </div>
             `;
             
             // Display risk indicator
-            const riskLevel = escapeHtml(data.risk_assessment.cvss_severity.toLowerCase());
+            const cvssScore = data.risk_assessment.cvss_aggregate_score || 0;
+            const cvssSeverity = data.risk_assessment.cvss_severity || 'None';
+            const riskLevel = escapeHtml(cvssSeverity.toLowerCase());
             const riskContainer = document.getElementById('risk-indicator-container');
             riskContainer.innerHTML = `
                 <div class="risk-indicator ${riskLevel}">
                     <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                     </svg>
-                    <span>${escapeHtml(data.risk_assessment.cvss_severity.toUpperCase())} RISK</span>
+                    <span>${escapeHtml(cvssSeverity.toUpperCase())} RISK</span>
                     <div style="width: 1px; height: 1rem; background: var(--neutral-700);"></div>
-                    <span>CVSS ${data.risk_assessment.cvss_aggregate_score.toFixed(1)}</span>
+                    <span>CVSS ${cvssScore.toFixed(1)}</span>
                 </div>
             `;
             
@@ -936,7 +942,7 @@
                     <div style="background: #0f0f0f; border: 1px solid #262626; padding: 0.75rem; border-radius: 0.375rem; display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-family: monospace; color: #06b6d4;">${escapeHtml(ip.ip)}</span>
                         <div style="display: flex; gap: 1rem; align-items: center;">
-                            <span style="color: #737373; font-size: 0.875rem;">${escapeHtml(ip.request_count.toString())} requests</span>
+                            <span style="color: #737373; font-size: 0.875rem;">${ip.count} requests</span>
                             <span style="color: #f87171; font-size: 0.75rem; text-transform: uppercase;">BLOCKED</span>
                         </div>
                     </div>
