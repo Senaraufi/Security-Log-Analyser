@@ -1,6 +1,6 @@
-# 🔒 Security Log Analyzer with AI-Powered Threat Intelligence
+# Security Log Analyser with AI-Powered Threat Intelligence
 
-A production-grade Rust application that analyzes Apache web server logs using pattern-based threat detection and Claude AI-powered deep analysis.
+A production grade Rust application that analyses Apache web server logs using pattern-based threat detection and Claude AI-powered deep analysis.
 
 ## Project Goal
 
@@ -8,10 +8,10 @@ An AI-powered security tool that:
 - Ingests and parses Apache web server logs
 - Detects threats using pattern matching (SQL injection, XSS, path traversal, etc.)
 - Provides AI-powered security analysis using Claude
-- Generates executive summaries and actionable recommendations
+- Generates executive summaries and recommendations
 - Maps threats to MITRE ATT&CK and OWASP Top 10 frameworks
 - Reduces false positives through intelligent context analysis
-- Explains findings in plain English with confidence scores
+- Explains findings in plain English
 
 ## Tech Stack
 

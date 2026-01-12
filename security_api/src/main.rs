@@ -14,6 +14,7 @@ use database::{init_db, test_connection, DbPool};
 mod parsers;
 mod llm;
 mod database;
+mod cvss;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct LogEntry {
@@ -66,6 +67,17 @@ struct ThreatStats {
     sql_injection_attempts: usize,
     port_scanning_attempts: usize,
     malware_detections: usize,
+    cvss_scores: Vec<ThreatCVSS>,
+}
+
+#[derive(Serialize, Clone)]
+struct ThreatCVSS {
+    threat_type: String,
+    count: usize,
+    cvss_score: f32,
+    severity: String,
+    vector_string: String,
+    explanation: String,
 }
 
 #[derive(Serialize)]
@@ -117,6 +129,8 @@ struct RiskAssessment {
     level: String,
     total_threats: usize,
     description: String,
+    cvss_aggregate_score: f32,
+    cvss_severity: String,
 }
 
 #[tokio::main]
@@ -1899,6 +1913,105 @@ fn process_logs(content: &str) -> AnalysisResult {
     
     let total_threats = failed_logins + root_attempts + suspicious_file_access + critical_alerts + 
                         sql_injection_attempts + port_scanning_attempts + malware_detections;
+    
+    // Calculate CVSS scores for detected threats
+    let mut cvss_scores = Vec::new();
+    let mut threat_types_for_aggregate = Vec::new();
+    
+    if sql_injection_attempts > 0 {
+        let cvss = cvss::ThreatType::SQLInjection.cvss_score();
+        cvss_scores.push(ThreatCVSS {
+            threat_type: "SQL Injection".to_string(),
+            count: sql_injection_attempts,
+            cvss_score: cvss.base_score,
+            severity: cvss.severity.as_str().to_string(),
+            vector_string: cvss.vector_string.clone(),
+            explanation: cvss.explanation.clone(),
+        });
+        threat_types_for_aggregate.push((cvss::ThreatType::SQLInjection, sql_injection_attempts));
+    }
+    
+    if failed_logins > 0 {
+        let cvss = cvss::ThreatType::FailedLogin.cvss_score();
+        cvss_scores.push(ThreatCVSS {
+            threat_type: "Failed Login".to_string(),
+            count: failed_logins,
+            cvss_score: cvss.base_score,
+            severity: cvss.severity.as_str().to_string(),
+            vector_string: cvss.vector_string.clone(),
+            explanation: cvss.explanation.clone(),
+        });
+        threat_types_for_aggregate.push((cvss::ThreatType::FailedLogin, failed_logins));
+    }
+    
+    if root_attempts > 0 {
+        let cvss = cvss::ThreatType::RootAccess.cvss_score();
+        cvss_scores.push(ThreatCVSS {
+            threat_type: "Root Access Attempt".to_string(),
+            count: root_attempts,
+            cvss_score: cvss.base_score,
+            severity: cvss.severity.as_str().to_string(),
+            vector_string: cvss.vector_string.clone(),
+            explanation: cvss.explanation.clone(),
+        });
+        threat_types_for_aggregate.push((cvss::ThreatType::RootAccess, root_attempts));
+    }
+    
+    if suspicious_file_access > 0 {
+        let cvss = cvss::ThreatType::SuspiciousFileAccess.cvss_score();
+        cvss_scores.push(ThreatCVSS {
+            threat_type: "Suspicious File Access".to_string(),
+            count: suspicious_file_access,
+            cvss_score: cvss.base_score,
+            severity: cvss.severity.as_str().to_string(),
+            vector_string: cvss.vector_string.clone(),
+            explanation: cvss.explanation.clone(),
+        });
+        threat_types_for_aggregate.push((cvss::ThreatType::SuspiciousFileAccess, suspicious_file_access));
+    }
+    
+    if port_scanning_attempts > 0 {
+        let cvss = cvss::ThreatType::PortScanning.cvss_score();
+        cvss_scores.push(ThreatCVSS {
+            threat_type: "Port Scanning".to_string(),
+            count: port_scanning_attempts,
+            cvss_score: cvss.base_score,
+            severity: cvss.severity.as_str().to_string(),
+            vector_string: cvss.vector_string.clone(),
+            explanation: cvss.explanation.clone(),
+        });
+        threat_types_for_aggregate.push((cvss::ThreatType::PortScanning, port_scanning_attempts));
+    }
+    
+    if malware_detections > 0 {
+        let cvss = cvss::ThreatType::Malware.cvss_score();
+        cvss_scores.push(ThreatCVSS {
+            threat_type: "Malware".to_string(),
+            count: malware_detections,
+            cvss_score: cvss.base_score,
+            severity: cvss.severity.as_str().to_string(),
+            vector_string: cvss.vector_string.clone(),
+            explanation: cvss.explanation.clone(),
+        });
+        threat_types_for_aggregate.push((cvss::ThreatType::Malware, malware_detections));
+    }
+    
+    if critical_alerts > 0 {
+        let cvss = cvss::ThreatType::CriticalAlert.cvss_score();
+        cvss_scores.push(ThreatCVSS {
+            threat_type: "Critical Alert".to_string(),
+            count: critical_alerts,
+            cvss_score: cvss.base_score,
+            severity: cvss.severity.as_str().to_string(),
+            vector_string: cvss.vector_string.clone(),
+            explanation: cvss.explanation.clone(),
+        });
+        threat_types_for_aggregate.push((cvss::ThreatType::CriticalAlert, critical_alerts));
+    }
+    
+    // Calculate aggregate CVSS score
+    let aggregate_cvss = cvss::calculate_aggregate_score(&threat_types_for_aggregate);
+    
     let (level, description) = if total_threats >= 10 {
         ("HIGH", "Immediate action required")
     } else if total_threats >= 5 {
@@ -1915,6 +2028,7 @@ fn process_logs(content: &str) -> AnalysisResult {
         sql_injection_attempts,
         port_scanning_attempts,
         malware_detections,
+        cvss_scores,
     };
     
     let ip_analysis = IpAnalysis {
@@ -1932,6 +2046,8 @@ fn process_logs(content: &str) -> AnalysisResult {
             level: level.to_string(),
             total_threats,
             description: description.to_string(),
+            cvss_aggregate_score: aggregate_cvss.base_score,
+            cvss_severity: aggregate_cvss.severity.as_str().to_string(),
         },
         parsing_info: ParsingInfo {
             total_lines,

@@ -815,6 +815,14 @@
             });
         });
 
+        function getCVSSColor(score) {
+            if (score >= 9.0) return '#dc2626'; // Critical - red
+            if (score >= 7.0) return '#ef4444'; // High - red
+            if (score >= 4.0) return '#f59e0b'; // Medium - orange
+            if (score >= 0.1) return '#10b981'; // Low - green
+            return '#94a3b8'; // None - gray
+        }
+
         function displayResults(data) {
             // Display metrics
             const metricsGrid = document.getElementById('metrics-grid');
@@ -859,56 +867,64 @@
                     <div class="metric-value">${Math.round((data.parsing_info.format_quality.perfect_format / data.parsing_info.total_lines) * 100)}%</div>
                     <div class="metric-label">Format Quality</div>
                 </div>
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <svg class="icon" fill="none" stroke="var(--neutral-500)" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                        </svg>
+                        <span class="metric-change" style="color: ${getCVSSColor(data.risk_assessment.cvss_aggregate_score)}">${data.risk_assessment.cvss_severity}</span>
+                    </div>
+                    <div class="metric-value" style="color: ${getCVSSColor(data.risk_assessment.cvss_aggregate_score)}">${data.risk_assessment.cvss_aggregate_score.toFixed(1)}</div>
+                    <div class="metric-label">CVSS Score</div>
+                </div>
             `;
             
             // Display risk indicator
-            const riskLevel = escapeHtml(data.risk_assessment.level.toLowerCase());
+            const riskLevel = escapeHtml(data.risk_assessment.cvss_severity.toLowerCase());
             const riskContainer = document.getElementById('risk-indicator-container');
             riskContainer.innerHTML = `
                 <div class="risk-indicator ${riskLevel}">
                     <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                     </svg>
-                    <span>${escapeHtml(data.risk_assessment.level.toUpperCase())} RISK</span>
+                    <span>${escapeHtml(data.risk_assessment.cvss_severity.toUpperCase())} RISK</span>
                     <div style="width: 1px; height: 1rem; background: var(--neutral-700);"></div>
-                    <span>${escapeHtml(data.risk_assessment.total_threats.toString())}/100</span>
+                    <span>CVSS ${data.risk_assessment.cvss_aggregate_score.toFixed(1)}</span>
                 </div>
             `;
             
-            // Display Threat Distribution
+            // Display Threat Distribution with CVSS Scores
             const threatsContent = document.getElementById('threats-content');
             document.getElementById('threats-count').textContent = `${data.risk_assessment.total_threats} Total`;
             
             const threatStats = data.threat_statistics;
-            threatsContent.innerHTML = `
-                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; padding: 1rem;">
-                    <div style="background: #0f0f0f; border: 1px solid #262626; padding: 0.75rem; border-radius: 0.375rem;">
-                        <div style="font-size: 1.5rem; font-weight: 600; margin-bottom: 0.25rem;">${threatStats.sql_injection_attempts}</div>
-                        <div style="font-size: 0.875rem; color: #737373; margin-bottom: 0.5rem;">SQL Injection</div>
-                        <div style="font-size: 0.75rem; color: #f87171; text-transform: uppercase;">CRITICAL</div>
-                    </div>
-                    <div style="background: #0f0f0f; border: 1px solid #262626; padding: 0.75rem; border-radius: 0.375rem;">
-                        <div style="font-size: 1.5rem; font-weight: 600; margin-bottom: 0.25rem;">${threatStats.failed_logins}</div>
-                        <div style="font-size: 0.875rem; color: #737373; margin-bottom: 0.5rem;">Failed Logins</div>
-                        <div style="font-size: 0.75rem; color: #fb923c; text-transform: uppercase;">HIGH</div>
-                    </div>
-                    <div style="background: #0f0f0f; border: 1px solid #262626; padding: 0.75rem; border-radius: 0.375rem;">
-                        <div style="font-size: 1.5rem; font-weight: 600; margin-bottom: 0.25rem;">${threatStats.suspicious_file_access}</div>
-                        <div style="font-size: 0.875rem; color: #737373; margin-bottom: 0.5rem;">File Access</div>
-                        <div style="font-size: 0.75rem; color: #facc15; text-transform: uppercase;">MEDIUM</div>
-                    </div>
-                    <div style="background: #0f0f0f; border: 1px solid #262626; padding: 0.75rem; border-radius: 0.375rem;">
-                        <div style="font-size: 1.5rem; font-weight: 600; margin-bottom: 0.25rem;">${threatStats.xss_attempts}</div>
-                        <div style="font-size: 0.875rem; color: #737373; margin-bottom: 0.5rem;">XSS Attempts</div>
-                        <div style="font-size: 0.75rem; color: #f87171; text-transform: uppercase;">CRITICAL</div>
-                    </div>
-                    <div style="background: #0f0f0f; border: 1px solid #262626; padding: 0.75rem; border-radius: 0.375rem;">
-                        <div style="font-size: 1.5rem; font-weight: 600; margin-bottom: 0.25rem;">${threatStats.root_attempts}</div>
-                        <div style="font-size: 0.875rem; color: #737373; margin-bottom: 0.5rem;">Root Attempts</div>
-                        <div style="font-size: 0.75rem; color: #fb923c; text-transform: uppercase;">HIGH</div>
-                    </div>
-                </div>
-            `;
+            let threatsHtml = '<div style="padding: 1rem;"><div style="display: grid; gap: 0.75rem;">';
+            
+            // Display CVSS scored threats
+            if (threatStats.cvss_scores && threatStats.cvss_scores.length > 0) {
+                threatStats.cvss_scores.forEach(threat => {
+                    const cvssColor = getCVSSColor(threat.cvss_score);
+                    threatsHtml += `
+                        <div style="background: #0f0f0f; border: 1px solid #262626; padding: 1rem; border-radius: 0.375rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                                <div>
+                                    <div style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.25rem;">${escapeHtml(threat.threat_type)}</div>
+                                    <div style="font-size: 0.875rem; color: #737373;">${threat.count} instance${threat.count !== 1 ? 's' : ''} detected</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 1.5rem; font-weight: 600; color: ${cvssColor};">${threat.cvss_score.toFixed(1)}</div>
+                                    <div style="font-size: 0.75rem; color: ${cvssColor}; text-transform: uppercase;">${escapeHtml(threat.severity)}</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 0.75rem; color: #525252; font-family: monospace; margin-bottom: 0.5rem;">${escapeHtml(threat.vector_string)}</div>
+                            <div style="font-size: 0.875rem; color: #737373; line-height: 1.4;">${escapeHtml(threat.explanation)}</div>
+                        </div>
+                    `;
+                });
+            }
+            
+            threatsHtml += '</div></div>';
+            threatsContent.innerHTML = threatsHtml;
             
             // Display IP Analysis
             const ipsContent = document.getElementById('ips-content');

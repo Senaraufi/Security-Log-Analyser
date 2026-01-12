@@ -136,6 +136,109 @@ let risk_score =
 
 ---
 
+## 📊 CVSS 3.1 Scoring System
+
+### Overview
+
+The system implements industry-standard CVSS 3.1 (Common Vulnerability Scoring System) for threat severity assessment.
+
+**Score Range:** 0.0 - 10.0
+- **0.0:** None
+- **0.1-3.9:** Low  
+- **4.0-6.9:** Medium
+- **7.0-8.9:** High
+- **9.0-10.0:** Critical
+
+### Threat Type Scores
+
+Each detected threat type has a predefined CVSS score:
+
+| Threat Type | CVSS Score | Severity | Vector String |
+|------------|------------|----------|---------------|
+| SQL Injection | 9.8 | Critical | CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H |
+| Malware | 9.8 | Critical | CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H |
+| Root Access | 8.8 | High | CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H |
+| Critical Alert | 8.0 | High | CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N |
+| Path Traversal | 7.5 | High | CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N |
+| Suspicious File Access | 7.5 | High | CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N |
+| XSS | 6.1 | Medium | CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N |
+| Failed Login | 5.3 | Medium | CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L |
+| Port Scanning | 5.3 | Medium | CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N |
+
+### Vector String Components
+
+**AV (Attack Vector):**
+- N = Network (remotely exploitable)
+- A = Adjacent Network
+- L = Local
+- P = Physical
+
+**AC (Attack Complexity):**
+- L = Low (no special conditions)
+- H = High (requires specific conditions)
+
+**PR (Privileges Required):**
+- N = None
+- L = Low
+- H = High
+
+**UI (User Interaction):**
+- N = None
+- R = Required
+
+**S (Scope):**
+- U = Unchanged
+- C = Changed
+
+**C/I/A (Confidentiality/Integrity/Availability Impact):**
+- H = High
+- L = Low
+- N = None
+
+### Aggregate Score Calculation
+
+The system calculates an aggregate CVSS score based on:
+
+1. **Highest Individual Score** - Maximum CVSS score among detected threats
+2. **Volume Multiplier** - Adjusts based on threat count:
+   - 1-2 instances: 1.0x
+   - 3-5 instances: 1.1x
+   - 6-10 instances: 1.15x
+   - 11-20 instances: 1.2x
+   - 20+ instances: 1.25x
+
+```rust
+let aggregate_score = (max_score * volume_multiplier).min(10.0);
+```
+
+**Example:**
+- 5 SQL Injection attempts (CVSS 9.8)
+- 10 Failed Logins (CVSS 5.3)
+- Aggregate: 9.8 × 1.1 = 10.0 (capped at 10.0)
+
+### Implementation
+
+```rust
+// Get CVSS score for a threat type
+let cvss = cvss::ThreatType::SQLInjection.cvss_score();
+
+// Returns CVSSScore struct:
+// - base_score: 9.8
+// - severity: Severity::Critical
+// - vector_string: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+// - explanation: "Network-accessible SQL injection..."
+```
+
+### Benefits
+
+✅ **Industry Standard** - Universally recognized scoring  
+✅ **Consistent** - Deterministic, reproducible scores  
+✅ **Detailed** - Vector strings provide granular metrics  
+✅ **Actionable** - Clear severity levels guide response  
+✅ **Comparable** - Scores can be compared across systems
+
+---
+
 ## 🤖 Claude AI Integration
 
 ### How It Works

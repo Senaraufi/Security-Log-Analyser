@@ -62,6 +62,13 @@ Navigate to: **http://localhost:3000**
 - **Confidence Scoring** - Reliability indicators
 - **Actionable Recommendations** - Specific remediation steps
 
+### CVSS 3.1 Scoring
+- **Industry-Standard Severity** - CVSS 3.1 scores for all threats
+- **Individual Threat Scores** - Each threat type has specific CVSS rating
+- **Aggregate Risk Score** - Overall security posture assessment
+- **Vector Strings** - Detailed CVSS metrics (AV:N/AC:L/PR:N/etc.)
+- **Severity Levels** - None, Low, Medium, High, Critical
+
 ---
 
 ## 🛠️ Tech Stack
@@ -95,12 +102,27 @@ curl -X POST http://localhost:3000/api/analyze \
 {
   "threat_statistics": {
     "sql_injection": 5,
-    "xss_attempts": 3,
-    "path_traversal": 2,
-    "scanner_activity": 1,
     "failed_logins": 10,
     "root_attempts": 2,
-    "suspicious_file_access": 1
+    "suspicious_file_access": 1,
+    "cvss_scores": [
+      {
+        "threat_type": "SQL Injection",
+        "count": 5,
+        "cvss_score": 9.8,
+        "severity": "Critical",
+        "vector_string": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+        "explanation": "Network-accessible SQL injection..."
+      },
+      {
+        "threat_type": "Failed Login",
+        "count": 10,
+        "cvss_score": 5.3,
+        "severity": "Medium",
+        "vector_string": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
+        "explanation": "Potential brute force attack..."
+      }
+    ]
   },
   "ip_analysis": {
     "high_risk_ips": [
@@ -109,14 +131,9 @@ curl -X POST http://localhost:3000/api/analyze \
   },
   "risk_assessment": {
     "level": "HIGH",
-    "total_threats": 24,
-    "threat_score": 85
-  },
-  "ai_analysis": {
-    "summary": "Multiple critical threats detected...",
-    "threat_level": "Critical",
-    "findings": [...],
-    "recommendations": [...]
+    "total_threats": 18,
+    "cvss_aggregate_score": 10.0,
+    "cvss_severity": "Critical"
   }
 }
 ```
