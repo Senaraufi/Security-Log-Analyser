@@ -4,7 +4,7 @@ use crate::llm::analyzer::{
 };
 use crate::parsers::apache::ApacheLog;
 
-/// Mock LLM analyzer for testing without API key
+/// Mock LLM analyzer for testing without API key for development 
 /// Generates realistic-looking reports based on parsed log data
 pub struct MockAnalyzer;
 
