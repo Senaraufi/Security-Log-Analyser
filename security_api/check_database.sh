@@ -3,11 +3,11 @@
 # Quick Database Check Script
 # Shows what's been saved to the database
 
-echo "🔍 Checking Security Logs Database..."
+echo "Checking Security Logs Database..."
 echo ""
 
 # Check uploads
-echo "📊 Recent Log Uploads:"
+echo " Recent Log Uploads:"
 mysql -u root -p security_LogsDB -e "
 SELECT 
     id,
@@ -22,7 +22,7 @@ LIMIT 10;
 "
 
 echo ""
-echo "📈 Analysis Results:"
+echo "Analysis Results:"
 mysql -u root -p security_LogsDB -e "
 SELECT 
     ar.id,
@@ -38,7 +38,7 @@ LIMIT 10;
 "
 
 echo ""
-echo "🤖 AI Analyses:"
+echo "AI Analyses:"
 mysql -u root -p security_LogsDB -e "
 SELECT 
     ai.id,
@@ -54,7 +54,7 @@ LIMIT 10;
 "
 
 echo ""
-echo "📊 Summary Statistics:"
+echo "Summary Statistics:"
 mysql -u root -p security_LogsDB -e "
 SELECT 
     COUNT(*) as total_uploads,
@@ -66,4 +66,4 @@ FROM log_uploads;
 "
 
 echo ""
-echo "✅ Database check complete!"
+echo "Database check complete!"
