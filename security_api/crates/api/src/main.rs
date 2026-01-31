@@ -41,7 +41,7 @@ async fn main() {
         }
     };
     
-    let static_files = ServeDir::new("static");
+    let static_files = ServeDir::new("crates/api/static");
     
     let mut app = Router::new()
         .route("/api/analyze", post(analyze_logs))
