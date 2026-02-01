@@ -11,7 +11,7 @@ path = "src/main.rs"
 # Workspace crates
 security-common = { path = "../common" }
 security-analyzer-basic = { path = "../analyzer-basic" }
-security-analyzer-claude = { path = "../analyzer-claude", optional = true }
+security-analyzer-groq = { path = "../analyzer-groq" }
 
 # Web framework
 axum = { workspace = true }
@@ -30,6 +30,5 @@ dotenv = { workspace = true }
 regex = { workspace = true }
 
 [features]
-default = ["claude"]
+default = []
 basic-only = []
-claude = ["security-analyzer-claude"]

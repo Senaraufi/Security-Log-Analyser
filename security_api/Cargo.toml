@@ -2,7 +2,7 @@
 members = [
     "crates/common",
     "crates/analyzer-basic",
-    "crates/analyzer-claude",
+    "crates/analyzer-groq",
     "crates/api",
 ]
 resolver = "2"

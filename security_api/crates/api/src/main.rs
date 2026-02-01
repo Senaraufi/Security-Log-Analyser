@@ -15,8 +15,7 @@ use security_common::{
 };
 use security_analyzer_basic::BasicAnalyzer;
 
-#[cfg(feature = "claude")]
-use security_analyzer_claude::LLMAnalyzer;
+mod groq_handler;
 
 #[tokio::main]
 async fn main() {
@@ -45,12 +44,8 @@ async fn main() {
     
     let mut app = Router::new()
         .route("/api/analyze", post(analyze_logs))
+        .route("/api/analyze-with-ai", post(groq_handler::analyze_logs_with_groq))
         .nest_service("/", static_files);
-
-    #[cfg(feature = "claude")]
-    {
-        app = app.route("/api/analyze-with-ai", post(analyze_logs_with_ai));
-    }
     
     // Add database pool to app state if available
     if let Some(pool) = db_pool {
@@ -96,71 +91,8 @@ async fn analyze_logs(
     Json(result)
 }
 
-// Claude AI analysis endpoint
-#[cfg(feature = "claude")]
-async fn analyze_logs_with_ai(
-    Extension(db_pool): Extension<DbPool>,
-    mut multipart: Multipart,
-) -> impl IntoResponse {
-    use security_common::parsers::apache::parse_apache_combined;
-    
-    let mut content = String::new();
-    let mut filename = String::from("unknown");
-    
-    while let Some(field) = multipart.next_field().await.unwrap() {
-        let name = field.name().unwrap_or("").to_string();
-        
-        if name == "file" {
-            filename = field.file_name().unwrap_or("unknown").to_string();
-            let data = field.bytes().await.unwrap();
-            content = String::from_utf8_lossy(&data).to_string();
-        }
-    }
-    
-    println!("📝 Processing log file with Claude AI: {}", filename);
-    
-    // Parse Apache logs
-    let mut logs = Vec::new();
-    for line in content.lines() {
-        if let Ok(log) = parse_apache_combined(line) {
-            logs.push(log);
-        }
-    }
-    
-    // Get AI analysis - use the concrete implementation
-    use security_analyzer_claude::llm::analyzer::ClaudeAnalyzer;
-    let analyzer = ClaudeAnalyzer::new();
-    let ai_report = match analyzer.analyze_logs(logs.clone()).await {
-        Ok(report) => report,
-        Err(e) => {
-            eprintln!("AI analysis failed: {}", e);
-            return Json(serde_json::json!({
-                "error": format!("AI analysis failed: {}", e)
-            }));
-        }
-    };
-    
-    // Also get basic analysis
-    let basic_result = process_logs(&content);
-    
-    // Combine results
-    Json(serde_json::json!({
-        "basic_analysis": basic_result,
-        "ai_report": ai_report,
-        "report": {
-            "summary": ai_report.summary,
-            "threat_level": format!("{:?}", ai_report.threat_level),
-            "findings": ai_report.findings,
-            "attack_chains": ai_report.attack_chains,
-            "recommendations": ai_report.recommendations,
-        },
-        "total_logs": logs.len(),
-        "suspicious_logs": ai_report.findings.len(),
-    }))
-}
-
 // Process logs with basic analyzer
-fn process_logs(content: &str) -> AnalysisResult {
+pub fn process_logs(content: &str) -> AnalysisResult {
     let mut entries = Vec::new();
     let mut total_lines = 0;
     let mut parsed_lines = 0;

@@ -3,17 +3,17 @@
 [![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/license-Private-blue.svg)](LICENSE)
 [![CVSS](https://img.shields.io/badge/CVSS-3.1-green.svg)](https://www.first.org/cvss/)
-[![Claude](https://img.shields.io/badge/AI-Claude%203.5-purple.svg)](https://www.anthropic.com/)
+[![Groq](https://img.shields.io/badge/AI-Groq%20Llama%203.1-purple.svg)](https://groq.com/)
 [![Workspace](https://img.shields.io/badge/cargo-workspace-red.svg)](https://doc.rust-lang.org/cargo/reference/workspaces.html)
 
-A production-grade Rust workspace application that analyzes security logs using **CVSS 3.1 scoring**, pattern-based threat detection, and **Claude AI-powered** deep analysis with attack chain detection.
+A production-grade Rust workspace application that analyzes security logs using **CVSS 3.1 scoring**, pattern-based threat detection, and **Groq AI-powered** deep analysis with attack chain detection.
 
 ## Features
 
 ### Core Capabilities
 - **CVSS 3.1 Scoring** - Industry-standard vulnerability severity ratings
 - **Dual-Mode Analysis** - Fast regex-based + AI-powered deep analysis
-- **Attack Chain Detection** - Identifies multi-stage attacks using Claude AI
+- **Attack Chain Detection** - Identifies multi-stage attacks using Groq AI
 - **Real-time Dashboard** - Modern web UI with color-coded threat visualization
 - **10+ Threat Types** - SQL injection, XSS, malware, port scanning, and more
 - **IP Analysis** - Tracks malicious IPs with frequency analysis
@@ -23,7 +23,7 @@ A production-grade Rust workspace application that analyzes security logs using 
 ### Technical Highlights
 - **Cargo Workspace** - Modular architecture with 4 independent crates
 - **70-80% Faster Builds** - Incremental compilation with parallel builds
-- **Feature Flags** - Build with/without Claude AI analyzer
+- **Feature Flags** - Build with/without AI analyzer
 - **Production-Ready** - Type-safe Rust with comprehensive error handling
 
 ## Tech Stack
@@ -37,7 +37,7 @@ A production-grade Rust workspace application that analyzes security logs using 
 - **Regex** - Pattern matching for threat detection
 
 ### AI & Security
-- **Claude 3.5 Sonnet** - Advanced LLM for contextual analysis
+- **Groq (Llama 3.1 70B)** - Free, fast LLM for contextual analysis
 - **CVSS 3.1** - Common Vulnerability Scoring System
 - **MITRE ATT&CK** - Threat intelligence framework
 
@@ -63,11 +63,8 @@ security_api/                    # Cargo Workspace Root
 │   │   ├── src/lib.rs          # Pattern matching engine
 │   │   └── Cargo.toml
 │   │
-│   ├── analyzer-claude/         # AI-powered analysis
-│   │   ├── src/llm/
-│   │   │   ├── analyzer.rs     # Claude API integration
-│   │   │   ├── prompts.rs      # Security prompts
-│   │   │   └── mock.rs         # Testing without API
+│   ├── analyzer-groq/           # AI-powered analysis (FREE)
+│   │   ├── src/lib.rs          # Groq API integration
 │   │   └── Cargo.toml
 │   │
 │   └── api/                     # Web server (binary)
@@ -82,7 +79,7 @@ security_api/                    # Cargo Workspace Root
 │   └── ARCHITECTURE_DIAGRAM.md
 │
 ├── test_logs_standard.log      # Basic analyzer test
-└── test_logs_claude.log        # Claude analyzer test
+└── test_logs_claude.log        # AI analyzer test
 ```
 
 ## Current Status
@@ -92,7 +89,7 @@ security_api/                    # Cargo Workspace Root
 **Workspace Architecture**
 - Cargo workspace with 4 independent crates
 - 70-80% faster incremental compilation
-- Parallel builds (basic + claude compile together)
+- Parallel builds (basic + groq compile together)
 - Feature flags for flexible builds
 
 **CVSS 3.1 Scoring**
@@ -110,7 +107,7 @@ security_api/                    # Cargo Workspace Root
 - Failed Logins (CVSS 5.3)
 - Critical Alerts (CVSS 8.0)
 
-**Claude AI Analysis**
+**Groq AI Analysis (FREE)**
 - Attack chain detection with timelines
 - MITRE ATT&CK technique mapping
 - IOC extraction (IPs, patterns, user agents)
@@ -130,7 +127,7 @@ security_api/                    # Cargo Workspace Root
 ### Prerequisites
 - **Rust 1.70+**: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
 - **MySQL** (optional): For database features
-- **Claude API key** (optional): For AI analysis mode
+- **Groq API key** (FREE): For AI analysis mode - Get at https://console.groq.com
 
 ### Quick Start
 
@@ -161,7 +158,7 @@ cargo build -p security-api --no-default-features --features basic-only
 # Build specific crate
 cargo build -p security-common
 cargo build -p security-analyzer-basic
-cargo build -p security-analyzer-claude
+cargo build -p security-analyzer-groq
 ```
 
 ### Usage
@@ -171,8 +168,8 @@ cargo build -p security-analyzer-claude
    - Upload `test_logs_standard.log`
    - Get instant CVSS-scored results
 
-2. **Claude AI Analysis** (Deep, contextual)
-   - Click "Analyse Logs with Claude"
+2. **Groq AI Analysis** (Deep, contextual, FREE)
+   - Click "Analyse Logs with AI"
    - Upload `test_logs_claude.log`
    - Get AI insights + attack chains + recommendations
 
@@ -216,7 +213,7 @@ Private project - All rights reserved
 |--------|--------|-------|-------------|
 | Full build | 45-60s | 45-60s | Parallel |
 | Change basic code | 45-60s | **5-10s** | **85% faster** |
-| Change Claude code | 45-60s | **8-12s** | **80% faster** |
+| Change Groq code | 45-60s | **8-12s** | **80% faster** |
 | Change API code | 45-60s | **10-15s** | **75% faster** |
 
 ### Binary Sizes
@@ -231,11 +228,11 @@ Private project - All rights reserved
 **Status:** ✅ Production-Ready with Workspace Architecture  
 **Started:** November 2025  
 **Language:** Rust 🦀  
-**AI:** Claude 3.5 Sonnet (Anthropic)  
+**AI:** Groq (Llama 3.1 70B) - FREE  
 **Architecture:** Cargo Workspace (4 crates)  
 **CVSS:** 3.1 Compliant  
 **Current Phase:** Optimized & Modular
 
 ---
 
-**Built with Rust 🦀 | Powered by Claude AI 🤖 | Securing the web 🔒**
+**Built with Rust 🦀 | Powered by Groq AI 🤖 | Securing the web 🔒**

@@ -1,6 +1,6 @@
 # Security Log Analyzer - Complete Documentation
 
-> **Production-grade security log analysis powered by Claude AI and Rust**
+> **Production-grade security log analysis powered by Groq AI and Rust**
 
 A comprehensive security log analyzer built with a **Cargo workspace architecture**, combining CVSS 3.1 scoring, pattern-based threat detection, and AI-powered analysis for expert-level security insights.
 
@@ -17,7 +17,7 @@ A comprehensive security log analyzer built with a **Cargo workspace architectur
 7. [API Reference](#api-reference)
 8. [CVSS 3.1 Scoring](#cvss-31-scoring)
 9. [Threat Detection](#threat-detection)
-10. [Claude AI Integration](#claude-ai-integration)
+10. [Groq AI Integration](#groq-ai-integration)
 11. [Database Integration](#database-integration)
 12. [Testing](#testing)
 13. [Troubleshooting](#troubleshooting)
@@ -51,7 +51,7 @@ Navigate to: **http://localhost:3000**
 2. Select your log file (`.txt` or `.log`)
 3. Choose analysis mode:
    - **Standard Analysis** - Fast pattern-based detection with CVSS scoring
-   - **AI Analysis** - Claude-powered expert analysis with attack chains
+   - **AI Analysis** - Groq-powered expert analysis with attack chains
 4. View comprehensive security report
 
 ---
@@ -62,7 +62,7 @@ Navigate to: **http://localhost:3000**
 
 - **CVSS 3.1 Scoring** - Industry-standard vulnerability severity ratings
 - **Dual-Mode Analysis** - Fast regex-based + AI-powered deep analysis
-- **Attack Chain Detection** - Identifies multi-stage attacks using Claude AI
+- **Attack Chain Detection** - Identifies multi-stage attacks using Groq AI
 - **Real-time Dashboard** - Modern web UI with color-coded threat visualization
 - **10+ Threat Types** - SQL injection, XSS, malware, port scanning, and more
 - **IP Analysis** - Tracks malicious IPs with frequency analysis
@@ -73,7 +73,7 @@ Navigate to: **http://localhost:3000**
 
 - **Cargo Workspace** - Modular architecture with 4 independent crates
 - **70-80% Faster Builds** - Incremental compilation with parallel builds
-- **Feature Flags** - Build with/without Claude AI analyzer
+- **Feature Flags** - Build with/without Groq AI analyzer
 - **Production-Ready** - Type-safe Rust with comprehensive error handling
 - **Async Architecture** - Built on Tokio for high performance
 
@@ -126,12 +126,12 @@ security_api/                    # Cargo Workspace Root
 │   │   ├── src/lib.rs          # Pattern matching engine
 │   │   └── Cargo.toml
 │   │
-│   ├── analyzer-claude/         # AI-powered analysis
+│   ├── analyzer-groq/         # AI-powered analysis
 │   │   ├── src/
 │   │   │   ├── lib.rs
 │   │   │   └── llm/
 │   │   │       ├── mod.rs
-│   │   │       ├── analyzer.rs # Claude API integration
+│   │   │       ├── analyzer.rs # Groq API integration
 │   │   │       ├── prompts.rs  # Security prompts
 │   │   │       └── mock.rs     # Testing without API
 │   │   └── Cargo.toml
@@ -143,7 +143,7 @@ security_api/                    # Cargo Workspace Root
 │
 ├── Documentation/               # Project docs
 ├── test_logs_standard.log      # Basic analyzer test
-└── test_logs_claude.log        # Claude analyzer test
+└── test_logs_groq.log        # Groq analyzer test
 ```
 
 ### System Architecture
@@ -168,7 +168,7 @@ security_api/                    # Cargo Workspace Root
     └─────────┘    └──────────┘   └──────────┘
           │              │              │
           ▼              ▼              ▼
-    Parse Logs    Claude API      MySQL Storage
+    Parse Logs    Groq API      MySQL Storage
 ```
 
 ### Request Flow
@@ -184,7 +184,7 @@ security_api/                    # Cargo Workspace Root
    ↓
 5. CVSS module calculates individual and aggregate scores
    ↓
-6. [Optional] ClaudeAnalyzer performs AI-powered analysis
+6. [Optional] GroqAnalyzer performs AI-powered analysis
    ↓
 7. [Optional] Results saved to MySQL database
    ↓
@@ -205,7 +205,7 @@ security_api/                    # Cargo Workspace Root
 
 **Optional:**
 - **MySQL 8.0+** - For database features
-- **Claude API key** - For AI analysis mode
+- **Groq API key** - For AI analysis mode
 
 ### Install Rust
 
@@ -243,7 +243,7 @@ cargo build -p security-api --no-default-features --features basic-only
 # Build specific crate
 cargo build -p security-common
 cargo build -p security-analyzer-basic
-cargo build -p security-analyzer-claude
+cargo build -p security-analyzer-groq
 cargo build -p security-api
 ```
 
@@ -256,8 +256,8 @@ cargo build -p security-api
 Create `.env` in the `security_api/` directory:
 
 ```bash
-# Claude AI API Key (Required for AI analysis)
-ANTHROPIC_API_KEY=sk-ant-api03-your-key-here
+# Groq AI API Key (Required for AI analysis)
+GROQ_API_KEY=sk-ant-api03-your-key-here
 
 # Database Connection (Optional)
 DATABASE_URL=mysql://root:your_password@localhost:3306/security_LogsDB
@@ -270,9 +270,9 @@ SERVER_PORT=3000
 USE_MOCK_ANALYZER=false
 ```
 
-### 2. Get Claude API Key
+### 2. Get Groq API Key
 
-1. Visit [console.anthropic.com](https://console.anthropic.com/)
+1. Visit [console.groq.com](https://console.groq.com/)
 2. Sign up or log in
 3. Navigate to API Keys
 4. Create new key
@@ -328,11 +328,11 @@ mysql -u root -p security_LogsDB < database/create_tables.sql
 - High-volume log processing
 - Deterministic results
 
-### Claude AI Analysis (Deep, Contextual)
+### Groq AI Analysis (Deep, Contextual)
 
-1. Ensure `ANTHROPIC_API_KEY` is set in `.env`
-2. Click "Analyse Logs with Claude"
-3. Upload `test_logs_claude.log`
+1. Ensure `GROQ_API_KEY` is set in `.env`
+2. Click "Analyse Logs with Groq"
+3. Upload `test_logs_groq.log`
 4. Get AI insights + attack chains + recommendations
 
 **Best for:**
@@ -350,7 +350,7 @@ curl -X POST http://localhost:3000/api/analyze \
 
 # AI analysis
 curl -X POST http://localhost:3000/api/analyze-with-ai \
-  -F "file=@test_logs_claude.log"
+  -F "file=@test_logs_groq.log"
 ```
 
 ---
@@ -413,7 +413,7 @@ curl -X POST http://localhost:3000/api/analyze \
 ```
 
 ### `POST /api/analyze-with-ai`
-Analyze with Claude AI (requires API key)
+Analyze with Groq AI (requires API key)
 
 **Response includes:**
 - All standard analysis fields
@@ -539,13 +539,13 @@ aggregate_score = min(aggregate_score, 10.0); // Cap at 10.0
 
 ---
 
-## Claude AI Integration
+## Groq AI Integration
 
 ### How It Works
 
 1. **Log Parsing** - Extracts structured data from raw logs
 2. **Context Building** - Creates security-focused prompt with log samples
-3. **API Call** - Sends to Claude 3.5 Sonnet via Anthropic API
+3. **API Call** - Sends to Groq 3.5 Sonnet via Groq API
 4. **Response Parsing** - Extracts structured security report
 5. **Enrichment** - Combines with basic analysis results
 
@@ -576,7 +576,7 @@ For testing without API costs:
 USE_MOCK_ANALYZER=true
 
 # Or use mock directly in code
-use security_analyzer_claude::llm::mock::MockAnalyzer;
+use security_analyzer_groq::llm::mock::MockAnalyzer;
 let analyzer = MockAnalyzer::new();
 ```
 
@@ -661,8 +661,8 @@ cargo test -p security-common
 # Test basic analyzer
 cargo test -p security-analyzer-basic
 
-# Test Claude analyzer
-cargo test -p security-analyzer-claude
+# Test Groq analyzer
+cargo test -p security-analyzer-groq
 
 # Test API server
 cargo test -p security-api
@@ -680,13 +680,13 @@ curl -X POST http://localhost:3000/api/analyze \
 
 # Test AI analysis (requires API key)
 curl -X POST http://localhost:3000/api/analyze-with-ai \
-  -F "file=@test_logs_claude.log"
+  -F "file=@test_logs_groq.log"
 ```
 
 ### Test Files
 
 - `test_logs_standard.log` - Basic analyzer test (46 lines)
-- `test_logs_claude.log` - Claude analyzer test (64 lines)
+- `test_logs_groq.log` - Groq analyzer test (64 lines)
 - Both include various threat types for comprehensive testing
 
 ---
@@ -724,11 +724,11 @@ cargo build --release
 cargo update
 ```
 
-### Claude API Errors
+### Groq API Errors
 
 **Issue:** API key not working
-- Verify key in `.env`: `ANTHROPIC_API_KEY=sk-ant-...`
-- Check key is valid at console.anthropic.com
+- Verify key in `.env`: `GROQ_API_KEY=sk-ant-...`
+- Check key is valid at console.groq.com
 - Use mock analyzer for testing: `USE_MOCK_ANALYZER=true`
 
 **Issue:** Rate limiting
@@ -753,7 +753,7 @@ cargo update
 |--------|------------------|-----------------|-------------|
 | Full build | 45-60s | 45-60s | Parallel compilation |
 | Change basic code | 45-60s | **5-10s** | **85% faster** |
-| Change Claude code | 45-60s | **8-12s** | **80% faster** |
+| Change Groq code | 45-60s | **8-12s** | **80% faster** |
 | Change API code | 45-60s | **10-15s** | **75% faster** |
 | Change common code | 45-60s | 20-25s | **50% faster** |
 
@@ -767,7 +767,7 @@ cargo update
 
 - **Log parsing**: ~10,000 lines/second
 - **Basic analysis**: ~5,000 lines/second
-- **Claude API**: ~2-5 seconds per request (network dependent)
+- **Groq API**: ~2-5 seconds per request (network dependent)
 - **Database writes**: ~1,000 records/second
 
 ---
@@ -818,7 +818,7 @@ Add to workspace `Cargo.toml`:
 members = [
     "crates/common",
     "crates/analyzer-basic",
-    "crates/analyzer-claude",
+    "crates/analyzer-groq",
     "crates/analyzer-custom",  # New
     "crates/api",
 ]
@@ -838,7 +838,7 @@ members = [
 - **Serde** - Serialization/deserialization
 
 ### AI & Security
-- **Claude 3.5 Sonnet** - Advanced LLM for contextual analysis
+- **Groq 3.5 Sonnet** - Advanced LLM for contextual analysis
 - **CVSS 3.1** - Common Vulnerability Scoring System
 - **MITRE ATT&CK** - Threat intelligence framework
 - **Reqwest** - HTTP client for API calls
@@ -872,9 +872,9 @@ members = [
 - [Axum Documentation](https://docs.rs/axum/)
 - [Tokio Documentation](https://tokio.rs/)
 
-### Claude AI
-- [Anthropic Documentation](https://docs.anthropic.com/)
-- [Claude API Reference](https://docs.anthropic.com/claude/reference/)
+### Groq AI
+- [Groq Documentation](https://docs.groq.com/)
+- [Groq API Reference](https://docs.groq.com/groq/reference/)
 
 ---
 
@@ -889,11 +889,11 @@ Private project - All rights reserved
 **Status:** ✅ Production-Ready with Workspace Architecture  
 **Started:** November 2025  
 **Language:** Rust 🦀  
-**AI:** Claude 3.5 Sonnet (Anthropic)  
+**AI:** Groq 3.5 Sonnet (Groq)  
 **Architecture:** Cargo Workspace (4 crates)  
 **CVSS:** 3.1 Compliant  
 **Current Phase:** Optimized & Modular
 
 ---
 
-**Built with Rust 🦀 | Powered by Claude AI 🤖 | CVSS 3.1 Compliant ✅ | Enterprise-Ready 🚀**
+**Built with Rust 🦀 | Powered by Groq AI 🤖 | CVSS 3.1 Compliant ✅ | Enterprise-Ready 🚀**
