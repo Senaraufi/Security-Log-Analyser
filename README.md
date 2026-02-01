@@ -201,34 +201,6 @@ cargo build --release
 - **[Documentation/CVSS_IMPLEMENTATION.md](Documentation/CVSS_IMPLEMENTATION.md)** - CVSS scoring system
 - **[Documentation/SETUP_AND_TESTING.md](Documentation/SETUP_AND_TESTING.md)** - Setup guide
 
-## 🔐 Security & API Keys
-
-### ✅ API Key Protection
-
-Your API keys are **safe and protected**:
-
-- `.env` files are in `.gitignore` (not tracked by git)
-- No API keys in documentation (only placeholders)
-- `.env.example` provided as template
-- All sensitive data excluded from repository
-
-### Setting Up Your API Key
-
-```bash
-# 1. Copy the example file
-cp security_api/.env.example security_api/.env
-
-# 2. Edit .env and add your key
-ANTHROPIC_API_KEY=your_actual_key_here
-
-# 3. Never commit .env file (already in .gitignore)
-```
-
-### Testing Without API Key
-
-Set `USE_MOCK_ANALYZER=true` in `.env` to test without API costs.
-
----
 
 ## License
 
