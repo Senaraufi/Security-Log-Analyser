@@ -4,8 +4,8 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                         CARGO WORKSPACE ROOT                             │
-│                         (security_api/)                                  │
+│                         CARGO WORKSPACE ROOT                            │
+│                         (security_api/)                                 │
 └─────────────────────────────────────────────────────────────────────────┘
                                     │
                     ┌───────────────┼───────────────┐
@@ -40,88 +40,88 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                                                                              │
-│  ┌────────────────────────────────────────────────────────────────────┐    │
-│  │                    CRATE: security-common                           │    │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐             │    │
-│  │  │   Models     │  │     CVSS     │  │   Parsers    │             │    │
-│  │  │              │  │   Scoring    │  │   (Apache)   │             │    │
-│  │  │ • LogEntry   │  │              │  │              │             │    │
-│  │  │ • ThreatStats│  │ • ThreatType │  │ • parse_log  │             │    │
-│  │  │ • IpInfo     │  │ • Severity   │  │ • formats    │             │    │
-│  │  │ • Analysis   │  │ • calculate  │  │ • validation │             │    │
-│  │  └──────────────┘  └──────────────┘  └──────────────┘             │    │
-│  │                                                                     │    │
-│  │  ┌──────────────────────────────────────────────────────────┐     │    │
-│  │  │              Database Layer                               │     │    │
-│  │  │  • models.rs  • queries.rs  • mod.rs                     │     │    │
-│  │  └──────────────────────────────────────────────────────────┘     │    │
-│  └────────────────────────────────────────────────────────────────────┘    │
-│                                    ▲                                         │
-│                                    │ (depends on)                            │
+│                                                                             │
+│  ┌────────────────────────────────────────────────────────────────────┐     │      
+│  │                    CRATE: security-common                          │     │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │     │
+│  │  │   Models     │  │     CVSS     │  │   Parsers    │              │     │
+│  │  │              │  │   Scoring    │  │   (Apache)   │              │     │
+│  │  │ • LogEntry   │  │              │  │              │              │     │
+│  │  │ • ThreatStats│  │ • ThreatType │  │ • parse_log  │              │     │
+│  │  │ • IpInfo     │  │ • Severity   │  │ • formats    │              │     │
+│  │  │ • Analysis   │  │ • calculate  │  │ • validation │              │     │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘              │     │
+│  │                                                                    │     │
+│  │  ┌──────────────────────────────────────────────────────────┐      │     │
+│  │  │              Database Layer                              │      │     │
+│  │  │  • models.rs  • queries.rs  • mod.rs                     │      │     │
+│  │  └──────────────────────────────────────────────────────────┘      │     │
+│  └────────────────────────────────────────────────────────────────────┘     │
+│                                    ▲                                        │
+│                                    │ (depends on)                           │
 │  ┌─────────────────────────────────┼──────────────────────────────────┐    │
-│  │                                 │                                   │    │
+│  │                                 │                                  |    │
 │  │  ┌──────────────────────────────┴────────────────────────────┐     │    │
-│  │  │           CRATE: security-analyzer-basic                   │     │    │
+│  │  │           CRATE: security-analyzer-basic                  │     │    │
 │  │  │  ┌────────────────────────────────────────────────────┐   │     │    │
-│  │  │  │  BasicAnalyzer                                      │   │     │    │
+│  │  │  │  BasicAnalyzer                                     │   │     │    │
 │  │  │  │  • analyze(entries) -> BasicAnalysisResult         │   │     │    │
 │  │  │  │  • generate_cvss_scores()                          │   │     │    │
-│  │  │  │                                                     │   │     │    │
+│  │  │  │                                                    │   │     │    │
 │  │  │  │  Pattern Matching:                                 │   │     │    │
-│  │  │  │  ✓ SQL Injection      ✓ Failed Logins             │   │     │    │
-│  │  │  │  ✓ Root Access        ✓ File Access               │   │     │    │
-│  │  │  │  ✓ Port Scanning      ✓ Malware                   │   │     │    │
+│  │  │  │  ✓ SQL Injection      ✓ Failed Logins              │   │     │    │
+│  │  │  │  ✓ Root Access        ✓ File Access                │   │     │    │
+│  │  │  │  ✓ Port Scanning      ✓ Malware                    │   │     │    │
 │  │  │  │  ✓ Critical Alerts                                 │   │     │    │
 │  │  │  └────────────────────────────────────────────────────┘   │     │    │
 │  │  └───────────────────────────────────────────────────────────┘     │    │
-│  │                                                                     │    │
-│  │  ┌──────────────────────────────────────────────────────────┐     │    │
-│  │  │           CRATE: security-analyzer-claude                 │     │    │
-│  │  │  ┌────────────────────────────────────────────────────┐  │     │    │
-│  │  │  │  ClaudeAnalyzer                                     │  │     │    │
-│  │  │  │  • analyze_logs(logs) -> SecurityReport            │  │     │    │
-│  │  │  │  • call_claude_api()                               │  │     │    │
-│  │  │  │  • parse_claude_response()                         │  │     │    │
-│  │  │  │                                                     │  │     │    │
-│  │  │  │  LLM Features:                                      │  │     │    │
-│  │  │  │  ✓ Attack Chain Detection                          │  │     │    │
-│  │  │  │  ✓ Contextual Analysis                             │  │     │    │
-│  │  │  │  ✓ MITRE ATT&CK Mapping                            │  │     │    │
-│  │  │  │  ✓ IOC Extraction                                  │  │     │    │
-│  │  │  │  ✓ Recommendations                                 │  │     │    │
-│  │  │  └────────────────────────────────────────────────────┘  │     │    │
-│  │  │  ┌────────────────────────────────────────────────────┐  │     │    │
-│  │  │  │  MockAnalyzer (for testing)                        │  │     │    │
-│  │  │  └────────────────────────────────────────────────────┘  │     │    │
-│  │  └──────────────────────────────────────────────────────────┘     │    │
-│  │                                                                     │    │
-│  │  ┌──────────────────────────────────────────────────────────┐     │    │
-│  │  │              CRATE: security-api (binary)                 │     │    │
-│  │  │  ┌────────────────────────────────────────────────────┐  │     │    │
-│  │  │  │  Axum Web Server                                    │  │     │    │
-│  │  │  │                                                     │  │     │    │
-│  │  │  │  Endpoints:                                         │  │     │    │
-│  │  │  │  • POST /api/analyze          (basic)              │  │     │    │
-│  │  │  │  • POST /api/analyze-with-ai  (claude)             │  │     │    │
-│  │  │  │  • GET  /                     (static files)       │  │     │    │
-│  │  │  │                                                     │  │     │    │
-│  │  │  │  Features:                                          │  │     │    │
-│  │  │  │  • Multipart file upload                           │  │     │    │
-│  │  │  │  • JSON responses                                  │  │     │    │
-│  │  │  │  • Database integration                            │  │     │    │
-│  │  │  │  • Static file serving                             │  │     │    │
-│  │  │  └────────────────────────────────────────────────────┘  │     │    │
-│  │  │  ┌────────────────────────────────────────────────────┐  │     │    │
-│  │  │  │  Frontend (static/index.html)                      │  │     │    │
-│  │  │  │  • Dark theme UI                                   │  │     │    │
-│  │  │  │  • CVSS score visualization                        │  │     │    │
-│  │  │  │  • Threat cards with details                       │  │     │    │
-│  │  │  │  • IP analysis dashboard                           │  │     │    │
-│  │  │  └────────────────────────────────────────────────────┘  │     │    │
-│  │  └──────────────────────────────────────────────────────────┘     │    │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────────────┘
+│  │                                                                    │    │
+│  │  ┌──────────────────────────────────────────────────────────┐      │    │
+│  │  │           CRATE: security-analyzer-claude                │      │    │
+│  │  │  ┌────────────────────────────────────────────────────┐  │      │    │
+│  │  │  │  ClaudeAnalyzer                                    │  │      │    │
+│  │  │  │  • analyze_logs(logs) -> SecurityReport            │  │      │    │
+│  │  │  │  • call_claude_api()                               │  │      │    │
+│  │  │  │  • parse_claude_response()                         │  │      │    │
+│  │  │  │                                                    │  │      │    │
+│  │  │  │  LLM Features:                                     │  │      │    │
+│  │  │  │  ✓ Attack Chain Detection                          │  │      │    │
+│  │  │  │  ✓ Contextual Analysis                             │  │      │    │
+│  │  │  │  ✓ MITRE ATT&CK Mapping                            │  │      │    │
+│  │  │  │  ✓ IOC Extraction                                  │  │      │    │
+│  │  │  │  ✓ Recommendations                                 │  │      │    │
+│  │  │  └────────────────────────────────────────────────────┘  │      │    │
+│  │  │  ┌────────────────────────────────────────────────────┐  │      │    │
+│  │  │  │  MockAnalyzer (for testing)                        │  │      │    │
+│  │  │  └────────────────────────────────────────────────────┘  │      │    │
+│  │  └──────────────────────────────────────────────────────────┘      │    │
+│  │                                                                    │    │
+│  │  ┌──────────────────────────────────────────────────────────┐      │    │
+│  │  │              CRATE: security-api (binary)                │      │    │
+│  │  │  ┌────────────────────────────────────────────────────┐  │      │    │
+│  │  │  │  Axum Web Server                                   │  │      │    │
+│  │  │  │                                                    │  │      │    │
+│  │  │  │  Endpoints:                                        │  │      │    │
+│  │  │  │  • POST /api/analyze          (basic)              │  │      │    │
+│  │  │  │  • POST /api/analyze-with-ai  (claude)             │  │      │    │
+│  │  │  │  • GET  /                     (static files)       │  │      │    │
+│  │  │  │                                                    │  │      │    │
+│  │  │  │  Features:                                         │  │      │    │
+│  │  │  │  • Multipart file upload                           │  │      │    │
+│  │  │  │  • JSON responses                                  │  │      │    │
+│  │  │  │  • Database integration                            │  │      │    │
+│  │  │  │  • Static file serving                             │  │      │    │
+│  │  │  └────────────────────────────────────────────────────┘  │      │    │
+│  │  │  ┌────────────────────────────────────────────────────┐  │      │    │
+│  │  │  │  Frontend (static/index.html)                      │  │      │    │
+│  │  │  │  • Dark theme UI                                   │  │      │    │
+│  │  │  │  • CVSS score visualization                        │  │      │    │
+│  │  │  │  • Threat cards with details                       │  │      │    │
+│  │  │  │  • IP analysis dashboard                           │  │      │    │
+│  │  │  └────────────────────────────────────────────────────┘  │      │    │
+│  │  └──────────────────────────────────────────────────────────┘      │    │
+│  └────────────────────────────────────────────────────────────────────┘    │
+└────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -285,11 +285,11 @@
 │   security-api                       │
 │                                      │
 │   Features:                          │
-│   ┌────────────────────────────┐    │
-│   │ default = ["claude"]       │    │
-│   │ basic-only = []            │    │
-│   │ claude = ["analyzer-claude"]│   │
-│   └────────────────────────────┘    │
+│   ┌────────────────────────────┐     │
+│   │ default = ["claude"]       │     │
+│   │ basic-only = []            │     │
+│   │ claude = ["analyzer-claude"]│    │
+│   └────────────────────────────┘     │
 └──────────────────────────────────────┘
 
 Build Options:
@@ -375,12 +375,6 @@ security_api/
 └── corporate_frontend.html       # Old frontend (unused)
 ```
 
-**Note:** Cleaned up! Removed:
-- ❌ `src/` (moved to `crates/`)
-- ❌ `examples/` (outdated)
-- ❌ `target/` (build cache - 2.7 GB saved!)
-- ❌ `Cargo.toml.old` (backup)
-
 ---
 
 ## Technology Stack
@@ -422,12 +416,3 @@ security_api/
 ```
 
 ---
-
-## Key Architectural Benefits
-
-1. **Modularity**: Each analyzer is independent
-2. **Parallel Compilation**: Basic and Claude compile simultaneously
-3. **Feature Flags**: Build only what you need
-4. **Shared Code**: Common library prevents duplication
-5. **Scalability**: Easy to add new analyzers
-6. **Testability**: Each crate can be tested independently
