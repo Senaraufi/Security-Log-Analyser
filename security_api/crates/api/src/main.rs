@@ -93,6 +93,8 @@ async fn analyze_logs(
 
 // Process logs with basic analyzer
 pub fn process_logs(content: &str) -> AnalysisResult {
+    use security_common::parsers::apache::parse_apache_combined;
+    
     let mut entries = Vec::new();
     let mut total_lines = 0;
     let mut parsed_lines = 0;
@@ -101,7 +103,7 @@ pub fn process_logs(content: &str) -> AnalysisResult {
     let mut alternative_format = 0;
     let mut fallback_format = 0;
     
-    // Parse all lines
+    // Parse all lines as Apache logs
     for line in content.lines() {
         total_lines += 1;
         
@@ -109,10 +111,25 @@ pub fn process_logs(content: &str) -> AnalysisResult {
             continue;
         }
         
-        // Try to parse the line
-        if let Some(entry) = parse_log_line(line) {
+        // Try to parse as Apache log
+        if let Ok(apache_log) = parse_apache_combined(line) {
             parsed_lines += 1;
             perfect_format += 1;
+            
+            // Convert Apache log to LogEntry for basic analyzer
+            let entry = LogEntry {
+                timestamp: apache_log.timestamp.to_string(),
+                level: if apache_log.status >= 500 {
+                    "CRITICAL".to_string()
+                } else if apache_log.status >= 400 {
+                    "ERROR".to_string()
+                } else {
+                    "INFO".to_string()
+                },
+                ip_address: Some(apache_log.ip.clone()),
+                username: None, // Apache logs don't have username in this format
+                message: format!("{} {} - Status: {}", apache_log.method, apache_log.path, apache_log.status),
+            };
             entries.push(entry);
         } else if parse_errors.len() < 10 {
             parse_errors.push(ParseError {
@@ -123,7 +140,7 @@ pub fn process_logs(content: &str) -> AnalysisResult {
                     line.to_string()
                 },
                 error_type: "Parse failed".to_string(),
-                suggestion: "Check log format".to_string(),
+                suggestion: "Check Apache log format".to_string(),
             });
         }
     }

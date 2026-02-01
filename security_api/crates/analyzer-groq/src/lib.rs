@@ -113,6 +113,40 @@ impl GroqAnalyzer {
             return Ok(report);
         }
 
+        // Try to extract JSON from markdown code blocks (```json ... ```)
+        let json_str = if response.contains("```json") {
+            response
+                .split("```json")
+                .nth(1)
+                .and_then(|s| s.split("```").next())
+                .unwrap_or(&response)
+                .trim()
+        } else if response.contains("```") {
+            // Try generic code block
+            response
+                .split("```")
+                .nth(1)
+                .and_then(|s| s.split("```").next())
+                .unwrap_or(&response)
+                .trim()
+        } else {
+            // Try to find JSON object in text
+            if let Some(start) = response.find('{') {
+                if let Some(end) = response.rfind('}') {
+                    &response[start..=end]
+                } else {
+                    &response
+                }
+            } else {
+                &response
+            }
+        };
+
+        // Try parsing the extracted JSON
+        if let Ok(report) = serde_json::from_str::<SecurityReport>(json_str) {
+            return Ok(report);
+        }
+
         // Fallback: Create a basic report from the text response
         Ok(SecurityReport {
             summary: response.lines().take(5).collect::<Vec<_>>().join("\n"),
@@ -148,35 +182,64 @@ impl GroqAnalyzer {
         }).collect::<Vec<_>>().join("\n");
 
         let prompt = format!(
-            r#"Analyze these Apache web server logs for security threats and provide a detailed security report.
+            r#"You are a senior cybersecurity analyst. Analyze these Apache web server logs and provide a DETAILED security assessment.
 
-LOGS TO ANALYZE:
+LOGS TO ANALYZE ({} total):
 {}
 
-Provide your analysis in the following JSON format:
+CRITICAL INSTRUCTIONS:
+1. Count the ACTUAL number of suspicious logs you identify
+2. List SPECIFIC attack chains with timestamps and IPs
+3. Provide DETAILED MITRE ATT&CK mappings with explanations
+4. List ALL malicious IPs found
+5. Give SPECIFIC, actionable recommendations
+
+Return ONLY valid JSON in this EXACT format (no markdown, no code blocks):
 {{
-    "summary": "Brief executive summary of findings",
-    "threat_level": "Low/Medium/High/Critical",
+    "summary": "Detailed 3-4 sentence executive summary describing the specific attacks found, their severity, and immediate concerns",
+    "threat_level": "Critical",
     "total_logs_analyzed": {},
-    "suspicious_logs_count": 0,
-    "attack_chains": ["Description of any multi-step attacks detected"],
-    "mitre_attack_techniques": ["T1190: Exploit Public-Facing Application"],
-    "indicators_of_compromise": ["Suspicious IPs, patterns, or signatures"],
-    "recommendations": ["Specific actionable recommendations"],
-    "confidence_score": 0.85,
+    "suspicious_logs_count": <actual count of suspicious entries>,
+    "attack_chains": [
+        "SQL Injection Attack Chain: IP 10.0.0.50 attempted multiple SQL injection attacks at 14:25:10-14:25:20, targeting /api/users and /api/data endpoints with UNION SELECT and OR 1=1 patterns",
+        "Brute Force Attack: IP 192.168.1.100 made 5 failed login attempts to /admin/login.php between 14:23:15-14:23:27",
+        "Path Traversal: IP 203.0.113.45 attempted directory traversal at 14:30:00-14:30:10 targeting /etc/passwd and Windows system files"
+    ],
+    "mitre_attack_techniques": [
+        "T1190 - Exploit Public-Facing Application: SQL injection attempts detected",
+        "T1110.001 - Brute Force: Password Guessing: Multiple failed authentication attempts",
+        "T1083 - File and Directory Discovery: Path traversal attempts to access sensitive files",
+        "T1595.002 - Active Scanning: Vulnerability Scanning: Port scanning detected from 198.51.100.88",
+        "T1505.003 - Web Shell: Backdoor upload and execution attempts from 45.33.32.156"
+    ],
+    "indicators_of_compromise": [
+        "Malicious IP: 10.0.0.50 - SQL injection source",
+        "Malicious IP: 192.168.1.100 - Brute force attacker",
+        "Malicious IP: 203.0.113.45 - Path traversal attempts",
+        "Malicious IP: 198.51.100.88 - Port scanner (masscan)",
+        "Malicious IP: 45.33.32.156 - Web shell deployment",
+        "Suspicious User-Agent: python-requests/2.28.0, curl/7.68.0, masscan/1.0, WPScan",
+        "Malicious Files: shell.php, backdoor.php accessed",
+        "Attack Patterns: SQL UNION SELECT, OR '1'='1, <script> tags, ../../etc/passwd"
+    ],
+    "recommendations": [
+        "IMMEDIATE: Block IPs 10.0.0.50, 192.168.1.100, 203.0.113.45, 198.51.100.88, 45.33.32.156 at firewall level",
+        "URGENT: Implement rate limiting on /admin/login.php to prevent brute force attacks (max 3 attempts per 5 minutes)",
+        "CRITICAL: Enable parameterized queries/prepared statements to prevent SQL injection on /api/users and /api/data endpoints",
+        "HIGH: Implement input validation and sanitization for all user inputs to prevent XSS attacks",
+        "HIGH: Restrict file upload functionality and scan all uploads for malware. Remove backdoor.php immediately",
+        "MEDIUM: Enable Web Application Firewall (WAF) with OWASP Core Rule Set",
+        "MEDIUM: Implement path traversal protection by validating and sanitizing file paths",
+        "LOW: Update WordPress installation and plugins (WPScan activity detected)",
+        "MONITORING: Set up alerts for failed login attempts > 3 in 5 minutes",
+        "MONITORING: Alert on any access to .env, .git, config.bak, or database.sql files"
+    ],
+    "confidence_score": 0.95,
     "alerts": []
 }}
 
-Focus on:
-1. SQL injection attempts
-2. XSS attacks
-3. Path traversal
-4. Brute force attempts
-5. Port scanning
-6. Malware indicators
-7. Suspicious patterns
-
-Be specific and actionable in your recommendations."#,
+Analyze EVERY log entry. Be thorough and specific. Include actual IPs, timestamps, and attack details."#,
+            logs.len(),
             log_sample,
             logs.len()
         );

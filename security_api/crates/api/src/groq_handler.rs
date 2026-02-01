@@ -48,9 +48,16 @@ pub async fn analyze_logs_with_groq(
     // Also get basic analysis
     let basic_result = super::process_logs(&content);
     
-    // Combine results
+    // Combine results - flatten structure for UI compatibility
     Json(serde_json::json!({
-        "basic_analysis": basic_result,
+        // Basic analysis data (for threat distribution, IP analysis, parsing stats)
+        "threat_statistics": basic_result.threat_statistics,
+        "ip_analysis": basic_result.ip_analysis,
+        "risk_assessment": basic_result.risk_assessment,
+        "parsing_info": basic_result.parsing_info,
+        "alerts": basic_result.alerts,
+        
+        // AI analysis data
         "ai_report": ai_report,
         "report": {
             "summary": ai_report.summary,

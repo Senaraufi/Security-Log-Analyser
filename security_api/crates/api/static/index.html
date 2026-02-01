@@ -1008,7 +1008,12 @@
         }
 
         function displayAIResults(data) {
-            // First display metrics
+            // First call displayResults to populate all the basic analysis sections
+            if (data.threat_statistics && data.ip_analysis && data.parsing_info) {
+                displayResults(data);
+            }
+            
+            // Then override metrics with AI-specific data
             const metricsGrid = document.getElementById('metrics-grid');
             metricsGrid.innerHTML = `
                 <div class="metric-card">
@@ -1028,7 +1033,7 @@
                         </svg>
                         <span class="metric-change">+12%</span>
                     </div>
-                    <div class="metric-value">${data.suspicious_logs}</div>
+                    <div class="metric-value">${data.risk_assessment ? data.risk_assessment.total_threats : data.suspicious_logs}</div>
                     <div class="metric-label">Threats Detected</div>
                 </div>
                 <div class="metric-card">
@@ -1038,7 +1043,7 @@
                         </svg>
                         <span class="metric-change">-3%</span>
                     </div>
-                    <div class="metric-value">${data.suspicious_logs}</div>
+                    <div class="metric-value">${data.ip_analysis ? data.ip_analysis.high_risk_ips.length : 0}</div>
                     <div class="metric-label">Blocked IPs</div>
                 </div>
                 <div class="metric-card">
@@ -1048,7 +1053,7 @@
                         </svg>
                         <span class="metric-change">+5%</span>
                     </div>
-                    <div class="metric-value">100%</div>
+                    <div class="metric-value">${data.parsing_info ? Math.round((data.parsing_info.format_quality.perfect_format / data.parsing_info.total_lines) * 100) : 100}%</div>
                     <div class="metric-label">Format Quality</div>
                 </div>
             `;
