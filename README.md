@@ -192,11 +192,9 @@ cargo build --release
 
 ### Documentation
 
-- **[ARCHITECTURE_DIAGRAM.md](security_api/ARCHITECTURE_DIAGRAM.md)** - Visual workspace architecture
-- **[WORKSPACE_MIGRATION_COMPLETE.md](security_api/WORKSPACE_MIGRATION_COMPLETE.md)** - Migration guide
-- **[Documentation/TECHNICAL_GUIDE.md](Documentation/TECHNICAL_GUIDE.md)** - Technical details
-- **[Documentation/CVSS_IMPLEMENTATION.md](Documentation/CVSS_IMPLEMENTATION.md)** - CVSS scoring system
-- **[Documentation/SETUP_AND_TESTING.md](Documentation/SETUP_AND_TESTING.md)** - Setup guide
+- **[ProjectStructure.md](Documentation/ProjectStructure.md)** - Visual workspace architecture
+- **[Complete_Guide](Documentation/COMPLETE_GUIDE.md)** - Visual workspace architecture
+
 
 
 ## License
