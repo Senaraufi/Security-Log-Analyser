@@ -418,19 +418,88 @@
 
         /* Footer */
         .footer {
-            padding: 1.5rem 2rem;
-            text-align: center;
+            padding: 2rem 2rem 1.5rem;
             border-top: 1px solid #1a1a1a;
             margin-top: auto;
+            background: #0a0a0a;
         }
         
-        .footer-text {
-            font-size: 0.8125rem;
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        .footer-left {
+            text-align: left;
+        }
+        
+        .footer-center {
+            text-align: center;
+        }
+        
+        .footer-right {
+            text-align: right;
+        }
+        
+        .footer-brand {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--neutral-100);
+            margin-bottom: 0.5rem;
+        }
+        
+        .footer-tagline {
+            font-size: 0.875rem;
             color: #525252;
         }
         
-        .trademark {
-            margin-top: 0.5rem;
+        .footer-links {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .footer-link {
+            color: #737373;
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: color 0.2s;
+        }
+        
+        .footer-link:hover {
+            color: var(--cyan-400);
+        }
+        
+        .footer-social {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+        
+        .social-link {
+            color: #737373;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+        
+        .social-link:hover {
+            color: var(--cyan-400);
+        }
+        
+        .footer-bottom {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #1a1a1a;
+            text-align: center;
             font-size: 0.75rem;
             color: #404040;
         }
@@ -457,6 +526,91 @@
         .help-button:hover {
             background: #262626;
             border-color: #404040;
+        }
+        
+        /* Help Modal */
+        .help-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .help-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        
+        .help-content {
+            background: var(--neutral-900);
+            border: 1px solid var(--neutral-800);
+            border-radius: 0.5rem;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+        
+        .help-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--neutral-800);
+        }
+        
+        .help-close {
+            background: none;
+            border: none;
+            color: var(--neutral-400);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            line-height: 1;
+        }
+        
+        .help-close:hover {
+            color: var(--neutral-100);
+        }
+        
+        .help-section {
+            margin-bottom: 2rem;
+        }
+        
+        .help-section h3 {
+            color: var(--cyan-400);
+            margin-bottom: 0.75rem;
+            font-size: 1.125rem;
+        }
+        
+        .help-section p {
+            color: var(--neutral-300);
+            line-height: 1.6;
+            margin-bottom: 0.75rem;
+        }
+        
+        .help-section ul {
+            color: var(--neutral-300);
+            line-height: 1.8;
+            padding-left: 1.5rem;
+        }
+        
+        .help-section code {
+            background: var(--neutral-800);
+            padding: 0.125rem 0.375rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+            font-size: 0.875rem;
+            color: var(--cyan-400);
         }
         
         #landing-page {
@@ -569,12 +723,127 @@
             </div>
 
             <div class="footer">
-                <div class="footer-text">SOC Analyst Dashboard • Real-time Threat Detection • Enterprise Grade Security</div>
-                <div class="trademark">© 2025 Senaraufi. All rights reserved.</div>
+                <div class="footer-content">
+                    <div class="footer-left">
+                        <div class="footer-brand">Security Log Analyzer</div>
+                        <div class="footer-tagline">Enterprise-Grade Threat Intelligence</div>
+                    </div>
+                    
+                    <div class="footer-center">
+                        <div class="footer-links">
+                            <a href="https://github.com/Senaraufi" target="_blank" class="footer-link">GitHub</a>
+                            <a href="https://www.linkedin.com/in/sena-raufi-610187293/" target="_blank" class="footer-link">LinkedIn</a>
+                        </div>
+                    </div>
+                    
+                    <div class="footer-right">
+                        <div class="footer-social">
+                            <a href="https://senaraufi.github.io/website_rs/" target="_blank" class="social-link">
+                                <svg class="icon-sm" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                                </svg>
+                                Dev by Senaraufi
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="footer-bottom">
+                    © 2025 Senaraufi. All rights reserved. | Built with Rust | Powered by Groq AI
+                </div>
             </div>
         </div>
         
-        <button class="help-button" onclick="alert('Help documentation coming soon!')">?</button>
+        <button class="help-button" onclick="toggleHelp()">?</button>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="help-modal" class="help-modal">
+        <div class="help-content">
+            <div class="help-header">
+                <h2 style="margin: 0; color: var(--neutral-100);">Documentation</h2>
+                <button class="help-close" onclick="toggleHelp()">&times;</button>
+            </div>
+            
+            <div class="help-section">
+                <h3>Getting Started</h3>
+                <p>This platform provides comprehensive security log analysis using pattern-based detection and AI-powered threat intelligence.</p>
+                <ul>
+                    <li>Upload Apache web server logs in Combined Log Format</li>
+                    <li>Choose between Standard or AI-powered analysis</li>
+                    <li>Review detailed threat assessments with CVSS scoring</li>
+                </ul>
+            </div>
+            
+            <div class="help-section">
+                <h3>Analysis Modes</h3>
+                <p><strong>Standard Analysis:</strong> Fast, pattern-based threat detection using regex and heuristics. Provides CVSS 3.1 scoring, IP analysis, and parsing statistics.</p>
+                <p><strong>AI Analysis:</strong> Advanced analysis using Groq AI (Llama 3.1 70B). Includes attack chain detection, MITRE ATT&CK mapping, and contextual recommendations.</p>
+            </div>
+            
+            <div class="help-section">
+                <h3>Supported Log Format</h3>
+                <p>Apache Combined Log Format:</p>
+                <code>IP - - [timestamp] "METHOD /path HTTP/1.1" status size "referer" "user-agent"</code>
+                <p style="margin-top: 0.5rem;">Example:</p>
+                <code>192.168.1.1 - - [01/Feb/2026:14:23:15 +0000] "GET /admin HTTP/1.1" 401 567 "-" "Mozilla/5.0"</code>
+            </div>
+            
+            <div class="help-section">
+                <h3>Threat Detection</h3>
+                <p>The system detects the following threat types:</p>
+                <ul>
+                    <li>SQL Injection (CVSS 9.8)</li>
+                    <li>Cross-Site Scripting (XSS) (CVSS 7.5)</li>
+                    <li>Path Traversal (CVSS 7.5)</li>
+                    <li>Brute Force Attacks (CVSS 5.3)</li>
+                    <li>Port Scanning (CVSS 5.3)</li>
+                    <li>Malware/Web Shells (CVSS 8.8)</li>
+                    <li>Root Access Attempts (CVSS 8.8)</li>
+                </ul>
+            </div>
+            
+            <div class="help-section">
+                <h3>Understanding Results</h3>
+                <p><strong>Threat Distribution:</strong> Shows detected threats with CVSS scores and severity levels.</p>
+                <p><strong>IP Analysis:</strong> Lists high-risk IP addresses with request counts. IPs with 3+ requests are flagged.</p>
+                <p><strong>Parsing Statistics:</strong> Displays log parsing success rate and format quality metrics.</p>
+                <p><strong>AI Analysis:</strong> Provides executive summary, attack chains, MITRE ATT&CK techniques, and actionable recommendations.</p>
+            </div>
+            
+            <div class="help-section">
+                <h3>CVSS Scoring</h3>
+                <p>Common Vulnerability Scoring System (CVSS) 3.1 severity levels:</p>
+                <ul>
+                    <li><strong>Critical:</strong> 9.0-10.0 - Immediate action required</li>
+                    <li><strong>High:</strong> 7.0-8.9 - Urgent attention needed</li>
+                    <li><strong>Medium:</strong> 4.0-6.9 - Review recommended</li>
+                    <li><strong>Low:</strong> 0.1-3.9 - Informational</li>
+                </ul>
+            </div>
+            
+            <div class="help-section">
+                <h3>Best Practices</h3>
+                <ul>
+                    <li>Analyze logs regularly to detect threats early</li>
+                    <li>Use AI analysis for complex or suspicious activity</li>
+                    <li>Review and implement recommended security measures</li>
+                    <li>Monitor high-risk IPs and block repeat offenders</li>
+                    <li>Keep logs for compliance and forensic analysis</li>
+                </ul>
+            </div>
+            
+            <div class="help-section">
+                <h3>Technical Support</h3>
+                <p>For technical issues or questions:</p>
+                <ul>
+                    <li>Ensure logs are in Apache Combined Log Format</li>
+                    <li>Check that Groq API key is configured for AI analysis</li>
+                    <li>Verify file size is under 10MB for optimal performance</li>
+                    <li>Use UTF-8 encoding for log files</li>
+                </ul>
+            </div>
+        </div>
     </div>
 
     <!-- Dashboard Page -->
@@ -679,6 +948,11 @@
     <script>
         let currentMode = null;
         let currentFile = null;
+
+        function toggleHelp() {
+            const modal = document.getElementById('help-modal');
+            modal.classList.toggle('active');
+        }
 
         // Security: Sanitize HTML to prevent XSS attacks
         function escapeHtml(unsafe) {
