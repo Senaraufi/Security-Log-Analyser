@@ -31,7 +31,7 @@ A comprehensive security log analyzer built with a **Cargo workspace architectur
 ### 1. Start the Server
 
 ```bash
-cd /Users/senaraufi/Desktop/Startup/security_api
+cd security_api
 cargo run -p security-api --release
 ```
 
@@ -222,7 +222,7 @@ cargo --version
 
 ```bash
 # Navigate to project
-cd /Users/senaraufi/Desktop/Startup/security_api
+cd security_api
 
 # Build entire workspace (release mode)
 cargo build --release
@@ -307,7 +307,7 @@ mysql -u root -p
 CREATE DATABASE security_LogsDB;
 
 # Run schema
-mysql -u root -p security_LogsDB < create_tables.sql
+mysql -u root -p security_LogsDB < database/create_tables.sql
 ```
 
 ---
