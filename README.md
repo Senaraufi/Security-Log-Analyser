@@ -1,12 +1,15 @@
 # Security Log Analyzer - AI-Powered Threat Intelligence
 
 [![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org/)
-[![License](https://img.shields.io/badge/license-Private-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![CVSS](https://img.shields.io/badge/CVSS-3.1-green.svg)](https://www.first.org/cvss/)
-[![Groq](https://img.shields.io/badge/AI-Groq%20Llama%203.1-purple.svg)](https://groq.com/)
+[![Groq](https://img.shields.io/badge/AI-Groq%20Llama%203.3-purple.svg)](https://groq.com/)
 [![Workspace](https://img.shields.io/badge/cargo-workspace-red.svg)](https://doc.rust-lang.org/cargo/reference/workspaces.html)
 
-A production-grade Rust workspace application that analyzes security logs using **CVSS 3.1 scoring**, pattern-based threat detection, and **Groq AI-powered** deep analysis with attack chain detection.
+A production-grade Rust workspace application that analyzes Apache web server logs using **CVSS 3.1 scoring**, pattern-based threat detection, and **Groq AI-powered** deep analysis with attack chain detection and MITRE ATT&CK mapping.
+
+**Live Demo:** [senaraufi.github.io/website_rs](https://senaraufi.github.io/website_rs/)  
+**Developer:** [Sena Raufi](https://github.com/Senaraufi) | [LinkedIn](https://www.linkedin.com/in/sena-raufi-610187293/)
 
 ## Features
 
@@ -37,9 +40,10 @@ A production-grade Rust workspace application that analyzes security logs using 
 - **Regex** - Pattern matching for threat detection
 
 ### AI & Security
-- **Groq (Llama 3.1 70B)** - Free, fast LLM for contextual analysis
+- **Groq (Llama 3.3 70B Versatile)** - Free, fast LLM for contextual analysis
 - **CVSS 3.1** - Common Vulnerability Scoring System
 - **MITRE ATT&CK** - Threat intelligence framework
+- **Apache Combined Log Format** - Industry-standard log parsing
 
 ### Frontend
 - **Vanilla JavaScript** - No framework dependencies
@@ -113,14 +117,16 @@ security_api/                    # Cargo Workspace Root
 - IOC extraction (IPs, patterns, user agents)
 - Executive summaries and recommendations
 - Contextual threat intelligence
+- Llama 3.3 70B Versatile model
 
 **Web Dashboard**
-- Modern dark theme UI
+- Modern dark theme UI with professional footer
 - CVSS score visualization
 - Color-coded threat cards
 - IP analysis with frequency tracking
 - Real-time analysis results
 - Dual-mode: Standard + AI analysis
+- Comprehensive help documentation
 
 ## Getting Started
 
@@ -135,9 +141,10 @@ security_api/                    # Cargo Workspace Root
 # 1. Clone and navigate
 cd security_api
 
-# 2. Configure environment (optional)
+# 2. Configure environment
 cp .env.example .env
-# Edit .env and add: ANTHROPIC_API_KEY=your_key_here
+# Edit .env and add: GROQ_API_KEY=your_key_here
+# Get free API key at: https://console.groq.com
 
 # 3. Build and run (release mode)
 cargo run -p security-api --release
@@ -164,14 +171,14 @@ cargo build -p security-analyzer-groq
 ### Usage
 
 1. **Standard Analysis** (Fast, regex-based)
-   - Click "Analyse Logs"
-   - Upload `test_logs_standard.log`
-   - Get instant CVSS-scored results
+   - Click "Standard Analysis"
+   - Upload Apache Combined Log Format file
+   - Get instant CVSS-scored results with threat distribution
 
 2. **Groq AI Analysis** (Deep, contextual, FREE)
-   - Click "Analyse Logs with AI"
-   - Upload `test_logs_claude.log`
-   - Get AI insights + attack chains + recommendations
+   - Click "AI-Powered Analysis"
+   - Upload `test_ai_analysis.log` or any Apache log file
+   - Get AI insights + attack chains + MITRE ATT&CK mapping + recommendations
 
 ### Testing
 
@@ -221,16 +228,113 @@ Private project - All rights reserved
 
 ---
 
+## AI Model Options & Fine-Tuning
+
+### Current Setup: Groq AI (FREE)
+- **Model:** Llama 3.3 70B Versatile
+- **Cost:** Free tier with generous limits
+- **Performance:** Fast inference, excellent quality
+- **Use Case:** Production-ready for most log analysis needs
+
+### Fine-Tuning Recommendations
+
+#### Option 1: Local Fine-Tuning with Ollama (RECOMMENDED for learning)
+**Cost:** FREE  
+**Best for:** Experimentation, privacy, full control
+
+```bash
+# Install Ollama
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Pull Llama 3.1 8B
+ollama pull llama3.1:8b
+
+# Fine-tune on your security logs using LoRA/QLoRA
+# Train on labeled attack patterns and threat data
+# Export and integrate with your Rust application
+```
+
+**Pros:**
+- Completely free, no API costs
+- Full control over training data
+- Privacy: logs never leave your infrastructure
+- Can run on consumer hardware (16GB+ RAM)
+
+**Cons:**
+- Requires local compute resources
+- Smaller models (8B) vs Groq's 70B
+- Manual integration required
+
+#### Option 2: OpenAI Fine-Tuning (RECOMMENDED for production)
+**Cost:** ~$3/million tokens training, $0.30/million tokens inference  
+**Best for:** Production deployment at scale
+
+```bash
+# Fine-tune GPT-4o-mini on security logs
+# Much cheaper than Claude for fine-tuned models
+# Better accuracy for domain-specific tasks
+```
+
+**Pros:**
+- Cheaper than Claude for fine-tuned models
+- Excellent quality after fine-tuning
+- Managed infrastructure
+- Easy API integration
+
+**Cons:**
+- Paid service (but cost-effective)
+- Data leaves your infrastructure
+
+#### Option 3: Hugging Face + AutoTrain (FREE tier available)
+**Cost:** FREE for small datasets  
+**Best for:** Quick experiments, proof of concept
+
+**Pros:**
+- Free tier available
+- Easy to use interface
+- Can export models for local use
+
+**Cons:**
+- Limited free compute
+- May need paid tier for larger datasets
+
+#### Option 4: Claude (NOT RECOMMENDED for fine-tuning)
+**Cost:** $3/million input tokens  
+**Best for:** One-off analysis, not fine-tuning
+
+**Cons:**
+- No fine-tuning available yet
+- Most expensive option
+- No cost reduction over time
+
+### Recommendation Summary
+
+**For Your Use Case:**
+1. **Keep Groq** for current production use (free, works well)
+2. **Add Ollama** for local fine-tuning experiments (learn the process)
+3. **Consider OpenAI** if you need production fine-tuning later (cost-effective)
+
+**Fine-Tuning Strategy:**
+1. Collect labeled security log data (attacks + benign traffic)
+2. Start with Ollama locally to validate the approach
+3. If results are promising, move to OpenAI for production
+4. Keep Groq as fallback for users without fine-tuned models
+
+---
+
 ## Project Status
 
 **Status:** ✅ Production-Ready with Workspace Architecture  
 **Started:** November 2025  
 **Language:** Rust 🦀  
-**AI:** Groq (Llama 3.1 70B) - FREE  
+**AI:** Groq (Llama 3.3 70B Versatile) - FREE  
 **Architecture:** Cargo Workspace (4 crates)  
 **CVSS:** 3.1 Compliant  
-**Current Phase:** Optimized & Modular
+**Current Phase:** Optimized & Modular  
+**Developer:** [Sena Raufi](https://github.com/Senaraufi)
 
 ---
 
 **Built with Rust 🦀 | Powered by Groq AI 🤖 | Securing the web 🔒**
+
+**Portfolio:** [senaraufi.github.io/website_rs](https://senaraufi.github.io/website_rs/)
