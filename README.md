@@ -2,9 +2,13 @@
 
 [![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Status](https://img.shields.io/badge/status-production--ready-brightgreen.svg)]()
 [![CVSS](https://img.shields.io/badge/CVSS-3.1-green.svg)](https://www.first.org/cvss/)
-[![Groq](https://img.shields.io/badge/AI-Groq%20Llama%203.3-purple.svg)](https://groq.com/)
-[![Workspace](https://img.shields.io/badge/cargo-workspace-red.svg)](https://doc.rust-lang.org/cargo/reference/workspaces.html)
+[![AI](https://img.shields.io/badge/AI-Groq%20Llama%203.3%2070B-purple.svg)](https://groq.com/)
+[![MITRE](https://img.shields.io/badge/MITRE-ATT%26CK-red.svg)](https://attack.mitre.org/)
+[![Workspace](https://img.shields.io/badge/cargo-workspace%20(4%20crates)-orange.svg)](https://doc.rust-lang.org/cargo/reference/workspaces.html)
+[![Apache](https://img.shields.io/badge/logs-Apache%20Combined-blue.svg)]()
+[![Database](https://img.shields.io/badge/database-MySQL-blue.svg)](https://www.mysql.com/)
 
 A production-grade Rust workspace application that analyzes Apache web server logs using **CVSS 3.1 scoring**, pattern-based threat detection, and **Groq AI-powered** deep analysis with attack chain detection and MITRE ATT&CK mapping.
 
