@@ -12,5 +12,9 @@ database/*.sh linguist-generated
 # Ensure Rust is properly detected
 *.rs linguist-language=Rust
 
-# Mark HTML as documentation where appropriate
+# Mark static HTML/CSS as vendored (UI framework, not core logic)
+**/static/*.html linguist-vendored
+**/static/*.css linguist-vendored
+
+# Mark documentation HTML as documentation
 Documentation/**/*.html linguist-documentation
