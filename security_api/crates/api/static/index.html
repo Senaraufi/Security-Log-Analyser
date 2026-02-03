@@ -644,7 +644,7 @@
         <div class="container">
             <div class="landing-header">
                 <h1>Select Analysis Method</h1>
-                <p>Choose your preferred log analysis approach. Standard analysis provides comprehensive threat detection, while AI-powered analysis leverages Groq AI for advanced pattern recognition and insights.</p>
+                <p>Choose your preferred log analysis approach. Standard analysis provides comprehensive threat detection, while AI-powered analysis leverages multi-provider LLM (OpenAI, Anthropic, Groq, or Gemini) for advanced pattern recognition and insights.</p>
             </div>
 
             <div class="mode-grid">
@@ -695,7 +695,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
                         </svg>
                     </h2>
-                    <p>AI-powered log analysis using Groq AI (Llama 3.1 70B) for advanced threat intelligence, contextual insights, and natural language explanations of security events.</p>
+                    <p>AI-powered log analysis using your choice of LLM provider (OpenAI, Anthropic, Groq, or Gemini) for advanced threat intelligence, contextual insights, and natural language explanations of security events.</p>
                     <ul class="feature-list">
                         <li>
                             <svg class="icon-sm" fill="none" stroke="var(--purple-400)" stroke-width="2" viewBox="0 0 24 24">
@@ -749,7 +749,7 @@
                 </div>
                 
                 <div class="footer-bottom">
-                    © 2025 Senaraufi. All rights reserved. | Built with Rust | Powered by Groq AI
+                    © 2025 Senaraufi. All rights reserved. | Built with Rust | Powered by Multi-Provider AI
                 </div>
             </div>
         </div>
@@ -778,7 +778,7 @@
             <div class="help-section">
                 <h3>Analysis Modes</h3>
                 <p><strong>Standard Analysis:</strong> Fast, pattern-based threat detection using regex and heuristics. Provides CVSS 3.1 scoring, IP analysis, and parsing statistics.</p>
-                <p><strong>AI Analysis:</strong> Advanced analysis using Groq AI (Llama 3.1 70B). Includes attack chain detection, MITRE ATT&CK mapping, and contextual recommendations.</p>
+                <p><strong>AI Analysis:</strong> Advanced analysis using your configured LLM provider (OpenAI, Anthropic, Groq, or Gemini). Includes attack chain detection, MITRE ATT&CK mapping, and contextual recommendations.</p>
             </div>
             
             <div class="help-section">
@@ -838,7 +838,7 @@
                 <p>For technical issues or questions:</p>
                 <ul>
                     <li>Ensure logs are in Apache Combined Log Format</li>
-                    <li>Check that Groq API key is configured for AI analysis</li>
+                    <li>Check that your LLM provider API key is configured for AI analysis (see LLM_CONFIG.md)</li>
                     <li>Verify file size is under 10MB for optimal performance</li>
                     <li>Use UTF-8 encoding for log files</li>
                 </ul>
@@ -901,7 +901,7 @@
                     <div class="section-header" onclick="toggleSection('ai-results')">
                         <div class="section-title">
                             <span>▼</span>
-                            <span>🤖 Groq AI Security Analysis</span>
+                            <span>🤖 AI Security Analysis</span>
                         </div>
                     </div>
                     <div class="section-content expanded" id="ai-results-content"></div>

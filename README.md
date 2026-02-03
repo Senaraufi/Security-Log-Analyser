@@ -4,13 +4,14 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/status-production--ready-brightgreen.svg)]()
 [![CVSS](https://img.shields.io/badge/CVSS-3.1-green.svg)](https://www.first.org/cvss/)
-[![AI](https://img.shields.io/badge/AI-Groq%20Llama%203.3%2070B-purple.svg)](https://groq.com/)
+[![AI](https://img.shields.io/badge/AI-Multi--Provider%20LLM-purple.svg)](https://github.com/0xPlaygrounds/rig)
+[![Providers](https://img.shields.io/badge/providers-OpenAI%20%7C%20Anthropic%20%7C%20Groq%20%7C%20Gemini-blue.svg)]()
 [![MITRE](https://img.shields.io/badge/MITRE-ATT%26CK-red.svg)](https://attack.mitre.org/)
 [![Workspace](https://img.shields.io/badge/cargo-workspace%20(4%20crates)-orange.svg)](https://doc.rust-lang.org/cargo/reference/workspaces.html)
 [![Apache](https://img.shields.io/badge/logs-Apache%20Combined-blue.svg)]()
 [![Database](https://img.shields.io/badge/database-MySQL-blue.svg)](https://www.mysql.com/)
 
-A production-grade Rust workspace application that analyzes Apache web server logs using **CVSS 3.1 scoring**, pattern-based threat detection, and **Groq AI-powered** deep analysis with attack chain detection and MITRE ATT&CK mapping.
+A production-grade Rust workspace application that analyzes Apache web server logs using **CVSS 3.1 scoring**, pattern-based threat detection, and **multi-provider LLM-powered** deep analysis (OpenAI, Anthropic, Groq, Gemini) with attack chain detection and MITRE ATT&CK mapping.
 
 **Live Demo:** [senaraufi.github.io/website_rs](https://senaraufi.github.io/website_rs/)  
 **Developer:** [Sena Raufi](https://github.com/Senaraufi) | [LinkedIn](https://www.linkedin.com/in/sena-raufi-610187293/)
@@ -20,12 +21,14 @@ A production-grade Rust workspace application that analyzes Apache web server lo
 ### Core Capabilities
 - **CVSS 3.1 Scoring** - Industry-standard vulnerability severity ratings
 - **Dual-Mode Analysis** - Fast regex-based + AI-powered deep analysis
-- **Attack Chain Detection** - Identifies multi-stage attacks using Groq AI
+- **Multi-Provider LLM** - Choose from OpenAI, Anthropic, Groq, or Gemini
+- **Attack Chain Detection** - Identifies multi-stage attacks using advanced AI
 - **Real-time Dashboard** - Modern web UI with color-coded threat visualization
 - **10+ Threat Types** - SQL injection, XSS, malware, port scanning, and more
 - **IP Analysis** - Tracks malicious IPs with frequency analysis
 - **MITRE ATT&CK Mapping** - Maps threats to industry frameworks
 - **Database Integration** - MySQL storage for audit trails and compliance
+- **Easy Provider Switching** - Change LLM providers via environment variables
 
 ### Technical Highlights
 - **Cargo Workspace** - Modular architecture with 4 independent crates
@@ -44,7 +47,8 @@ A production-grade Rust workspace application that analyzes Apache web server lo
 - **Regex** - Pattern matching for threat detection
 
 ### AI & Security
-- **Groq (Llama 3.3 70B Versatile)** - Free, fast LLM for contextual analysis
+- **Multi-Provider LLM Support** - OpenAI, Anthropic, Groq, or Gemini via `rig-core`
+- **Flexible Configuration** - Switch providers via environment variables
 - **CVSS 3.1** - Common Vulnerability Scoring System
 - **MITRE ATT&CK** - Threat intelligence framework
 - **Apache Combined Log Format** - Industry-standard log parsing
