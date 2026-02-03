@@ -1,0 +1,32 @@
+[package]
+name = "security-analyzer-llm"
+version = "0.1.0"
+edition = "2021"
+description = "Multi-provider LLM analyzer for security log analysis using rig-core"
+
+[dependencies]
+# Core LLM library with multi-provider support
+rig-core = { version = "0.9", features = ["derive"] }
+
+# Internal dependencies
+security-common = { path = "../common" }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true }
+async-trait = { workspace = true }
+
+# Environment and configuration
+dotenv = { workspace = true }
+
+# Error handling
+thiserror = "1.0"
+
+[features]
+default = ["openai", "anthropic"]
+openai = []
+anthropic = []
+all-providers = ["openai", "anthropic"]
