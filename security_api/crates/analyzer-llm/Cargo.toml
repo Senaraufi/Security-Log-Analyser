@@ -25,6 +25,9 @@ dotenv = { workspace = true }
 # Error handling
 thiserror = "1.0"
 
+# Pattern matching for IOC extraction
+regex = { workspace = true }
+
 [features]
 default = ["openai", "anthropic"]
 openai = []

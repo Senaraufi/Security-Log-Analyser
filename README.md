@@ -44,7 +44,7 @@ A production-grade Rust workspace application that analyzes Apache web server lo
 - **Regex** - Pattern matching for threat detection
 
 ### AI & Security
-- **Groq (Llama 3.3 70B Versatile)** - Free, fast LLM for contextual analysis
+- **Multi-Provider LLM Support** - OpenAI, Anthropic, Groq, or Gemini via `rig-core`
 - **CVSS 3.1** - Common Vulnerability Scoring System
 - **MITRE ATT&CK** - Threat intelligence framework
 - **Apache Combined Log Format** - Industry-standard log parsing
@@ -60,34 +60,33 @@ A production-grade Rust workspace application that analyzes Apache web server lo
 security_api/                    # Cargo Workspace Root
 ├── Cargo.toml                   # Workspace configuration
 ├── crates/
-│   ├── common/                  # Shared library
-│   │   ├── src/
-│   │   │   ├── cvss.rs         # CVSS 3.1 scoring engine
-│   │   │   ├── parsers/        # Log parsing (Apache, etc.)
-│   │   │   └── database/       # MySQL integration
-│   │   └── Cargo.toml
+│   ├── common/                  # Shared types & utilities
+│   │   ├── parsers/             # Apache log parser (Nom)
+│   │   ├── cvss.rs              # CVSS 3.1 scoring
+│   │   └── types.rs             # Common data structures
 │   │
-│   ├── analyzer-basic/          # Fast regex-based detection
-│   │   ├── src/lib.rs          # Pattern matching engine
-│   │   └── Cargo.toml
+│   ├── analyzer-basic/          # Pattern-based analyzer
+│   │   └── lib.rs               # Regex threat detection
 │   │
-│   ├── analyzer-groq/           # AI-powered analysis (FREE)
-│   │   ├── src/lib.rs          # Groq API integration
-│   │   └── Cargo.toml
+│   ├── analyzer-llm/            # Multi-provider LLM analyzer (NEW)
+│   │   ├── lib.rs               # Multi-provider support via rig-core
+│   │   ├── config.rs            # Provider configuration
+│   │   ├── analyzer.rs          # Core analysis logic
+│   │   └── LLM_CONFIG.md        # Configuration guide
 │   │
-│   └── api/                     # Web server (binary)
-│       ├── src/main.rs         # Axum REST API
-│       ├── static/index.html   # Frontend UI
-│       └── Cargo.toml
+│   ├── analyzer-groq/           # Legacy Groq analyzer (DEPRECATED)
+│   │   └── lib.rs               # Use analyzer-llm instead
+│   │
+│   └── api/                     # Web API server
+│       ├── main.rs              # Axum server
+│       ├── llm_handler.rs       # Multi-provider LLM endpoint
+│       ├── groq_handler.rs      # Legacy endpoint (deprecated)
+│       └── static/              # Frontend assets
+│           └── index.html       # Dashboard UI
 │
-├── Documentation/               # Project docs
-│   ├── README.md
-│   ├── TECHNICAL_GUIDE.md
-│   ├── CVSS_IMPLEMENTATION.md
-│   └── ARCHITECTURE_DIAGRAM.md
-│
-├── test_logs_standard.log      # Basic analyzer test
-└── test_logs_claude.log        # AI analyzer test
+├── MIGRATION.md                 # Migration guide (Groq → LLM)
+├── .env                         # API keys (gitignored)
+└── test_logs/                   # Sample log files
 ```
 
 ## Current Status
@@ -115,13 +114,14 @@ security_api/                    # Cargo Workspace Root
 - Failed Logins (CVSS 5.3)
 - Critical Alerts (CVSS 8.0)
 
-**Groq AI Analysis (FREE)**
+**Multi-Provider AI Analysis**
+- **Flexible Provider Support**: OpenAI, Anthropic, Groq, or Gemini
 - Attack chain detection with timelines
 - MITRE ATT&CK technique mapping
 - IOC extraction (IPs, patterns, user agents)
 - Executive summaries and recommendations
 - Contextual threat intelligence
-- Llama 3.3 70B Versatile model
+- Easy provider switching via environment variables
 
 **Web Dashboard**
 - Modern dark theme UI with professional footer
@@ -137,7 +137,7 @@ security_api/                    # Cargo Workspace Root
 ### Prerequisites
 - **Rust 1.70+**: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
 - **MySQL** (optional): For database features
-- **Groq API key** (FREE): For AI analysis mode - Get at https://console.groq.com
+- **LLM API key**: For AI analysis mode - supports OpenAI, Anthropic, Groq, or Gemini
 
 ### Quick Start
 
@@ -147,8 +147,10 @@ cd security_api
 
 # 2. Configure environment
 cp .env.example .env
-# Edit .env and add: GROQ_API_KEY=your_key_here
-# Get free API key at: https://console.groq.com
+# Edit .env and configure your LLM provider:
+# LLM_PROVIDER=groq  # or openai, anthropic, gemini
+# GROQ_API_KEY=your_key_here  # Get free at: https://console.groq.com
+# See security_api/crates/analyzer-llm/LLM_CONFIG.md for all options
 
 # 3. Build and run (release mode)
 cargo run -p security-api --release
@@ -331,14 +333,14 @@ ollama pull llama3.1:8b
 **Status:** ✅ Production-Ready with Workspace Architecture  
 **Started:** November 2025  
 **Language:** Rust 🦀  
-**AI:** Groq (Llama 3.3 70B Versatile) - FREE  
-**Architecture:** Cargo Workspace (4 crates)  
+**AI:** Multi-Provider LLM (OpenAI, Anthropic, Groq, Gemini) via `rig-core`  
+**Architecture:** Cargo Workspace (5 crates)  
 **CVSS:** 3.1 Compliant  
-**Current Phase:** Optimized & Modular  
+**Current Phase:** Optimized & Modular with Multi-Provider AI  
 **Developer:** [Sena Raufi](https://github.com/Senaraufi)
 
 ---
 
-**Built with Rust 🦀 | Powered by Groq AI 🤖 | Securing the web 🔒**
+**Built with Rust 🦀 | Powered by Multi-Provider AI 🤖 | Securing the web 🔒**
 
 **Portfolio:** [senaraufi.github.io/website_rs](https://senaraufi.github.io/website_rs/)

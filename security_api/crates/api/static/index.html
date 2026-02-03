@@ -1034,8 +1034,8 @@
                     let endpoint, data;
                     
                     if (currentMode === 'ai') {
-                        // AI mode: directly call AI endpoint
-                        endpoint = '/api/analyze-with-ai';
+                        // AI mode: use new multi-provider LLM endpoint
+                        endpoint = '/api/analyze-with-llm';
                         const response = await fetch(endpoint, {
                             method: 'POST',
                             body: formData

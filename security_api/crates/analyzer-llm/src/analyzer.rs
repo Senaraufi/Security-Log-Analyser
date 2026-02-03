@@ -132,7 +132,12 @@ impl LlmAnalyzer {
 
     /// Call Anthropic API using rig-core
     async fn call_anthropic(&self, prompt: &str) -> Result<String, AnalyzerError> {
-        let client = anthropic::Client::new(&self.config.api_key);
+        let client = anthropic::Client::new(
+            &self.config.api_key,
+            "https://api.anthropic.com",
+            None,
+            "2023-06-01"
+        );
         
         let agent = client
             .agent(&self.config.model)
@@ -153,9 +158,10 @@ impl LlmAnalyzer {
     /// Call Groq API (OpenAI-compatible) using rig-core
     async fn call_groq(&self, prompt: &str) -> Result<String, AnalyzerError> {
         // Groq uses OpenAI-compatible API with custom base URL
-        let client = openai::Client::builder(&self.config.api_key)
-            .base_url("https://api.groq.com/openai/v1")
-            .build();
+        let client = openai::Client::from_url(
+            &self.config.api_key,
+            "https://api.groq.com/openai/v1"
+        );
         
         let agent = client
             .agent(&self.config.model)
