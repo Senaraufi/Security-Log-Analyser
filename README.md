@@ -60,34 +60,29 @@ A production-grade Rust workspace application that analyzes Apache web server lo
 security_api/                    # Cargo Workspace Root
 ├── Cargo.toml                   # Workspace configuration
 ├── crates/
-│   ├── common/                  # Shared library
-│   │   ├── src/
-│   │   │   ├── cvss.rs         # CVSS 3.1 scoring engine
-│   │   │   ├── parsers/        # Log parsing (Apache, etc.)
-│   │   │   └── database/       # MySQL integration
-│   │   └── Cargo.toml
+│   ├── common/                  # Shared types & utilities
+│   │   ├── parsers/             # Apache log parser (Nom)
+│   │   ├── cvss.rs              # CVSS 3.1 scoring
+│   │   └── types.rs             # Common data structures
 │   │
-│   ├── analyzer-basic/          # Fast regex-based detection
-│   │   ├── src/lib.rs          # Pattern matching engine
-│   │   └── Cargo.toml
+│   ├── analyzer-basic/          # Pattern-based analyzer
+│   │   └── lib.rs               # Regex threat detection
 │   │
-│   ├── analyzer-groq/           # AI-powered analysis (FREE)
-│   │   ├── src/lib.rs          # Groq API integration
-│   │   └── Cargo.toml
+│   ├── analyzer-llm/            # Multi-provider LLM analyzer
+│   │   ├── lib.rs               # Multi-provider support via rig-core
+│   │   ├── config.rs            # Provider configuration
+│   │   ├── analyzer.rs          # Core analysis logic
+│   │   └── LLM_CONFIG.md        # Configuration guide
 │   │
-│   └── api/                     # Web server (binary)
-│       ├── src/main.rs         # Axum REST API
-│       ├── static/index.html   # Frontend UI
-│       └── Cargo.toml
+│   └── api/                     # Web API server
+│       ├── main.rs              # Axum server
+│       ├── llm_handler.rs       # Multi-provider LLM endpoint
+│       └── static/              # Frontend assets
+│           └── index.html       # Dashboard UI
 │
-├── Documentation/               # Project docs
-│   ├── README.md
-│   ├── TECHNICAL_GUIDE.md
-│   ├── CVSS_IMPLEMENTATION.md
-│   └── ARCHITECTURE_DIAGRAM.md
-│
-├── test_logs_standard.log      # Basic analyzer test
-└── test_logs_claude.log        # AI analyzer test
+├── MIGRATION.md                 # Migration guide
+├── .env                         # API keys (gitignored)
+└── test_logs/                   # Sample log files
 ```
 
 ## Current Status
@@ -97,7 +92,7 @@ security_api/                    # Cargo Workspace Root
 **Workspace Architecture**
 - Cargo workspace with 4 independent crates
 - 70-80% faster incremental compilation
-- Parallel builds (basic + groq compile together)
+- Parallel builds (basic + llm compile together)
 - Feature flags for flexible builds
 
 **CVSS 3.1 Scoring**
@@ -331,14 +326,14 @@ ollama pull llama3.1:8b
 **Status:** ✅ Production-Ready with Workspace Architecture  
 **Started:** November 2025  
 **Language:** Rust 🦀  
-**AI:** Groq (Llama 3.3 70B Versatile) - FREE  
+**AI:** Multi-Provider LLM (OpenAI, Anthropic, Groq, Gemini) via `rig-core`  
 **Architecture:** Cargo Workspace (4 crates)  
 **CVSS:** 3.1 Compliant  
-**Current Phase:** Optimized & Modular  
+**Current Phase:** Optimized & Modular with Multi-Provider AI  
 **Developer:** [Sena Raufi](https://github.com/Senaraufi)
 
 ---
 
-**Built with Rust 🦀 | Powered by Groq AI 🤖 | Securing the web 🔒**
+**Built with Rust 🦀 | Powered by Multi-Provider AI 🤖 | Securing the web 🔒**
 
 **Portfolio:** [senaraufi.github.io/website_rs](https://senaraufi.github.io/website_rs/)

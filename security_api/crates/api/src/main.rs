@@ -15,7 +15,6 @@ use security_common::{
 };
 use security_analyzer_basic::BasicAnalyzer;
 
-mod groq_handler;
 mod llm_handler;
 
 #[tokio::main]
@@ -45,7 +44,6 @@ async fn main() {
     
     let mut app = Router::new()
         .route("/api/analyze", post(analyze_logs))
-        .route("/api/analyze-with-ai", post(groq_handler::analyze_logs_with_groq))
         .route("/api/analyze-with-llm", post(llm_handler::analyze_logs_with_llm))
         .route("/api/llm-health", axum::routing::get(llm_handler::llm_health_check))
         .nest_service("/", static_files);

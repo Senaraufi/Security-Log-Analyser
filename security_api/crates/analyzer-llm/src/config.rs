@@ -140,11 +140,11 @@ impl LlmConfig {
             .unwrap_or(0.3)
             .clamp(0.0, 1.0);
 
-        // Parse max tokens
+        // Parse max tokens (default: 4096)
         let max_tokens = env::var("LLM_MAX_TOKENS")
             .ok()
             .and_then(|t| t.parse::<u32>().ok())
-            .unwrap_or_none();
+            .unwrap_or(4096);
 
         Ok(Self {
             provider,

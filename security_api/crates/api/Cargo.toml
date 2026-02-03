@@ -11,7 +11,6 @@ path = "src/main.rs"
 # Workspace crates
 security-common = { path = "../common" }
 security-analyzer-basic = { path = "../analyzer-basic" }
-security-analyzer-groq = { path = "../analyzer-groq" }
 security-analyzer-llm = { path = "../analyzer-llm" }
 
 # Web framework
