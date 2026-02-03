@@ -16,6 +16,7 @@ use security_common::{
 use security_analyzer_basic::BasicAnalyzer;
 
 mod groq_handler;
+mod llm_handler;
 
 #[tokio::main]
 async fn main() {
@@ -45,6 +46,8 @@ async fn main() {
     let mut app = Router::new()
         .route("/api/analyze", post(analyze_logs))
         .route("/api/analyze-with-ai", post(groq_handler::analyze_logs_with_groq))
+        .route("/api/analyze-with-llm", post(llm_handler::analyze_logs_with_llm))
+        .route("/api/llm-health", axum::routing::get(llm_handler::llm_health_check))
         .nest_service("/", static_files);
     
     // Add database pool to app state if available
@@ -58,6 +61,8 @@ async fn main() {
     
     println!("🚀 Security API Server running on http://localhost:3000");
     println!("📊 Upload logs at: http://localhost:3000");
+    println!("🤖 LLM Analysis: POST /api/analyze-with-llm");
+    println!("❤️  LLM Health:   GET  /api/llm-health");
     
     axum::serve(listener, app).await.unwrap();
 }
