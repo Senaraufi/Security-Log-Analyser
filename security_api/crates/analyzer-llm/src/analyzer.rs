@@ -179,14 +179,65 @@ impl LlmAnalyzer {
             })
     }
 
-    /// Call Gemini API using rig-core
+    /// Call Gemini API using direct HTTP calls
     async fn call_gemini(&self, prompt: &str) -> Result<String, AnalyzerError> {
-        // For now, Gemini support is limited - return a placeholder error
-        // In a full implementation, you would use rig's gemini provider
-        Err(AnalyzerError::ProviderNotSupported {
-            provider: "Gemini".to_string(),
-            reason: "Gemini provider support is coming soon. Please use OpenAI, Anthropic, or Groq.".to_string(),
-        })
+        // Gemini API endpoint - use v1beta for newer models
+        let url = format!(
+            "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
+            self.config.model, self.config.api_key
+        );
+
+        // Build request body
+        let request_body = serde_json::json!({
+            "contents": [{
+                "parts": [{
+                    "text": format!("{}\n\n{}", SYSTEM_PROMPT, prompt)
+                }]
+            }],
+            "generationConfig": {
+                "temperature": self.config.temperature,
+                "maxOutputTokens": self.config.max_tokens,
+            }
+        });
+
+        // Make API call
+        let client = reqwest::Client::new();
+        let response = client
+            .post(&url)
+            .json(&request_body)
+            .send()
+            .await
+            .map_err(|e| AnalyzerError::ApiError {
+                provider: "Gemini".to_string(),
+                message: format!("Failed to call Gemini API: {}", e),
+            })?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            return Err(AnalyzerError::ApiError {
+                provider: "Gemini".to_string(),
+                message: format!("Gemini API error ({}): {}", status, error_text),
+            });
+        }
+
+        // Parse response
+        let response_json: serde_json::Value = response.json().await.map_err(|e| {
+            AnalyzerError::ApiError {
+                provider: "Gemini".to_string(),
+                message: format!("Failed to parse Gemini response: {}", e),
+            }
+        })?;
+
+        // Extract text from response
+        let text = response_json["candidates"][0]["content"]["parts"][0]["text"]
+            .as_str()
+            .ok_or_else(|| AnalyzerError::ApiError {
+                provider: "Gemini".to_string(),
+                message: "Failed to extract text from Gemini response".to_string(),
+            })?;
+
+        Ok(text.to_string())
     }
 
     /// Parse the LLM response into a SecurityReport

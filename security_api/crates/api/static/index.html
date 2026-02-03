@@ -211,6 +211,56 @@
             border-top-color: rgba(168, 85, 247, 0.2);
         }
 
+        /* LLM Provider Selector */
+        .provider-selector {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(168, 85, 247, 0.2);
+        }
+
+        .provider-label {
+            display: block;
+            font-size: 0.875rem;
+            color: var(--neutral-400);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .provider-dropdown {
+            width: 100%;
+            padding: 0.625rem 0.875rem;
+            background: var(--neutral-800);
+            border: 1px solid var(--neutral-700);
+            border-radius: 0.375rem;
+            color: var(--neutral-200);
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1.25rem;
+            padding-right: 2.5rem;
+        }
+
+        .provider-dropdown:hover {
+            background-color: var(--neutral-750);
+            border-color: var(--purple-500);
+        }
+
+        .provider-dropdown:focus {
+            outline: none;
+            border-color: var(--purple-500);
+            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+        }
+
+        .provider-dropdown option {
+            background: var(--neutral-800);
+            color: var(--neutral-200);
+            padding: 0.5rem;
+        }
+
         /* File Upload */
         .file-upload {
             background: var(--neutral-900);
@@ -716,6 +766,19 @@
                             <span>Natural language reports</span>
                         </li>
                     </ul>
+                    <div class="provider-selector" onclick="event.stopPropagation()">
+                        <label class="provider-label" for="llm-provider">Select LLM Provider:</label>
+                        <select id="llm-provider" class="provider-dropdown">
+                            <option value="auto" selected>Auto (Use Server Default)</option>
+                            <option value="groq">✓ Groq (Llama 3.3 70B)</option>
+                            <option value="gemini">✓ Google Gemini (1.5 Flash)</option>
+                            <option value="openai" disabled>⚙️ OpenAI (Requires API Key)</option>
+                            <option value="anthropic" disabled>⚙️ Anthropic (Requires API Key)</option>
+                        </select>
+                        <small style="display: block; margin-top: 0.5rem; color: var(--neutral-500); font-size: 0.75rem;">
+                            ✓ = Configured | ⚙️ = Add API key in .env to enable
+                        </small>
+                    </div>
                     <div class="mode-footer">
                         Best for complex investigations
                     </div>
@@ -1034,8 +1097,15 @@
                     let endpoint, data;
                     
                     if (currentMode === 'ai') {
-                        // AI mode: directly call AI endpoint
-                        endpoint = '/api/analyze-with-ai';
+                        // AI mode: use new multi-provider LLM endpoint
+                        endpoint = '/api/analyze-with-llm';
+                        
+                        // Get selected provider
+                        const selectedProvider = document.getElementById('llm-provider').value;
+                        if (selectedProvider && selectedProvider !== 'auto') {
+                            formData.append('provider', selectedProvider);
+                        }
+                        
                         const response = await fetch(endpoint, {
                             method: 'POST',
                             body: formData

@@ -30,8 +30,9 @@ pub async fn analyze_logs_with_llm(
 ) -> impl IntoResponse {
     let mut content = String::new();
     let mut filename = String::from("unknown");
+    let mut provider_override: Option<String> = None;
 
-    // Extract file from multipart form
+    // Extract file and optional provider from multipart form
     while let Some(field) = multipart.next_field().await.unwrap_or(None) {
         let name = field.name().unwrap_or("").to_string();
 
@@ -47,6 +48,11 @@ pub async fn analyze_logs_with_llm(
                     }));
                 }
             }
+        } else if name == "provider" {
+            // User-selected provider override
+            if let Ok(data) = field.bytes().await {
+                provider_override = Some(String::from_utf8_lossy(&data).to_string());
+            }
         }
     }
 
@@ -56,16 +62,47 @@ pub async fn analyze_logs_with_llm(
         }));
     }
 
-    // Create the LLM analyzer from environment configuration
-    let analyzer = match LlmAnalyzer::from_env() {
-        Ok(a) => a,
-        Err(e) => {
-            let suggestion = get_error_suggestion(&e);
-            eprintln!("❌ LLM Analyzer configuration error: {}", e);
-            return Json(serde_json::json!({
-                "error": format!("LLM configuration error: {}", e),
-                "suggestion": suggestion
-            }));
+    // Create the LLM analyzer from environment configuration or user override
+    let analyzer = if let Some(provider) = provider_override {
+        // Temporarily set LLM_PROVIDER env var for this request
+        // SAFETY: This is safe because we're only modifying the environment for this process
+        // and the analyzer will read it immediately after
+        unsafe {
+            std::env::set_var("LLM_PROVIDER", &provider);
+            
+            // Set appropriate model for each provider
+            match provider.as_str() {
+                "groq" => std::env::set_var("LLM_MODEL", "llama-3.3-70b-versatile"),
+                "gemini" => std::env::set_var("LLM_MODEL", "gemini-3-flash-preview"),
+                "openai" => std::env::set_var("LLM_MODEL", "gpt-4o"),
+                "anthropic" => std::env::set_var("LLM_MODEL", "claude-sonnet-4-20250514"),
+                _ => {}
+            }
+        }
+        println!("🎯 User selected provider: {}", provider);
+        match LlmAnalyzer::from_env() {
+            Ok(a) => a,
+            Err(e) => {
+                let suggestion = get_error_suggestion(&e);
+                eprintln!("❌ LLM Analyzer configuration error: {}", e);
+                return Json(serde_json::json!({
+                    "error": format!("LLM configuration error: {}", e),
+                    "suggestion": suggestion
+                }));
+            }
+        }
+    } else {
+        // Use default environment configuration
+        match LlmAnalyzer::from_env() {
+            Ok(a) => a,
+            Err(e) => {
+                let suggestion = get_error_suggestion(&e);
+                eprintln!("❌ LLM Analyzer configuration error: {}", e);
+                return Json(serde_json::json!({
+                    "error": format!("LLM configuration error: {}", e),
+                    "suggestion": suggestion
+                }));
+            }
         }
     };
 

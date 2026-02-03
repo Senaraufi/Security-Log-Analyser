@@ -28,6 +28,9 @@ thiserror = "1.0"
 # Pattern matching for IOC extraction
 regex = { workspace = true }
 
+# HTTP client for Gemini API (since rig-core doesn't support it yet)
+reqwest = { workspace = true }
+
 [features]
 default = ["openai", "anthropic"]
 openai = []
