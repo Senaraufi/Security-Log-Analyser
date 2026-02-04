@@ -79,12 +79,12 @@ pub async fn analyze_logs_with_llm(
                 _ => {}
             }
         }
-        println!("🎯 User selected provider: {}", provider);
+        println!("[INFO] User selected provider: {}", provider);
         match LlmAnalyzer::from_env() {
             Ok(a) => a,
             Err(e) => {
                 let suggestion = get_error_suggestion(&e);
-                eprintln!("❌ LLM Analyzer configuration error: {}", e);
+                eprintln!("[ERROR] LLM Analyzer configuration error: {}", e);
                 return Json(serde_json::json!({
                     "error": format!("LLM configuration error: {}", e),
                     "suggestion": suggestion
@@ -97,7 +97,7 @@ pub async fn analyze_logs_with_llm(
             Ok(a) => a,
             Err(e) => {
                 let suggestion = get_error_suggestion(&e);
-                eprintln!("❌ LLM Analyzer configuration error: {}", e);
+                eprintln!("[ERROR] LLM Analyzer configuration error: {}", e);
                 return Json(serde_json::json!({
                     "error": format!("LLM configuration error: {}", e),
                     "suggestion": suggestion
@@ -107,7 +107,7 @@ pub async fn analyze_logs_with_llm(
     };
 
     println!(
-        "🤖 Processing log file with {} ({}): {}",
+        "[INFO] Processing log file with {} ({}): {}",
         analyzer.provider(),
         analyzer.model(),
         filename
@@ -137,7 +137,7 @@ pub async fn analyze_logs_with_llm(
     }
 
     println!(
-        "📊 Parsed {} logs ({} parse errors), sending to LLM...",
+        "[INFO] Parsed {} logs ({} parse errors), sending to LLM...",
         logs.len(),
         parse_errors
     );
@@ -147,7 +147,7 @@ pub async fn analyze_logs_with_llm(
         Ok(report) => report,
         Err(e) => {
             let suggestion = get_error_suggestion(&e);
-            eprintln!("❌ LLM analysis failed: {}", e);
+            eprintln!("[ERROR] LLM analysis failed: {}", e);
             return Json(serde_json::json!({
                 "error": format!("AI analysis failed: {}", e),
                 "suggestion": suggestion,

@@ -16,6 +16,7 @@ use security_common::{
 use security_analyzer_basic::BasicAnalyzer;
 
 mod llm_handler;
+mod simple_handler;
 
 #[tokio::main]
 async fn main() {
@@ -27,7 +28,7 @@ async fn main() {
     let db_pool = match init_db().await {
         Ok(pool) => {
             if let Err(e) = test_connection(&pool).await {
-                eprintln!("❌ Database connection test failed: {}", e);
+                eprintln!("[ERROR] Database connection test failed: {}", e);
                 eprintln!("  Server will run but database features will be unavailable");
             }
             Some(pool)
@@ -46,6 +47,7 @@ async fn main() {
         .route("/api/analyze", post(analyze_logs))
         .route("/api/analyze-with-llm", post(llm_handler::analyze_logs_with_llm))
         .route("/api/llm-health", axum::routing::get(llm_handler::llm_health_check))
+        .route("/api/explain-logs", post(simple_handler::explain_logs))
         .nest_service("/", static_files);
     
     // Add database pool to app state if available
@@ -57,10 +59,10 @@ async fn main() {
         .await
         .unwrap();
     
-    println!("🚀 Security API Server running on http://localhost:3000");
-    println!("📊 Upload logs at: http://localhost:3000");
-    println!("🤖 LLM Analysis: POST /api/analyze-with-llm");
-    println!("❤️  LLM Health:   GET  /api/llm-health");
+    println!("[INFO] Security API Server running on http://localhost:3000");
+    println!("[INFO] Upload logs at: http://localhost:3000");
+    println!("[INFO] LLM Analysis: POST /api/analyze-with-llm");
+    println!("[INFO] LLM Health:   GET  /api/llm-health");
     
     axum::serve(listener, app).await.unwrap();
 }

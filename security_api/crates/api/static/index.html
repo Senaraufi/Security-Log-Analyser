@@ -675,6 +675,370 @@
             align-items: center;
             justify-content: center;
         }
+
+        /* Mode Toggle Switch */
+        .mode-toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-left: auto;
+        }
+
+        .mode-toggle {
+            position: relative;
+            display: inline-flex;
+            background: var(--neutral-800);
+            border-radius: 0.5rem;
+            padding: 0.25rem;
+            border: 1px solid var(--neutral-700);
+        }
+
+        .mode-toggle-option {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--neutral-400);
+            border: none;
+            background: none;
+        }
+
+        .mode-toggle-option.active {
+            background: var(--purple-500);
+            color: white;
+        }
+
+        .mode-toggle-option:hover:not(.active) {
+            color: var(--neutral-200);
+        }
+
+        /* Simple Mode Page */
+        #simple-mode-page {
+            display: none;
+            min-height: 100vh;
+            background: var(--neutral-950);
+        }
+
+        .simple-mode-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .simple-mode-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .simple-mode-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--cyan-400), var(--purple-400));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .simple-mode-header p {
+            font-size: 1.125rem;
+            color: var(--neutral-400);
+        }
+
+        /* Paste Logs Section */
+        .paste-logs-section {
+            background: var(--neutral-900);
+            border: 1px solid var(--neutral-800);
+            border-radius: 0.75rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .paste-logs-label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .paste-logs-label h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--neutral-100);
+        }
+
+        .example-button {
+            background: var(--neutral-800);
+            border: 1px solid var(--neutral-700);
+            color: var(--neutral-300);
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .example-button:hover {
+            background: var(--neutral-700);
+            color: var(--neutral-100);
+        }
+
+        .logs-textarea {
+            width: 100%;
+            min-height: 400px;
+            background: var(--neutral-950);
+            border: 1px solid var(--neutral-800);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            color: var(--neutral-100);
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            resize: vertical;
+            margin-bottom: 1rem;
+        }
+
+        .logs-textarea:focus {
+            outline: none;
+            border-color: var(--purple-500);
+            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+        }
+
+        .logs-textarea::placeholder {
+            color: var(--neutral-600);
+        }
+
+        .textarea-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .char-counter {
+            font-size: 0.875rem;
+            color: var(--neutral-500);
+        }
+
+        .analyze-button {
+            background: linear-gradient(135deg, var(--purple-500), var(--purple-400));
+            border: none;
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(168, 85, 247, 0.2);
+        }
+
+        .analyze-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(168, 85, 247, 0.3);
+        }
+
+        .analyze-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Simple Results Section */
+        .simple-results {
+            display: none;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .result-card {
+            background: var(--neutral-900);
+            border: 1px solid var(--neutral-800);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            transition: all 0.2s;
+        }
+
+        .result-card:hover {
+            border-color: var(--neutral-700);
+            transform: translateY(-2px);
+        }
+
+        .result-card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .result-card-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .result-card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--neutral-100);
+        }
+
+        .result-card-content {
+            color: var(--neutral-300);
+            line-height: 1.6;
+        }
+
+        .risk-score-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            padding: 2rem 0;
+        }
+
+        .risk-score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            border: 4px solid;
+        }
+
+        .risk-low { 
+            background: rgba(74, 222, 128, 0.1);
+            border-color: var(--green-400);
+            color: var(--green-400);
+        }
+
+        .risk-medium { 
+            background: rgba(250, 204, 21, 0.1);
+            border-color: var(--yellow-400);
+            color: var(--yellow-400);
+        }
+
+        .risk-high { 
+            background: rgba(251, 146, 60, 0.1);
+            border-color: var(--orange-400);
+            color: var(--orange-400);
+        }
+
+        .risk-critical { 
+            background: rgba(248, 113, 113, 0.1);
+            border-color: var(--red-400);
+            color: var(--red-400);
+        }
+
+        .risk-label {
+            font-size: 1.25rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .threat-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .threat-item {
+            display: flex;
+            align-items: start;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: var(--neutral-950);
+            border-radius: 0.5rem;
+            border-left: 3px solid var(--red-400);
+        }
+
+        .threat-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .fix-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .fix-item {
+            padding: 1rem;
+            background: var(--neutral-950);
+            border-radius: 0.5rem;
+            border-left: 3px solid var(--green-400);
+        }
+
+        .fix-title {
+            font-weight: 600;
+            color: var(--neutral-100);
+            margin-bottom: 0.5rem;
+        }
+
+        .fix-command {
+            background: var(--neutral-900);
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            color: var(--cyan-400);
+            margin-top: 0.5rem;
+            position: relative;
+        }
+
+        .action-bar {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            padding: 2rem 0;
+        }
+
+        .action-button {
+            background: var(--neutral-800);
+            border: 1px solid var(--neutral-700);
+            color: var(--neutral-200);
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .action-button:hover {
+            background: var(--neutral-700);
+            color: var(--neutral-100);
+        }
+
+        .action-button.primary {
+            background: var(--purple-500);
+            border-color: var(--purple-500);
+            color: white;
+        }
+
+        .action-button.primary:hover {
+            background: var(--purple-400);
+        }
     </style>
 </head>
 <body>
@@ -687,6 +1051,12 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
                     </svg>
                     <span>Cybersecurity Analysis Platform</span>
+                </div>
+                <div class="mode-toggle-container">
+                    <div class="mode-toggle">
+                        <button class="mode-toggle-option" id="advanced-mode-btn" onclick="switchToAdvancedMode()">Advanced Mode</button>
+                        <button class="mode-toggle-option active" id="simple-mode-btn" onclick="switchToSimpleMode()">Simple Mode</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1476,6 +1846,291 @@
             section.classList.remove('hidden');
             section.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
+
+        // Simple Mode Functions
+        let simpleMode = true;
+
+        function switchToSimpleMode() {
+            simpleMode = true;
+            document.getElementById('simple-mode-btn').classList.add('active');
+            document.getElementById('advanced-mode-btn').classList.remove('active');
+            document.getElementById('landing-page').classList.add('hidden');
+            document.getElementById('dashboard-page').classList.add('hidden');
+            document.getElementById('simple-mode-page').style.display = 'block';
+        }
+
+        function switchToAdvancedMode() {
+            simpleMode = false;
+            document.getElementById('advanced-mode-btn').classList.add('active');
+            document.getElementById('simple-mode-btn').classList.remove('active');
+            document.getElementById('simple-mode-page').style.display = 'none';
+            document.getElementById('landing-page').classList.remove('hidden');
+            document.getElementById('dashboard-page').classList.add('hidden');
+        }
+
+        function loadExampleLogs() {
+            const exampleLogs = `192.168.1.100 - - [15/Jan/2024:10:23:45 +0000] "GET /admin/config.php HTTP/1.1" 404 512 "-" "Mozilla/5.0"
+192.168.1.101 - - [15/Jan/2024:10:24:12 +0000] "POST /login.php HTTP/1.1" 200 1024 "-" "curl/7.68.0"
+10.0.0.50 - - [15/Jan/2024:10:25:33 +0000] "GET /../../../etc/passwd HTTP/1.1" 403 256 "-" "sqlmap/1.0"
+192.168.1.102 - - [15/Jan/2024:10:26:01 +0000] "GET /api/users HTTP/1.1" 200 2048 "-" "Mozilla/5.0"
+10.0.0.51 - - [15/Jan/2024:10:27:15 +0000] "POST /upload.php HTTP/1.1" 200 512 "-" "python-requests/2.25.1"`;
+            
+            document.getElementById('simple-logs-textarea').value = exampleLogs;
+            updateCharCounter();
+        }
+
+        function updateCharCounter() {
+            const textarea = document.getElementById('simple-logs-textarea');
+            const counter = document.getElementById('char-counter');
+            const analyzeBtn = document.getElementById('simple-analyze-btn');
+            
+            counter.textContent = `${textarea.value.length} / 50,000 characters`;
+            analyzeBtn.disabled = textarea.value.trim().length === 0;
+        }
+
+        async function analyzeSimpleLogs() {
+            const textarea = document.getElementById('simple-logs-textarea');
+            const logs = textarea.value.trim();
+            
+            if (!logs) return;
+            
+            // Hide input, show loading
+            document.getElementById('simple-input-section').style.display = 'none';
+            document.getElementById('simple-loading').style.display = 'block';
+            document.getElementById('simple-results').style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/explain-logs', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ logs: logs })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Hide loading, show results
+                document.getElementById('simple-loading').style.display = 'none';
+                document.getElementById('simple-results').style.display = 'block';
+                
+                displaySimpleResults(data);
+            } catch (error) {
+                document.getElementById('simple-loading').style.display = 'none';
+                document.getElementById('simple-input-section').style.display = 'block';
+                alert('Error analyzing logs: ' + error.message);
+            }
+        }
+
+        function displaySimpleResults(data) {
+            // Summary
+            document.getElementById('summary-content').textContent = data.summary || 'Analysis complete.';
+            
+            // Risk Score
+            const riskScore = data.risk_score || 0;
+            const riskLevel = getRiskLevel(riskScore);
+            document.getElementById('risk-score-value').textContent = riskScore.toFixed(1);
+            document.getElementById('risk-score-circle').className = `risk-score-circle risk-${riskLevel}`;
+            document.getElementById('risk-label').textContent = riskLevel;
+            document.getElementById('risk-label').className = `risk-label risk-${riskLevel}`;
+            
+            // Threats
+            const threatsList = document.getElementById('threats-list');
+            threatsList.innerHTML = '';
+            if (data.threats && data.threats.length > 0) {
+                data.threats.forEach(threat => {
+                    const li = document.createElement('li');
+                    li.className = 'threat-item';
+                    li.innerHTML = `
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: var(--neutral-100); margin-bottom: 0.25rem;">${escapeHtml(threat.type)}</div>
+                            <div style="color: var(--neutral-400); font-size: 0.875rem;">${escapeHtml(threat.description)}</div>
+                        </div>
+                        <span class="threat-badge" style="background: var(--red-400); color: white;">${escapeHtml(threat.severity)}</span>
+                    `;
+                    threatsList.appendChild(li);
+                });
+            } else {
+                threatsList.innerHTML = '<li style="color: var(--neutral-500); text-align: center; padding: 2rem;">No threats detected</li>';
+            }
+            
+            // Fixes
+            const fixesList = document.getElementById('fixes-list');
+            fixesList.innerHTML = '';
+            if (data.fixes && data.fixes.length > 0) {
+                data.fixes.forEach(fix => {
+                    const li = document.createElement('li');
+                    li.className = 'fix-item';
+                    li.innerHTML = `
+                        <div class="fix-title">${escapeHtml(fix.title)}</div>
+                        <div style="color: var(--neutral-400); font-size: 0.875rem; margin-bottom: 0.5rem;">${escapeHtml(fix.description)}</div>
+                        ${fix.command ? `<div class="fix-command">${escapeHtml(fix.command)}</div>` : ''}
+                    `;
+                    fixesList.appendChild(li);
+                });
+            } else {
+                fixesList.innerHTML = '<li style="color: var(--neutral-500); text-align: center; padding: 2rem;">No fixes needed</li>';
+            }
+        }
+
+        function getRiskLevel(score) {
+            if (score < 3) return 'low';
+            if (score < 6) return 'medium';
+            if (score < 8) return 'high';
+            return 'critical';
+        }
+
+        function analyzeAnother() {
+            document.getElementById('simple-input-section').style.display = 'block';
+            document.getElementById('simple-results').style.display = 'none';
+            document.getElementById('simple-logs-textarea').value = '';
+            updateCharCounter();
+        }
+
+        function copyReport() {
+            const summary = document.getElementById('summary-content').textContent;
+            const riskScore = document.getElementById('risk-score-value').textContent;
+            const riskLevel = document.getElementById('risk-label').textContent;
+            
+            let report = `Security Log Analysis Report\n\n`;
+            report += `Risk Score: ${riskScore} (${riskLevel})\n\n`;
+            report += `Summary:\n${summary}\n\n`;
+            
+            navigator.clipboard.writeText(report).then(() => {
+                alert('Report copied to clipboard!');
+            });
+        }
+
+        // Initialize Simple Mode on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            switchToSimpleMode();
+        });
     </script>
+
+    <!-- Simple Mode Page -->
+    <div id="simple-mode-page">
+        <div class="header">
+            <div class="header-content">
+                <div class="header-title">
+                    <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                    </svg>
+                    <span>Cybersecurity Analysis Platform</span>
+                </div>
+                <div class="mode-toggle-container">
+                    <div class="mode-toggle">
+                        <button class="mode-toggle-option" id="advanced-mode-btn-2" onclick="switchToAdvancedMode()">Advanced Mode</button>
+                        <button class="mode-toggle-option active" id="simple-mode-btn-2" onclick="switchToSimpleMode()">Simple Mode</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="simple-mode-container">
+            <div class="simple-mode-header">
+                <h1>🔍 Security Log Explainer</h1>
+                <p>Paste your logs below and get easy-to-understand security insights</p>
+            </div>
+
+            <!-- Input Section -->
+            <div id="simple-input-section">
+                <div class="paste-logs-section">
+                    <div class="paste-logs-label">
+                        <h2>Paste Your Logs</h2>
+                        <button class="example-button" onclick="loadExampleLogs()">📋 Load Example</button>
+                    </div>
+                    <textarea 
+                        id="simple-logs-textarea" 
+                        class="logs-textarea" 
+                        placeholder="Paste your Apache, firewall, or authentication logs here...
+
+Example:
+192.168.1.100 - - [15/Jan/2024:10:23:45 +0000] &quot;GET /admin/config.php HTTP/1.1&quot; 404 512 &quot;-&quot; &quot;Mozilla/5.0&quot;"
+                        oninput="updateCharCounter()"
+                        maxlength="50000"
+                    ></textarea>
+                    <div class="textarea-footer">
+                        <span id="char-counter" class="char-counter">0 / 50,000 characters</span>
+                        <button id="simple-analyze-btn" class="analyze-button" onclick="analyzeSimpleLogs()" disabled>
+                            Analyze Logs
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="simple-loading" style="display: none; text-align: center; padding: 4rem;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🔄</div>
+                <h2 style="color: var(--neutral-100); margin-bottom: 0.5rem;">Analyzing Your Logs...</h2>
+                <p style="color: var(--neutral-400);">Our AI is examining your logs for security threats</p>
+            </div>
+
+            <!-- Results Section -->
+            <div id="simple-results" class="simple-results">
+                <div class="results-grid">
+                    <!-- Summary Card -->
+                    <div class="result-card" style="grid-column: 1 / -1;">
+                        <div class="result-card-header">
+                            <div class="result-card-icon" style="background: rgba(34, 211, 238, 0.1); color: var(--cyan-400);">🔍</div>
+                            <h3 class="result-card-title">What Happened</h3>
+                        </div>
+                        <div id="summary-content" class="result-card-content">
+                            Loading summary...
+                        </div>
+                    </div>
+
+                    <!-- Risk Score Card -->
+                    <div class="result-card">
+                        <div class="result-card-header">
+                            <div class="result-card-icon" style="background: rgba(251, 146, 60, 0.1); color: var(--orange-400);">⚠️</div>
+                            <h3 class="result-card-title">Risk Score</h3>
+                        </div>
+                        <div class="risk-score-display">
+                            <div id="risk-score-circle" class="risk-score-circle risk-low">
+                                <span id="risk-score-value">0.0</span>
+                            </div>
+                            <div id="risk-label" class="risk-label risk-low">Low</div>
+                        </div>
+                    </div>
+
+                    <!-- Suspicious Activities Card -->
+                    <div class="result-card">
+                        <div class="result-card-header">
+                            <div class="result-card-icon" style="background: rgba(248, 113, 113, 0.1); color: var(--red-400);">🚨</div>
+                            <h3 class="result-card-title">Suspicious Activities</h3>
+                        </div>
+                        <ul id="threats-list" class="threat-list">
+                            <li style="color: var(--neutral-500); text-align: center; padding: 2rem;">No threats detected</li>
+                        </ul>
+                    </div>
+
+                    <!-- Suggested Fixes Card -->
+                    <div class="result-card" style="grid-column: 1 / -1;">
+                        <div class="result-card-header">
+                            <div class="result-card-icon" style="background: rgba(74, 222, 128, 0.1); color: var(--green-400);">🛠️</div>
+                            <h3 class="result-card-title">Suggested Fixes</h3>
+                        </div>
+                        <ul id="fixes-list" class="fix-list">
+                            <li style="color: var(--neutral-500); text-align: center; padding: 2rem;">No fixes needed</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Action Bar -->
+                <div class="action-bar">
+                    <button class="action-button" onclick="copyReport()">
+                        📋 Copy Report
+                    </button>
+                    <button class="action-button primary" onclick="analyzeAnother()">
+                        🔄 Analyze Another Log
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
