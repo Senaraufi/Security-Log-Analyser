@@ -29,6 +29,10 @@ uuid = { workspace = true }
 dotenv = { workspace = true }
 regex = { workspace = true }
 
+# LLM integration for Simple Mode
+rig-core = { workspace = true }
+reqwest = { workspace = true }
+
 [features]
 default = []
 basic-only = []

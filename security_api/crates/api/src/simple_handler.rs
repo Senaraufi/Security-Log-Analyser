@@ -188,38 +188,139 @@ pub async fn explain_logs(
 /// Call LLM with simple mode prompt
 async fn call_llm_simple(analyzer: &LlmAnalyzer, prompt: &str) -> Result<String, AnalyzerError> {
     // Build the full prompt with system instructions
-    let _full_prompt = format!("{}\n\n{}", SIMPLE_MODE_PROMPT, prompt);
+    let full_prompt = format!("{}\n\n{}", SIMPLE_MODE_PROMPT, prompt);
     
-    // Use the analyzer's analyze_logs method but with our custom prompt
-    // For now, we'll create a simple wrapper
-    let provider_str = format!("{:?}", analyzer.provider()).to_lowercase();
-    match provider_str.as_str() {
-        "groq" | "openai" | "anthropic" | "gemini" => {
-            // Call the LLM directly with our simple prompt
-            // This is a simplified version - in production you'd want to use the full analyzer
-            Ok(format!(r#"{{
-  "summary": "Your logs show {} requests. Most activity appears normal with some suspicious patterns detected.",
-  "risk_score": 4.5,
-  "threats": [
-    {{
-      "type": "Suspicious Access Attempt",
-      "description": "Someone tried to access admin pages that don't exist on your server",
-      "severity": "Medium"
-    }}
-  ],
-  "fixes": [
-    {{
-      "title": "Review your access logs regularly",
-      "description": "Check your logs daily for unusual patterns",
-      "command": null
-    }}
-  ]
-}}"#, prompt.lines().count()))
+    // Call the LLM using the analyzer's internal methods
+    use security_analyzer_llm::LlmProvider;
+    
+    let response = match analyzer.provider() {
+        LlmProvider::OpenAI => {
+            use rig::providers::openai;
+            use rig::completion::Prompt;
+            
+            let client = openai::Client::new(&std::env::var("OPENAI_API_KEY")
+                .map_err(|_| AnalyzerError::Configuration("OPENAI_API_KEY not set".to_string()))?);
+            
+            let agent = client
+                .agent(analyzer.model())
+                .preamble(SIMPLE_MODE_PROMPT)
+                .temperature(0.3)
+                .max_tokens(2048)
+                .build();
+            
+            agent.prompt(prompt).await
+                .map_err(|e| AnalyzerError::ApiError {
+                    provider: "OpenAI".to_string(),
+                    message: e.to_string(),
+                })?
         }
-        _ => Err(AnalyzerError::Configuration(
-            "Unsupported provider for Simple Mode".to_string()
-        )),
-    }
+        LlmProvider::Anthropic => {
+            use rig::providers::anthropic;
+            use rig::completion::Prompt;
+            
+            let client = anthropic::Client::new(
+                &std::env::var("ANTHROPIC_API_KEY")
+                    .map_err(|_| AnalyzerError::Configuration("ANTHROPIC_API_KEY not set".to_string()))?,
+                "https://api.anthropic.com",
+                None,
+                "2023-06-01"
+            );
+            
+            let agent = client
+                .agent(analyzer.model())
+                .preamble(SIMPLE_MODE_PROMPT)
+                .temperature(0.3)
+                .max_tokens(2048)
+                .build();
+            
+            agent.prompt(prompt).await
+                .map_err(|e| AnalyzerError::ApiError {
+                    provider: "Anthropic".to_string(),
+                    message: e.to_string(),
+                })?
+        }
+        LlmProvider::Groq => {
+            use rig::providers::openai;
+            use rig::completion::Prompt;
+            
+            let client = openai::Client::from_url(
+                &std::env::var("GROQ_API_KEY")
+                    .map_err(|_| AnalyzerError::Configuration("GROQ_API_KEY not set".to_string()))?,
+                "https://api.groq.com/openai/v1"
+            );
+            
+            let agent = client
+                .agent(analyzer.model())
+                .preamble(SIMPLE_MODE_PROMPT)
+                .temperature(0.3)
+                .max_tokens(2048)
+                .build();
+            
+            agent.prompt(prompt).await
+                .map_err(|e| AnalyzerError::ApiError {
+                    provider: "Groq".to_string(),
+                    message: e.to_string(),
+                })?
+        }
+        LlmProvider::Gemini => {
+            let api_key = std::env::var("GEMINI_API_KEY")
+                .map_err(|_| AnalyzerError::Configuration("GEMINI_API_KEY not set".to_string()))?;
+            let model = analyzer.model();
+            
+            let url = format!(
+                "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
+                model, api_key
+            );
+            
+            let request_body = serde_json::json!({
+                "contents": [{
+                    "parts": [{
+                        "text": full_prompt
+                    }]
+                }],
+                "generationConfig": {
+                    "temperature": 0.3,
+                    "maxOutputTokens": 2048
+                }
+            });
+            
+            let client = reqwest::Client::new();
+            let response = client
+                .post(&url)
+                .json(&request_body)
+                .send()
+                .await
+                .map_err(|e| AnalyzerError::ApiError {
+                    provider: "Gemini".to_string(),
+                    message: format!("HTTP request failed: {}", e),
+                })?;
+            
+            if !response.status().is_success() {
+                let status = response.status();
+                let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+                return Err(AnalyzerError::ApiError {
+                    provider: "Gemini".to_string(),
+                    message: format!("API returned {}: {}", status, error_text),
+                });
+            }
+            
+            let response_json: serde_json::Value = response.json().await
+                .map_err(|e| AnalyzerError::ApiError {
+                    provider: "Gemini".to_string(),
+                    message: format!("Failed to parse response: {}", e),
+                })?;
+            
+            response_json["candidates"][0]["content"]["parts"][0]["text"]
+                .as_str()
+                .ok_or_else(|| AnalyzerError::ApiError {
+                    provider: "Gemini".to_string(),
+                    message: "Invalid response format".to_string(),
+                })?
+                .to_string()
+        }
+    };
+    
+    Ok(response)
 }
 
 /// Parse the LLM response into structured format
