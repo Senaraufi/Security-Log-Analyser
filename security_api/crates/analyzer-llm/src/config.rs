@@ -58,7 +58,7 @@ impl LlmProvider {
             LlmProvider::OpenAI => "gpt-4o",
             LlmProvider::Anthropic => "claude-sonnet-4-20250514",
             LlmProvider::Groq => "llama-3.1-70b-versatile",
-            LlmProvider::Gemini => "gemini-1.5-pro",
+            LlmProvider::Gemini => "gemini-1.5-flash",
         }
     }
 

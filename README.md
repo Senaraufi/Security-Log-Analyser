@@ -89,7 +89,7 @@ GROQ_API_KEY=your_key_here
 
 # Or use Gemini
 LLM_PROVIDER=gemini
-LLM_MODEL=gemini-3-flash-preview
+LLM_MODEL=gemini-1.5-flash
 GEMINI_API_KEY=your_key_here
 ```
 
