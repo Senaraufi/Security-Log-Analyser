@@ -304,8 +304,137 @@
             text-align: center;
             color: var(--neutral-500);
             font-size: 0.875rem;
-            padding-top: 2rem;
-            border-top: 1px solid var(--neutral-900);
+            margin-top: 3rem;
+        }
+
+        /* Global Footer */
+        .global-footer {
+            background: var(--neutral-950);
+            border-top: 1px solid var(--neutral-800);
+            padding: 2rem 0 1.5rem;
+            margin-top: auto;
+            width: 100%;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 3rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-brand {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--neutral-100);
+            font-weight: 600;
+            font-size: 1.125rem;
+        }
+
+        .footer-logo svg {
+            width: 28px;
+            height: 28px;
+            color: var(--cyan-400);
+        }
+
+        .footer-description {
+            color: var(--neutral-400);
+            font-size: 0.875rem;
+            line-height: 1.6;
+            max-width: 400px;
+        }
+
+        .footer-social {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .footer-social h4 {
+            color: var(--neutral-100);
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .social-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--neutral-900);
+            border: 1px solid var(--neutral-800);
+            border-radius: 0.375rem;
+            color: var(--neutral-300);
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .social-link:hover {
+            background: var(--neutral-800);
+            border-color: var(--cyan-500);
+            color: var(--cyan-400);
+            transform: translateY(-2px);
+        }
+
+        .social-link svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .footer-bottom {
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--neutral-800);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .footer-copyright {
+            color: var(--neutral-500);
+            font-size: 0.875rem;
+        }
+
+        .footer-trademark {
+            color: var(--neutral-600);
+            font-size: 0.75rem;
+        }
+
+        @media (max-width: 768px) {
+            .footer-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .footer-bottom {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .social-links {
+                flex-direction: column;
+            }
         }
 
         /* Simple Mode Page */
@@ -1343,6 +1472,59 @@
             </div>
         </div>
     </div>
+
+    <!-- Global Footer -->
+    <footer class="global-footer">
+        <div class="footer-content">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                        </svg>
+                        LogShield Security Platform
+                    </div>
+                    <p class="footer-description">
+                        Advanced security log analysis platform powered by AI and traditional threat detection. 
+                        Protecting your infrastructure with real-time threat intelligence and comprehensive reporting.
+                    </p>
+                </div>
+
+                <div class="footer-social">
+                    <h4>Connect With Me</h4>
+                    <div class="social-links">
+                        <a href="https://www.linkedin.com/in/sena-raufi-610187293/" target="_blank" rel="noopener noreferrer" class="social-link">
+                            <svg fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                            </svg>
+                            LinkedIn
+                        </a>
+                        <a href="https://github.com/Senaraufi" target="_blank" rel="noopener noreferrer" class="social-link">
+                            <svg fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                            </svg>
+                            GitHub
+                        </a>
+                        <a href="https://senaraufi.github.io/website_rs/" target="_blank" rel="noopener noreferrer" class="social-link">
+                            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                            </svg>
+                            Website
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <div class="footer-copyright">
+                    © 2026 LogShield Security Platform. All rights reserved. | Developed by <strong>Senaraufi</strong>
+                </div>
+                <div class="footer-trademark">
+                    LogShield™ is a trademark. Unauthorized use is prohibited.
+                </div>
+            </div>
+        </div>
+    </footer>
 
     <script>
         // Page Navigation
