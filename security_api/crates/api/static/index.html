@@ -1898,9 +1898,50 @@
                     summaryHTML += `</div></div>`;
                 }
                 
+                // Threat Statistics (from basic analysis data)
+                if (data.threat_statistics && data.threat_statistics.cvss_scores && data.threat_statistics.cvss_scores.length > 0) {
+                    summaryHTML += `<div style="background: var(--neutral-900); border: 1px solid var(--neutral-800); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
+                        <h3 style="color: var(--red-400); margin-bottom: 0.75rem; font-size: 1rem;">🚨 Detected Threats</h3>`;
+                    
+                    data.threat_statistics.cvss_scores.forEach((threat, i) => {
+                        const severityColor = threat.severity === 'CRITICAL' ? 'var(--red-400)' :
+                                            threat.severity === 'HIGH' ? 'var(--orange-400)' :
+                                            threat.severity === 'MEDIUM' ? 'var(--yellow-400)' : 'var(--green-400)';
+                        
+                        summaryHTML += `<div style="background: var(--neutral-800); border-left: 3px solid ${severityColor}; padding: 0.75rem; margin-bottom: 0.75rem; border-radius: 0.25rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <span style="font-weight: 600; color: var(--neutral-100);">${threat.threat_type}</span>
+                                <span style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: ${severityColor}; color: #000; border-radius: 0.25rem; font-weight: 600;">${threat.severity}</span>
+                            </div>
+                            <div style="display: flex; gap: 1rem; font-size: 0.875rem; color: var(--neutral-400);">
+                                <span><strong>CVSS:</strong> ${threat.base_score.toFixed(1)}</span>
+                                <span><strong>Count:</strong> ${threat.count || 1}</span>
+                            </div>
+                        </div>`;
+                    });
+                    
+                    summaryHTML += `</div>`;
+                }
+                
+                // High Risk IPs (from basic analysis data)
+                if (data.ip_analysis && data.ip_analysis.high_risk_ips && data.ip_analysis.high_risk_ips.length > 0) {
+                    summaryHTML += `<div style="background: var(--neutral-900); border: 1px solid var(--neutral-800); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
+                        <h3 style="color: var(--purple-400); margin-bottom: 0.75rem; font-size: 1rem;">🔍 High Risk IP Addresses</h3>
+                        <div style="display: grid; gap: 0.5rem;">`;
+                    
+                    data.ip_analysis.high_risk_ips.slice(0, 10).forEach(ip => {
+                        summaryHTML += `<div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background: var(--neutral-800); border-radius: 0.25rem;">
+                            <span style="font-family: monospace; color: var(--cyan-400);">${ip.ip}</span>
+                            <span style="color: var(--neutral-400);">${ip.count} requests</span>
+                        </div>`;
+                    });
+                    
+                    summaryHTML += `</div></div>`;
+                }
+                
                 // Recommendations Section
                 if (report.recommendations && report.recommendations.length > 0) {
-                    summaryHTML += `<div style="background: var(--neutral-900); border: 1px solid var(--neutral-800); border-radius: 0.5rem; padding: 1rem;">
+                    summaryHTML += `<div style="background: var(--neutral-900); border: 1px solid var(--neutral-800); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
                         <h3 style="color: var(--green-400); margin-bottom: 0.75rem; font-size: 1rem;">💡 Recommendations</h3>
                         <ul style="color: var(--neutral-300); line-height: 1.8; padding-left: 1.25rem; margin: 0;">`;
                     
@@ -1909,6 +1950,27 @@
                     });
                     
                     summaryHTML += `</ul></div>`;
+                }
+                
+                // Parsing Statistics (from basic analysis data)
+                if (data.parsing_info) {
+                    summaryHTML += `<div style="background: var(--neutral-900); border: 1px solid var(--neutral-800); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
+                        <h3 style="color: var(--green-400); margin-bottom: 0.75rem; font-size: 1rem;">📈 Parsing Statistics</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem;">
+                            <div>
+                                <div style="font-size: 0.875rem; color: var(--neutral-400);">Parsed Lines</div>
+                                <div style="font-size: 1.25rem; font-weight: 600; color: var(--green-400);">${data.parsing_info.parsed_lines}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.875rem; color: var(--neutral-400);">Skipped Lines</div>
+                                <div style="font-size: 1.25rem; font-weight: 600; color: var(--orange-400);">${data.parsing_info.skipped_lines}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.875rem; color: var(--neutral-400);">Success Rate</div>
+                                <div style="font-size: 1.25rem; font-weight: 600; color: var(--cyan-400);">${((data.parsing_info.parsed_lines / data.parsing_info.total_lines) * 100).toFixed(1)}%</div>
+                            </div>
+                        </div>
+                    </div>`;
                 }
                 
                 // Confidence Score

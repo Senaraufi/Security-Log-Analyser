@@ -113,7 +113,7 @@ pub async fn analyze_logs_with_llm(
         filename
     );
 
-    // Parse Apache logs
+    // Parse logs with unified parser (supports Apache, generic, and any text format)
     let mut logs = Vec::new();
     let mut parse_errors = 0;
 
@@ -122,17 +122,54 @@ pub async fn analyze_logs_with_llm(
             continue;
         }
 
+        // Try Apache format first, fall back to generic parsing
         match parse_apache_combined(line) {
             Ok(log) => logs.push(log),
-            Err(_) => parse_errors += 1,
+            Err(_) => {
+                // Use generic parser to convert any log format to Apache-like structure
+                if let Some(entry) = security_common::parsers::parse_log_line_unified(line) {
+                    // Convert generic LogEntry to ApacheLog for LLM analysis
+                    use security_common::parsers::apache::ApacheLog;
+                    use chrono::Utc;
+                    
+                    let apache_log = ApacheLog {
+                        ip: entry.ip_address.clone().unwrap_or_else(|| "unknown".to_string()),
+                        timestamp: Utc::now(), // Use current time as fallback
+                        method: "GENERIC".to_string(),
+                        path: entry.message.clone(),
+                        protocol: "LOG/1.0".to_string(),
+                        status: match entry.level.as_str() {
+                            "CRITICAL" => 500,
+                            "ERROR" => 400,
+                            "WARN" => 300,
+                            _ => 200,
+                        },
+                        size: 0,
+                        referer: "-".to_string(),
+                        user_agent: entry.username.clone().unwrap_or_else(|| "-".to_string()),
+                        is_suspicious: entry.level == "ERROR" || entry.level == "CRITICAL",
+                        threat_type: if entry.level == "CRITICAL" {
+                            Some("Critical Alert".to_string())
+                        } else if entry.level == "ERROR" {
+                            Some("Error Event".to_string())
+                        } else {
+                            None
+                        },
+                        severity: Some(entry.level.clone()),
+                    };
+                    logs.push(apache_log);
+                } else {
+                    parse_errors += 1;
+                }
+            }
         }
     }
 
     if logs.is_empty() {
         return Json(serde_json::json!({
-            "error": "No valid Apache logs found in the uploaded file",
+            "error": "No valid logs found in the uploaded file",
             "parse_errors": parse_errors,
-            "suggestion": "Ensure the file contains Apache combined log format entries"
+            "suggestion": "Ensure the file contains log entries with timestamps and messages"
         }));
     }
 
