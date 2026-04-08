@@ -1,4 +1,4 @@
-# 🛡️ LogShield Security Platform
+# Logr — Security Log Analysis Platform
 
 [![Rust](https://img.shields.io/badge/rust-1.70+-orange.svg)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -6,11 +6,11 @@
 
 Advanced security log analysis platform powered by AI and traditional threat detection. Analyze Apache, Nginx, and other log formats with real-time threat intelligence, CVSS scoring, and comprehensive reporting.
 
-![LogShield Platform](https://img.shields.io/badge/Platform-Security%20Analysis-cyan)
+![Logr Platform](https://img.shields.io/badge/Platform-Security%20Analysis-cyan)
 
-## ✨ Features
+## Features
 
-### 🔍 **Three Analysis Modes**
+### **Three Analysis Modes**
 
 1. **Simple Mode**
    - Paste logs directly for instant analysis
@@ -32,7 +32,7 @@ Advanced security log analysis platform powered by AI and traditional threat det
    - Natural language explanations
    - Supports multiple LLM providers
 
-### 🚀 **Key Capabilities**
+### **Key Capabilities**
 
 - **Multi-Format Support**: Apache, Nginx, and common log formats
 - **Real-time Analysis**: Instant threat detection and classification
@@ -43,7 +43,7 @@ Advanced security log analysis platform powered by AI and traditional threat det
 - **MITRE ATT&CK**: Map threats to attack techniques
 - **Modern UI**: Dark theme, responsive design
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 security_api/
@@ -63,7 +63,7 @@ security_api/
 - **Database**: MySQL
 - **LLMs**: Groq, Gemini, OpenAI, Anthropic
 
-## 📦 Installation
+## Installation
 
 ### Prerequisites
 
@@ -110,7 +110,7 @@ security_api/
    Open http://localhost:3000 in your browser
    ```
 
-## ⚙️ Configuration
+## Configuration
 
 Edit `.env` file:
 
@@ -136,7 +136,7 @@ ANTHROPIC_API_KEY=your_anthropic_key_here
 - **OpenAI**: [Get API Key](https://platform.openai.com/)
 - **Anthropic**: [Get API Key](https://console.anthropic.com/)
 
-## 🎯 Usage
+## Usage
 
 ### Simple Mode
 1. Navigate to "Simple Mode"
@@ -158,7 +158,7 @@ ANTHROPIC_API_KEY=your_anthropic_key_here
 4. Get AI-generated threat intelligence
 5. View MITRE ATT&CK mappings and recommendations
 
-## 📊 API Endpoints
+## API Endpoints
 
 ```
 POST   /api/explain-logs        # Simple Mode analysis
@@ -167,14 +167,14 @@ POST   /api/analyze-with-llm     # AI-powered analysis
 GET    /api/llm-health           # LLM provider health check
 ```
 
-## 🔒 Security
+## Security
 
 - **API Keys**: Never commit `.env` file (already in `.gitignore`)
 - **Database**: Use strong passwords and secure connections
 - **HTTPS**: Enable in production environments
 - **Rate Limiting**: Implement for public deployments
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please:
 
@@ -184,18 +184,18 @@ Contributions are welcome! Please:
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **MITRE ATT&CK** for threat intelligence framework
 - **CVSS** for vulnerability scoring standards
 - **Groq** for free LLM API access
 - **Rust Community** for excellent tooling
 
-## 📧 Contact
+## Contact
 
 **Developer**: YOUR_NAME
 
@@ -205,6 +205,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**LogShield™** - Advanced Security Log Analysis Platform
+**Logr™** - Advanced Security Log Analysis Platform
 
-© 2026 LogShield Security Platform. All rights reserved.
+© 2026 Logr Security Platform. All rights reserved.

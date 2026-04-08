@@ -98,13 +98,13 @@ git push origin v1.0.0
 1. Go to your repository on GitHub
 2. Click "Releases" → "Create a new release"
 3. Select tag: `v1.0.0`
-4. Release title: `LogShield v1.0.0 - Initial Release`
+4. Release title: `Logr v1.0.0 - Initial Release`
 5. Description: Copy from CHANGELOG.md (v1.0.0 section)
 6. Add these highlights:
    ```markdown
    ## 🎉 First Public Release!
    
-   LogShield is an advanced security log analysis platform that combines traditional 
+   Logr is an advanced security log analysis platform that combines traditional 
    pattern-based threat detection with AI-powered intelligence.
    
    ### ✨ Key Features

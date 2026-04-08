@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LogShield Security Platform</title>
+    <title>Logr — Security Log Analysis</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
@@ -51,6 +51,8 @@
             min-height: 100vh;
             line-height: 1.6;
             overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
         /* Header */
@@ -85,6 +87,25 @@
             width: 24px;
             height: 24px;
             color: var(--cyan-500);
+        }
+
+        .logr-mark {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--cyan-500), var(--cyan-600));
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .logr-mark span {
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.875rem;
+            font-family: 'SF Mono', 'Monaco', 'Menlo', 'Courier New', monospace;
+            line-height: 1;
         }
 
         .header-actions {
@@ -129,9 +150,17 @@
 
         /* Landing Page */
         .landing-page {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .landing-content {
             max-width: 1200px;
             margin: 0 auto;
             padding: 4rem 2rem;
+            flex: 1;
+            width: 100%;
         }
 
         .landing-header {
@@ -155,7 +184,7 @@
 
         .mode-selection-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 2rem;
             margin-bottom: 3rem;
         }
@@ -440,6 +469,8 @@
         /* Simple Mode Page */
         .simple-mode-page {
             display: none;
+            flex: 1;
+            flex-direction: column;
         }
 
         .simple-container {
@@ -556,6 +587,8 @@
         /* Advanced Mode Page */
         .advanced-mode-page {
             display: none;
+            flex: 1;
+            flex-direction: column;
         }
 
         .advanced-container {
@@ -585,7 +618,7 @@
 
         .engine-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 2rem;
         }
 
@@ -782,6 +815,8 @@
         /* AI Dashboard Page */
         .ai-dashboard-page {
             display: none;
+            flex: 1;
+            flex-direction: column;
         }
 
         .ai-dashboard-container {
@@ -980,13 +1015,21 @@
         }
 
         /* Responsive */
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
             .mode-selection-grid,
             .engine-grid {
                 grid-template-columns: 1fr;
             }
 
-            .landing-page,
+            .dashboard-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .landing-content,
             .simple-container,
             .advanced-container {
                 padding: 2rem 1rem;
@@ -994,6 +1037,14 @@
 
             .header {
                 padding: 1rem 1.5rem;
+            }
+
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .results-grid .result-card[style*="grid-column"] {
+                grid-column: auto;
             }
         }
 
@@ -1013,10 +1064,8 @@
         <div class="header">
             <div class="header-content">
                 <div class="logo">
-                    <svg class="logo-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-                    </svg>
-                    <span>LogShield Security Platform</span>
+                    <div class="logr-mark"><span>L</span></div>
+                    <span>Logr</span>
                 </div>
                 <div class="header-actions">
                     <button class="help-button" onclick="showHelp()">?</button>
@@ -1024,55 +1073,57 @@
             </div>
         </div>
 
-        <div class="landing-header">
-            <h1>Choose Your Analysis Mode</h1>
-            <p>Select the analysis mode that best fits your needs. Simple mode for quick log analysis, or Advanced mode for comprehensive threat detection with AI capabilities.</p>
-        </div>
-
-        <div class="mode-selection-grid">
-            <!-- Simple Mode Card -->
-            <div class="mode-selection-card simple-mode" onclick="showSimpleMode()">
-                <div class="mode-card-header">
-                    <div class="mode-card-title">
-                        <div class="mode-icon">🔍</div>
-                        <div>
-                            <h2>Simple Mode</h2>
-                        </div>
-                    </div>
-                    <div class="mode-card-arrow">→</div>
-                </div>
-                <p class="mode-card-description">Quick and straightforward log analysis with essential threat detection and visual insights. Perfect for rapid security assessments.</p>
-                <ul class="mode-features">
-                    <li>Paste and analyze logs instantly</li>
-                    <li>Generate sample logs</li>
-                    <li>Simplified visual reports</li>
-                </ul>
-                <div class="mode-card-footer">Best for quick assessments</div>
+        <div class="landing-content">
+            <div class="landing-header">
+                <h1>Choose Your Analysis Mode</h1>
+                <p>Select the analysis mode that best fits your needs. Simple mode for quick log analysis, or Advanced mode for comprehensive threat detection with AI capabilities.</p>
             </div>
 
-            <!-- Advanced Mode Card -->
-            <div class="mode-selection-card advanced-mode" onclick="showAdvancedMode()">
-                <div class="mode-card-header">
-                    <div class="mode-card-title">
-                        <div class="mode-icon">🛡️</div>
-                        <div>
-                            <h2>Advanced Mode <span style="font-size: 1rem;">✨</span></h2>
+            <div class="mode-selection-grid">
+                <!-- Simple Mode Card -->
+                <div class="mode-selection-card simple-mode" onclick="showSimpleMode()">
+                    <div class="mode-card-header">
+                        <div class="mode-card-title">
+                            <div class="mode-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:24px;height:24px;"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg></div>
+                            <div>
+                                <h2>Simple Mode</h2>
+                            </div>
                         </div>
+                        <div class="mode-card-arrow">→</div>
                     </div>
-                    <div class="mode-card-arrow">→</div>
+                    <p class="mode-card-description">Quick and straightforward log analysis with essential threat detection and visual insights. Perfect for rapid security assessments.</p>
+                    <ul class="mode-features">
+                        <li>Paste and analyze logs instantly</li>
+                        <li>Generate sample logs</li>
+                        <li>Simplified visual reports</li>
+                    </ul>
+                    <div class="mode-card-footer">Best for quick assessments</div>
                 </div>
-                <p class="mode-card-description">Comprehensive security dashboard with full threat intelligence, IP analysis, and optional AI-powered insights from Claude.</p>
-                <ul class="mode-features">
-                    <li>Full SOC dashboard</li>
-                    <li>AI analysis option</li>
-                    <li>Detailed reporting</li>
-                </ul>
-                <div class="mode-card-footer">Best for comprehensive analysis</div>
-            </div>
-        </div>
 
-        <div class="landing-footer">
-            Enterprise Security Platform • Real-time Threat Detection • SOC Ready
+                <!-- Advanced Mode Card -->
+                <div class="mode-selection-card advanced-mode" onclick="showAdvancedMode()">
+                    <div class="mode-card-header">
+                        <div class="mode-card-title">
+                            <div class="mode-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:24px;height:24px;"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg></div>
+                            <div>
+                                <h2>Advanced Mode</h2>
+                            </div>
+                        </div>
+                        <div class="mode-card-arrow">→</div>
+                    </div>
+                    <p class="mode-card-description">Comprehensive security dashboard with full threat intelligence, IP analysis, and optional AI-powered insights.</p>
+                    <ul class="mode-features">
+                        <li>Full SOC dashboard</li>
+                        <li>AI analysis option</li>
+                        <li>Detailed reporting</li>
+                    </ul>
+                    <div class="mode-card-footer">Best for comprehensive analysis</div>
+                </div>
+            </div>
+
+            <div class="landing-footer">
+                Enterprise Security Platform • Real-time Threat Detection • SOC Ready
+            </div>
         </div>
     </div>
 
@@ -1081,13 +1132,11 @@
         <div class="header">
             <div class="header-content">
                 <div class="logo">
-                    <svg class="logo-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-                    </svg>
+                    <div class="logr-mark"><span>L</span></div>
                     <span>Simple Log Analysis</span>
                 </div>
                 <div class="header-actions">
-                    <button class="btn btn-secondary" onclick="showExportModal('simple')" style="margin-right: 1rem;">📥 Export</button>
+                    <button class="btn btn-secondary" onclick="showExportModal('simple')" style="margin-right: 1rem;"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:16px;height:16px;"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg> Export</button>
                     <a href="#" class="back-link" onclick="showLandingPage(); return false;">Back to Home</a>
                 </div>
             </div>
@@ -1129,7 +1178,7 @@
                 <div class="results-grid">
                     <div class="result-card" style="grid-column: 1 / -1;">
                         <div class="result-card-header">
-                            <div class="result-icon" style="background: rgba(34, 211, 238, 0.1); color: var(--cyan-400);">🔍</div>
+                            <div class="result-icon" style="background: rgba(34, 211, 238, 0.1); color: var(--cyan-400);"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:20px;height:20px;"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg></div>
                             <h3>Summary</h3>
                         </div>
                         <div id="summary-content" class="result-content">
@@ -1139,7 +1188,7 @@
 
                     <div class="result-card">
                         <div class="result-card-header">
-                            <div class="result-icon" style="background: rgba(251, 146, 60, 0.1); color: var(--orange-400);">⚠️</div>
+                            <div class="result-icon" style="background: rgba(251, 146, 60, 0.1); color: var(--orange-400);"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:20px;height:20px;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg></div>
                             <h3>Risk Score</h3>
                         </div>
                         <div id="risk-score-display" class="result-content">
@@ -1150,7 +1199,7 @@
 
                     <div class="result-card">
                         <div class="result-card-header">
-                            <div class="result-icon" style="background: rgba(248, 113, 113, 0.1); color: var(--red-400);">🚨</div>
+                            <div class="result-icon" style="background: rgba(248, 113, 113, 0.1); color: var(--red-400);"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:20px;height:20px;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg></div>
                             <h3>Threats Detected</h3>
                         </div>
                         <div id="threats-content" class="result-content">
@@ -1160,7 +1209,7 @@
 
                     <div class="result-card" style="grid-column: 1 / -1;">
                         <div class="result-card-header">
-                            <div class="result-icon" style="background: rgba(74, 222, 128, 0.1); color: var(--green-400);">🛠️</div>
+                            <div class="result-icon" style="background: rgba(74, 222, 128, 0.1); color: var(--green-400);"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:20px;height:20px;"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17l-5.384-3.19a.5.5 0 00-.497.006l-2.19 1.3a.5.5 0 00-.191.67l1.844 3.187a.5.5 0 00.399.258l2.579.136a.5.5 0 00.368-.152l3.071-3.071a.5.5 0 00-.148-.844zM21.75 12a9.75 9.75 0 11-19.5 0 9.75 9.75 0 0119.5 0z"/></svg></div>
                             <h3>Recommended Actions</h3>
                         </div>
                         <div id="recommendations-content" class="result-content">
@@ -1177,9 +1226,7 @@
         <div class="header">
             <div class="header-content">
                 <div class="logo">
-                    <svg class="logo-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-                    </svg>
+                    <div class="logr-mark"><span>L</span></div>
                     <span>Advanced Analysis</span>
                 </div>
                 <div class="header-actions">
@@ -1199,7 +1246,7 @@
                     <!-- Standard Analysis -->
                     <div class="engine-card" onclick="launchStandardAnalysis()">
                         <div class="engine-header">
-                            <div class="engine-icon">📊</div>
+                            <div class="engine-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:28px;height:28px;color:var(--cyan-400);"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg></div>
                             <div class="engine-title">
                                 <h3>Standard Analysis</h3>
                                 <div class="engine-subtitle">Traditional threat detection</div>
@@ -1222,9 +1269,9 @@
                     <!-- AI-Powered Analysis -->
                     <div class="engine-card ai-powered" onclick="launchAIAnalysis()">
                         <div class="engine-header">
-                            <div class="engine-icon">✨</div>
+                            <div class="engine-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:28px;height:28px;color:var(--purple-400);"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"/></svg></div>
                             <div class="engine-title">
-                                <h3>AI-Powered Analysis <span style="font-size: 0.875rem;">✨</span></h3>
+                                <h3>AI-Powered Analysis</h3>
                                 <div class="engine-subtitle">Advanced threat intelligence</div>
                             </div>
                         </div>
@@ -1244,7 +1291,7 @@
                 </div>
 
                 <div class="help-section">
-                    <h3>🤔 Not sure which to choose?</h3>
+                    <h3>Not sure which to choose?</h3>
                     <p>Start with <strong>Standard Analysis</strong> for routine security monitoring and known threat detection. Use <strong>AI-Powered Analysis</strong> when investigating complex incidents, analyzing sophisticated attack patterns, or requiring detailed explanations of security events.</p>
                 </div>
             </div>
@@ -1256,14 +1303,12 @@
         <div class="header">
             <div class="header-content">
                 <div class="logo">
-                    <svg class="logo-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-                    </svg>
-                    <span>AI-Powered Analysis Dashboard</span>
+                    <div class="logr-mark"><span>L</span></div>
+                    <span>AI-Powered Analysis</span>
                 </div>
                 <div class="header-actions">
                     <a href="#" class="back-link" onclick="showAdvancedMode(); return false;">← Back</a>
-                    <a href="#" class="back-link" onclick="showLandingPage(); return false;">🏠 Home</a>
+                    <a href="#" class="back-link" onclick="showLandingPage(); return false;">Home</a>
                 </div>
             </div>
         </div>
@@ -1271,7 +1316,7 @@
         <div class="ai-dashboard-container">
             <div class="dashboard-header">
                 <div class="dashboard-title">
-                    <h1>AI-Powered Analysis Dashboard <span class="ai-badge">✨ AI</span></h1>
+                    <h1>AI-Powered Analysis Dashboard <span class="ai-badge">AI</span></h1>
                 </div>
                 <div class="provider-selector-header">
                     <select id="llm-provider-dropdown" class="provider-dropdown" onchange="handleProviderChange()">
@@ -1280,13 +1325,13 @@
                         <option value="openai" disabled style="color: var(--neutral-600);">GPT-4 (OpenAI) - Not Configured</option>
                         <option value="anthropic" disabled style="color: var(--neutral-600);">Claude (Anthropic) - Not Configured</option>
                     </select>
-                    <button class="btn btn-secondary" onclick="showExportModal('ai')" style="margin-left: 1rem;">📥 Export Report</button>
+                    <button class="btn btn-secondary" onclick="showExportModal('ai')" style="margin-left: 1rem;"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:16px;height:16px;"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg> Export Report</button>
                 </div>
             </div>
 
             <div class="upload-section">
                 <div class="upload-area" onclick="document.getElementById('file-input').click()">
-                    <div class="upload-icon">📤</div>
+                    <div class="upload-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:48px;height:48px;color:var(--neutral-500);"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg></div>
                     <div class="upload-text">
                         <h3>Upload Log File</h3>
                         <p>Click to browse or drag and drop your log files here</p>
@@ -1307,7 +1352,7 @@
                 <div class="results-grid">
                     <div class="result-card" style="grid-column: 1 / -1;">
                         <div class="result-card-header">
-                            <div class="result-icon" style="background: rgba(168, 85, 247, 0.1); color: var(--purple-400);">✨</div>
+                            <div class="result-icon" style="background: rgba(168, 85, 247, 0.1); color: var(--purple-400);"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:20px;height:20px;"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg></div>
                             <h3>AI Analysis Summary</h3>
                         </div>
                         <div id="ai-summary-content" class="result-content">
@@ -1324,15 +1369,13 @@
         <div class="header">
             <div class="header-content">
                 <div class="logo">
-                    <svg class="logo-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                    <span>Standard Analysis Dashboard</span>
+                    <div class="logr-mark"><span>L</span></div>
+                    <span>Standard Analysis</span>
                 </div>
                 <div class="header-actions">
-                    <button class="btn btn-secondary" onclick="showExportModal('standard')" style="margin-right: 1rem;">📥 Export</button>
+                    <button class="btn btn-secondary" onclick="showExportModal('standard')" style="margin-right: 1rem;"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:16px;height:16px;"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg> Export</button>
                     <a href="#" class="back-link" onclick="showAdvancedMode(); return false;">← Back</a>
-                    <a href="#" class="back-link" onclick="showLandingPage(); return false;">🏠 Home</a>
+                    <a href="#" class="back-link" onclick="showLandingPage(); return false;">Home</a>
                 </div>
             </div>
         </div>
@@ -1340,13 +1383,13 @@
         <div class="ai-dashboard-container">
             <div class="dashboard-header">
                 <div class="dashboard-title">
-                    <h1>Standard Analysis Dashboard 📊</h1>
+                    <h1>Standard Analysis Dashboard</h1>
                 </div>
             </div>
 
             <div class="upload-section">
                 <div class="upload-area" onclick="document.getElementById('standard-file-input').click()">
-                    <div class="upload-icon">📤</div>
+                    <div class="upload-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:48px;height:48px;color:var(--neutral-500);"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg></div>
                     <div class="upload-text">
                         <h3>Upload Log File</h3>
                         <p>Click to browse or drag and drop your log files here</p>
@@ -1368,7 +1411,7 @@
                 <div class="results-grid">
                     <div class="result-card" style="grid-column: 1 / -1;">
                         <div class="result-card-header">
-                            <div class="result-icon" style="background: rgba(34, 211, 238, 0.1); color: var(--cyan-400);">📊</div>
+                            <div class="result-icon" style="background: rgba(34, 211, 238, 0.1); color: var(--cyan-400);"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:20px;height:20px;"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg></div>
                             <h3>Analysis Results</h3>
                         </div>
                         <div id="standard-summary-content" class="result-content">
@@ -1384,13 +1427,13 @@
     <div id="export-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center;">
         <div style="background: var(--neutral-900); border: 1px solid var(--neutral-700); border-radius: 0.75rem; max-width: 500px; padding: 2rem; position: relative;">
             <button onclick="closeExportModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: var(--neutral-400); font-size: 1.5rem; cursor: pointer; padding: 0.5rem;">&times;</button>
-            <h2 style="color: var(--cyan-400); margin-bottom: 1rem;">📥 Export Report</h2>
+            <h2 style="color: var(--cyan-400); margin-bottom: 1rem;">Export Report</h2>
             <p style="color: var(--neutral-300); margin-bottom: 1.5rem; font-size: 0.875rem;">Choose your preferred export format:</p>
             
             <div style="display: flex; flex-direction: column; gap: 1rem;">
                 <button onclick="exportAs('json')" style="padding: 1rem; background: var(--neutral-800); border: 1px solid var(--neutral-700); border-radius: 0.5rem; color: var(--neutral-100); cursor: pointer; text-align: left; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--cyan-500)'" onmouseout="this.style.borderColor='var(--neutral-700)'">
                     <div style="display: flex; align-items: center; gap: 0.75rem;">
-                        <span style="font-size: 1.5rem;">📄</span>
+                        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:24px;height:24px;color:var(--cyan-400);"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"/></svg>
                         <div>
                             <div style="font-weight: 600; margin-bottom: 0.25rem;">JSON Format</div>
                             <div style="font-size: 0.75rem; color: var(--neutral-400);">Complete data structure, ideal for integration</div>
@@ -1400,7 +1443,7 @@
                 
                 <button onclick="exportAs('csv')" style="padding: 1rem; background: var(--neutral-800); border: 1px solid var(--neutral-700); border-radius: 0.5rem; color: var(--neutral-100); cursor: pointer; text-align: left; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--cyan-500)'" onmouseout="this.style.borderColor='var(--neutral-700)'">
                     <div style="display: flex; align-items: center; gap: 0.75rem;">
-                        <span style="font-size: 1.5rem;">📊</span>
+                        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:24px;height:24px;color:var(--cyan-400);"><path stroke-linecap="round" stroke-linejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0112 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m17.25-3.75h-7.5c-.621 0-1.125.504-1.125 1.125m8.625-1.125c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M12 10.875v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125M10.875 12c-.621 0-1.125.504-1.125 1.125M12 12c.621 0 1.125.504 1.125 1.125m0 0v1.5c0 .621-.504 1.125-1.125 1.125m0-2.625c0 .621.504 1.125 1.125 1.125"/></svg>
                         <div>
                             <div style="font-weight: 600; margin-bottom: 0.25rem;">CSV Format</div>
                             <div style="font-size: 0.75rem; color: var(--neutral-400);">Spreadsheet-friendly, easy to analyze</div>
@@ -1410,7 +1453,7 @@
                 
                 <button onclick="exportAs('txt')" style="padding: 1rem; background: var(--neutral-800); border: 1px solid var(--neutral-700); border-radius: 0.5rem; color: var(--neutral-100); cursor: pointer; text-align: left; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--cyan-500)'" onmouseout="this.style.borderColor='var(--neutral-700)'">
                     <div style="display: flex; align-items: center; gap: 0.75rem;">
-                        <span style="font-size: 1.5rem;">📝</span>
+                        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:24px;height:24px;color:var(--cyan-400);"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
                         <div>
                             <div style="font-weight: 600; margin-bottom: 0.25rem;">Text Report</div>
                             <div style="font-size: 0.75rem; color: var(--neutral-400);">Human-readable formatted report</div>
@@ -1425,31 +1468,31 @@
     <div id="help-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center;">
         <div style="background: var(--neutral-900); border: 1px solid var(--neutral-700); border-radius: 0.75rem; max-width: 600px; max-height: 80vh; overflow-y: auto; padding: 2rem; position: relative;">
             <button onclick="closeHelp()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: var(--neutral-400); font-size: 1.5rem; cursor: pointer; padding: 0.5rem;">&times;</button>
-            <h2 style="color: var(--cyan-400); margin-bottom: 1rem;">📚 Help & Documentation</h2>
+            <h2 style="color: var(--cyan-400); margin-bottom: 1rem;">Help & Documentation</h2>
             
             <div style="margin-bottom: 1.5rem;">
-                <h3 style="color: var(--purple-400); margin-bottom: 0.5rem;">🔍 Simple Mode</h3>
+                <h3 style="color: var(--purple-400); margin-bottom: 0.5rem;">Simple Mode</h3>
                 <p style="color: var(--neutral-300); line-height: 1.6; font-size: 0.875rem;">
                     Paste your logs directly and get instant, beginner-friendly analysis with risk scores, threats, and actionable fixes. Perfect for quick assessments.
                 </p>
             </div>
             
             <div style="margin-bottom: 1.5rem;">
-                <h3 style="color: var(--purple-400); margin-bottom: 0.5rem;">📊 Standard Analysis</h3>
+                <h3 style="color: var(--purple-400); margin-bottom: 0.5rem;">Standard Analysis</h3>
                 <p style="color: var(--neutral-300); line-height: 1.6; font-size: 0.875rem;">
                     Upload log files for comprehensive pattern-based threat detection. Includes CVSS scoring, IP reputation analysis, and detailed parsing statistics. No API keys required.
                 </p>
             </div>
             
             <div style="margin-bottom: 1.5rem;">
-                <h3 style="color: var(--purple-400); margin-bottom: 0.5rem;">✨ AI-Powered Analysis</h3>
+                <h3 style="color: var(--purple-400); margin-bottom: 0.5rem;">AI-Powered Analysis</h3>
                 <p style="color: var(--neutral-300); line-height: 1.6; font-size: 0.875rem;">
                     Leverage LLMs for advanced threat intelligence, contextual analysis, and natural language explanations. Supports Groq (free) and Gemini. Ideal for complex investigations.
                 </p>
             </div>
             
             <div style="margin-bottom: 1.5rem;">
-                <h3 style="color: var(--purple-400); margin-bottom: 0.5rem;">🔑 LLM Providers</h3>
+                <h3 style="color: var(--purple-400); margin-bottom: 0.5rem;">LLM Providers</h3>
                 <p style="color: var(--neutral-300); line-height: 1.6; font-size: 0.875rem;">
                     <strong>Currently Configured:</strong><br>
                     • Groq (Llama 3.3) ✓<br>
@@ -1459,7 +1502,7 @@
             </div>
             
             <div style="margin-bottom: 1.5rem;">
-                <h3 style="color: var(--purple-400); margin-bottom: 0.5rem;">📥 Export Reports</h3>
+                <h3 style="color: var(--purple-400); margin-bottom: 0.5rem;">Export Reports</h3>
                 <p style="color: var(--neutral-300); line-height: 1.6; font-size: 0.875rem;">
                     Click the Export button to download your analysis results as JSON. Available in all analysis modes after completing an analysis.
                 </p>
@@ -1467,7 +1510,7 @@
             
             <div style="padding: 1rem; background: rgba(34, 211, 238, 0.1); border: 1px solid rgba(34, 211, 238, 0.3); border-radius: 0.5rem;">
                 <p style="color: var(--cyan-400); font-size: 0.875rem; margin: 0;">
-                    💡 <strong>Tip:</strong> Start with Simple Mode for quick checks, use Standard Analysis for routine monitoring, and leverage AI Analysis for complex security investigations.
+                    <strong>Tip:</strong> Start with Simple Mode for quick checks, use Standard Analysis for routine monitoring, and leverage AI Analysis for complex security investigations.
                 </p>
             </div>
         </div>
@@ -1479,10 +1522,8 @@
             <div class="footer-grid">
                 <div class="footer-brand">
                     <div class="footer-logo">
-                        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-                        </svg>
-                        LogShield Security Platform
+                        <div class="logr-mark"><span>L</span></div>
+                        Logr
                     </div>
                     <p class="footer-description">
                         Advanced security log analysis platform powered by AI and traditional threat detection. 
@@ -1517,10 +1558,10 @@
 
             <div class="footer-bottom">
                 <div class="footer-copyright">
-                    © 2026 LogShield Security Platform. All rights reserved. | Developed by <strong>Senaraufi</strong>
+                    © 2026 Logr. All rights reserved. | Developed by <strong>Senaraufi</strong>
                 </div>
                 <div class="footer-trademark">
-                    LogShield™ is a trademark. Unauthorized use is prohibited.
+                    Logr™ is a trademark. Unauthorized use is prohibited.
                 </div>
             </div>
         </div>
@@ -1528,44 +1569,35 @@
 
     <script>
         // Page Navigation
+        const allPages = ['landing-page', 'simple-mode-page', 'advanced-mode-page', 'ai-dashboard-page', 'standard-analysis-page'];
+        
+        function hideAllPages() {
+            allPages.forEach(id => document.getElementById(id).style.display = 'none');
+        }
+
         function showLandingPage() {
-            document.getElementById('landing-page').style.display = 'block';
-            document.getElementById('simple-mode-page').style.display = 'none';
-            document.getElementById('advanced-mode-page').style.display = 'none';
-            document.getElementById('ai-dashboard-page').style.display = 'none';
-            document.getElementById('standard-analysis-page').style.display = 'none';
+            hideAllPages();
+            document.getElementById('landing-page').style.display = 'flex';
         }
 
         function showSimpleMode() {
-            document.getElementById('landing-page').style.display = 'none';
-            document.getElementById('simple-mode-page').style.display = 'block';
-            document.getElementById('advanced-mode-page').style.display = 'none';
-            document.getElementById('ai-dashboard-page').style.display = 'none';
-            document.getElementById('standard-analysis-page').style.display = 'none';
+            hideAllPages();
+            document.getElementById('simple-mode-page').style.display = 'flex';
         }
 
         function showAdvancedMode() {
-            document.getElementById('landing-page').style.display = 'none';
-            document.getElementById('simple-mode-page').style.display = 'none';
-            document.getElementById('advanced-mode-page').style.display = 'block';
-            document.getElementById('ai-dashboard-page').style.display = 'none';
-            document.getElementById('standard-analysis-page').style.display = 'none';
+            hideAllPages();
+            document.getElementById('advanced-mode-page').style.display = 'flex';
         }
 
         function showAIDashboard() {
-            document.getElementById('landing-page').style.display = 'none';
-            document.getElementById('simple-mode-page').style.display = 'none';
-            document.getElementById('advanced-mode-page').style.display = 'none';
-            document.getElementById('ai-dashboard-page').style.display = 'block';
-            document.getElementById('standard-analysis-page').style.display = 'none';
+            hideAllPages();
+            document.getElementById('ai-dashboard-page').style.display = 'flex';
         }
 
         function showStandardAnalysis() {
-            document.getElementById('landing-page').style.display = 'none';
-            document.getElementById('simple-mode-page').style.display = 'none';
-            document.getElementById('advanced-mode-page').style.display = 'none';
-            document.getElementById('ai-dashboard-page').style.display = 'none';
-            document.getElementById('standard-analysis-page').style.display = 'block';
+            hideAllPages();
+            document.getElementById('standard-analysis-page').style.display = 'flex';
         }
 
         // Simple Mode Functions
@@ -1636,7 +1668,7 @@
                         </div>
                     `).join('');
                 } else {
-                    threatsContent.innerHTML = '<div style="text-align: center; color: var(--neutral-500); padding: 2rem;">✅ No threats detected</div>';
+                    threatsContent.innerHTML = '<div style="text-align: center; color: var(--neutral-500); padding: 2rem;">No threats detected</div>';
                 }
                 
                 // Update recommendations (fixes) - backend returns array of {title, description, command}
@@ -1650,7 +1682,7 @@
                         </div>
                     `).join('');
                 } else {
-                    recsContent.innerHTML = '<div style="text-align: center; color: var(--neutral-500); padding: 2rem;">✅ No actions needed</div>';
+                    recsContent.innerHTML = '<div style="text-align: center; color: var(--neutral-500); padding: 2rem;">No actions needed</div>';
                 }
                 
             } catch (error) {
@@ -1711,7 +1743,7 @@
                 // Format the standard analysis results
                 let summaryHTML = `
                     <div style="background: var(--neutral-900); border: 1px solid var(--neutral-800); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
-                        <h3 style="color: var(--cyan-400); margin-bottom: 0.75rem; font-size: 1rem;">📊 Analysis Overview</h3>
+                        <h3 style="color: var(--cyan-400); margin-bottom: 0.75rem; font-size: 1rem;">Analysis Overview</h3>
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
                             <div style="padding: 0.75rem; background: var(--neutral-800); border-radius: 0.375rem;">
                                 <div style="font-size: 0.875rem; color: var(--neutral-400);">Total Events</div>
@@ -1740,7 +1772,7 @@
                 // Threat Statistics
                 if (data.threat_statistics && data.threat_statistics.cvss_scores && data.threat_statistics.cvss_scores.length > 0) {
                     summaryHTML += `<div style="background: var(--neutral-900); border: 1px solid var(--neutral-800); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
-                        <h3 style="color: var(--red-400); margin-bottom: 0.75rem; font-size: 1rem;">🚨 Detected Threats</h3>`;
+                        <h3 style="color: var(--red-400); margin-bottom: 0.75rem; font-size: 1rem;">Detected Threats</h3>`;
                     
                     data.threat_statistics.cvss_scores.forEach((threat, i) => {
                         const severityColor = threat.severity === 'CRITICAL' ? 'var(--red-400)' :
@@ -1765,7 +1797,7 @@
                 // High Risk IPs
                 if (data.ip_analysis && data.ip_analysis.high_risk_ips && data.ip_analysis.high_risk_ips.length > 0) {
                     summaryHTML += `<div style="background: var(--neutral-900); border: 1px solid var(--neutral-800); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
-                        <h3 style="color: var(--purple-400); margin-bottom: 0.75rem; font-size: 1rem;">🔍 High Risk IP Addresses</h3>
+                        <h3 style="color: var(--purple-400); margin-bottom: 0.75rem; font-size: 1rem;">High Risk IP Addresses</h3>
                         <div style="display: grid; gap: 0.5rem;">`;
                     
                     data.ip_analysis.high_risk_ips.slice(0, 10).forEach(ip => {
@@ -1780,7 +1812,7 @@
                 
                 // Parsing Info
                 summaryHTML += `<div style="background: var(--neutral-900); border: 1px solid var(--neutral-800); border-radius: 0.5rem; padding: 1rem;">
-                    <h3 style="color: var(--green-400); margin-bottom: 0.75rem; font-size: 1rem;">📈 Parsing Statistics</h3>
+                    <h3 style="color: var(--green-400); margin-bottom: 0.75rem; font-size: 1rem;">Parsing Statistics</h3>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem;">
                         <div>
                             <div style="font-size: 0.875rem; color: var(--neutral-400);">Parsed Lines</div>
@@ -1846,14 +1878,14 @@
                 
                 let summaryHTML = `
                     <div style="background: var(--neutral-900); border: 1px solid var(--neutral-800); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
-                        <h3 style="color: var(--purple-400); margin-bottom: 0.75rem; font-size: 1rem;">📋 Executive Summary</h3>
+                        <h3 style="color: var(--purple-400); margin-bottom: 0.75rem; font-size: 1rem;">Executive Summary</h3>
                         <p style="color: var(--neutral-300); line-height: 1.6;">${report.summary || 'Analysis complete'}</p>
                         <div style="margin-top: 0.75rem; padding: 0.75rem; background: var(--neutral-800); border-radius: 0.375rem;">
                             <strong style="color: var(--neutral-100);">Threat Level:</strong> 
                             <span style="color: var(--red-400); font-weight: 600; font-size: 1.1rem;">${report.threat_level || 'Unknown'}</span>
                         </div>
                         <div style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--neutral-400);">
-                            📊 Analyzed ${data.total_logs || 0} logs | 🚨 ${data.suspicious_logs || 0} suspicious
+                            Analyzed ${data.total_logs || 0} logs | ${data.suspicious_logs || 0} suspicious
                         </div>
                     </div>
                 `;
@@ -1862,7 +1894,7 @@
                 const findings = report.attack_chains || [];
                 if (findings.length > 0 || (report.indicators_of_compromise && report.indicators_of_compromise.length > 0)) {
                     summaryHTML += `<div style="background: var(--neutral-900); border: 1px solid var(--neutral-800); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
-                        <h3 style="color: var(--purple-400); margin-bottom: 0.75rem; font-size: 1rem;">🔍 Key Findings</h3>`;
+                        <h3 style="color: var(--purple-400); margin-bottom: 0.75rem; font-size: 1rem;">Key Findings</h3>`;
                     
                     if (findings.length > 0) {
                         findings.forEach((finding, i) => {
@@ -1888,7 +1920,7 @@
                 // MITRE ATT&CK Techniques
                 if (report.mitre_attack_techniques && report.mitre_attack_techniques.length > 0) {
                     summaryHTML += `<div style="background: var(--neutral-900); border: 1px solid var(--neutral-800); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
-                        <h3 style="color: var(--cyan-400); margin-bottom: 0.75rem; font-size: 1rem;">🎯 MITRE ATT&CK Techniques</h3>
+                        <h3 style="color: var(--cyan-400); margin-bottom: 0.75rem; font-size: 1rem;">MITRE ATT&CK Techniques</h3>
                         <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">`;
                     
                     report.mitre_attack_techniques.forEach(tech => {
@@ -1901,7 +1933,7 @@
                 // Threat Statistics (from basic analysis data)
                 if (data.threat_statistics && data.threat_statistics.cvss_scores && data.threat_statistics.cvss_scores.length > 0) {
                     summaryHTML += `<div style="background: var(--neutral-900); border: 1px solid var(--neutral-800); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
-                        <h3 style="color: var(--red-400); margin-bottom: 0.75rem; font-size: 1rem;">🚨 Detected Threats</h3>`;
+                        <h3 style="color: var(--red-400); margin-bottom: 0.75rem; font-size: 1rem;">Detected Threats</h3>`;
                     
                     data.threat_statistics.cvss_scores.forEach((threat, i) => {
                         const severityColor = threat.severity === 'CRITICAL' ? 'var(--red-400)' :
@@ -1926,7 +1958,7 @@
                 // High Risk IPs (from basic analysis data)
                 if (data.ip_analysis && data.ip_analysis.high_risk_ips && data.ip_analysis.high_risk_ips.length > 0) {
                     summaryHTML += `<div style="background: var(--neutral-900); border: 1px solid var(--neutral-800); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
-                        <h3 style="color: var(--purple-400); margin-bottom: 0.75rem; font-size: 1rem;">🔍 High Risk IP Addresses</h3>
+                        <h3 style="color: var(--purple-400); margin-bottom: 0.75rem; font-size: 1rem;">High Risk IP Addresses</h3>
                         <div style="display: grid; gap: 0.5rem;">`;
                     
                     data.ip_analysis.high_risk_ips.slice(0, 10).forEach(ip => {
@@ -1942,7 +1974,7 @@
                 // Recommendations Section
                 if (report.recommendations && report.recommendations.length > 0) {
                     summaryHTML += `<div style="background: var(--neutral-900); border: 1px solid var(--neutral-800); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
-                        <h3 style="color: var(--green-400); margin-bottom: 0.75rem; font-size: 1rem;">💡 Recommendations</h3>
+                        <h3 style="color: var(--green-400); margin-bottom: 0.75rem; font-size: 1rem;">Recommendations</h3>
                         <ul style="color: var(--neutral-300); line-height: 1.8; padding-left: 1.25rem; margin: 0;">`;
                     
                     report.recommendations.forEach(rec => {
@@ -1955,7 +1987,7 @@
                 // Parsing Statistics (from basic analysis data)
                 if (data.parsing_info) {
                     summaryHTML += `<div style="background: var(--neutral-900); border: 1px solid var(--neutral-800); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
-                        <h3 style="color: var(--green-400); margin-bottom: 0.75rem; font-size: 1rem;">📈 Parsing Statistics</h3>
+                        <h3 style="color: var(--green-400); margin-bottom: 0.75rem; font-size: 1rem;">Parsing Statistics</h3>
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem;">
                             <div>
                                 <div style="font-size: 0.875rem; color: var(--neutral-400);">Parsed Lines</div>
