@@ -16,7 +16,7 @@ We take the security of our security log analyzer seriously. If you discover a s
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-Instead, please report them via email to: **sena.raufi@example.com**
+Instead, please report them via email to: **sena.devx@gmail.com**
 
 Include the following information:
 
@@ -66,6 +66,6 @@ Security updates will be released as patch versions and announced via:
 
 ## Contact
 
-For security concerns, contact: sena.raufi@example.com
+For security concerns, contact: sena.devx@gmail.com
 
 For general questions, use GitHub Issues.
