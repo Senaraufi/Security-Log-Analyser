@@ -52,6 +52,19 @@ security_api/
 └── test_logs/           # Sample log files
 ```
 
+## Architecture Visualization
+
+![Project Architecture Graph](graphify-out/graph.svg)
+
+*Interactive knowledge graph showing 292 code entities and 574 relationships across 15 communities. Generated with [Graphify](https://github.com/safishamsi/graphify).*
+
+**Key Components:**
+- **God Nodes:** `LlmAnalyzer`, `AnalyzerError`, `ApacheLog`, `parse_apache_combined()`
+- **15 Communities:** Logical groupings of related functionality
+- **Cross-module bridges:** High betweenness centrality nodes connecting different parts of the system
+
+[View Interactive Graph](graphify-out/graph.html) | [Full Analysis Report](graphify-out/GRAPH_REPORT.md)
+
 ## Installation
 
 ### Prerequisites
