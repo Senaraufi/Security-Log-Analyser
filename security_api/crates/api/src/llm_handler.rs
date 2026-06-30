@@ -9,7 +9,7 @@ use axum::{
     response::{IntoResponse, Json},
 };
 use security_analyzer_llm::{LlmAnalyzer, AnalyzerError};
-use security_common::{database::DbPool, parsers::apache::parse_apache_combined};
+use security_common::{database::DbPool, geolocation, parsers::apache::parse_apache_combined};
 
 /// Analyze logs using the configured LLM provider
 ///
@@ -200,7 +200,30 @@ pub async fn analyze_logs_with_llm(
     );
 
     // Also get basic analysis for additional context
-    let basic_result = super::process_logs(&content);
+    let mut basic_result = super::process_logs(&content);
+
+    // Enrich IPs with geolocation data
+    let all_ip_strings: Vec<String> = basic_result.ip_analysis.all_ips.iter().map(|ip| ip.ip.clone()).collect();
+    if !all_ip_strings.is_empty() {
+        println!("[INFO] Looking up geolocation for {} IPs...", all_ip_strings.len());
+        let geo_data = geolocation::lookup_batch(&all_ip_strings).await;
+        
+        for ip_info in &mut basic_result.ip_analysis.all_ips {
+            if let Some(geo) = geo_data.get(&ip_info.ip) {
+                ip_info.country = geo.country.clone();
+                ip_info.city = geo.city.clone();
+                ip_info.is_vpn = geo.is_proxy || geo.is_hosting;
+            }
+        }
+        
+        for ip_info in &mut basic_result.ip_analysis.high_risk_ips {
+            if let Some(geo) = geo_data.get(&ip_info.ip) {
+                ip_info.country = geo.country.clone();
+                ip_info.city = geo.city.clone();
+                ip_info.is_vpn = geo.is_proxy || geo.is_hosting;
+            }
+        }
+    }
 
     // Combine results - flatten structure for UI compatibility
     Json(serde_json::json!({

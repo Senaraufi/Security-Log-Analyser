@@ -13,3 +13,4 @@ nom = { workspace = true }
 uuid = { workspace = true }
 maxminddb = { workspace = true }
 csv = { workspace = true }
+reqwest = { workspace = true }

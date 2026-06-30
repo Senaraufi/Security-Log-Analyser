@@ -2,6 +2,7 @@
 // Contains shared models, parsers, CVSS scoring, and database integration
 
 pub mod cvss;
+pub mod geolocation;
 pub mod parsers;
 pub mod database;
 

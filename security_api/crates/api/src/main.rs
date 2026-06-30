@@ -10,6 +10,7 @@ use tower_http::services::ServeDir;
 use security_common::{
     database::{init_db, test_connection, DbPool},
     cvss,
+    geolocation,
     AnalysisResult, ThreatStats, IpAnalysis, IpInfo, RiskAssessment, 
     ParsingInfo, ParseError, FormatQuality, LogEntry,
 };
@@ -85,13 +86,35 @@ async fn analyze_logs(
         }
     }
     
-    // TODO: Save to database with proper NewLogUpload struct
-    println!("📝 Processing log file: {}", filename);
+    println!("[INFO] Processing log file: {}", filename);
     
     // Parse logs and analyze
-    let result = process_logs(&content);
+    let mut result = process_logs(&content);
     
-    println!("✅ Analysis complete");
+    // Enrich IPs with geolocation data
+    let all_ip_strings: Vec<String> = result.ip_analysis.all_ips.iter().map(|ip| ip.ip.clone()).collect();
+    if !all_ip_strings.is_empty() {
+        println!("[INFO] Looking up geolocation for {} IPs...", all_ip_strings.len());
+        let geo_data = geolocation::lookup_batch(&all_ip_strings).await;
+        
+        for ip_info in &mut result.ip_analysis.all_ips {
+            if let Some(geo) = geo_data.get(&ip_info.ip) {
+                ip_info.country = geo.country.clone();
+                ip_info.city = geo.city.clone();
+                ip_info.is_vpn = geo.is_proxy || geo.is_hosting;
+            }
+        }
+        
+        for ip_info in &mut result.ip_analysis.high_risk_ips {
+            if let Some(geo) = geo_data.get(&ip_info.ip) {
+                ip_info.country = geo.country.clone();
+                ip_info.city = geo.city.clone();
+                ip_info.is_vpn = geo.is_proxy || geo.is_hosting;
+            }
+        }
+    }
+    
+    println!("[INFO] Analysis complete");
     
     Json(result)
 }
