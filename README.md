@@ -10,7 +10,7 @@ Production-grade security log analysis platform with dual-mode operation: Simple
 
 ## Demo
 
-![Security Log Analyzer Demo](docs/Logr-trailer.gif)
+![Security Log Analyzer Demo](security_api/docs/Logr-trailer.gif)
 
 ## Features
 
