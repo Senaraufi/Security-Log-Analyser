@@ -10,6 +10,8 @@ Advanced security log analysis platform powered by AI and traditional threat det
 
 ![Logr trailer](./docs/Logr-trailer.gif)
 
+> The trailer above shows the web UI and CLI in action.
+
 ## Features
 
 ### **Three Analysis Modes**
