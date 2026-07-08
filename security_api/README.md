@@ -8,6 +8,8 @@ Advanced security log analysis platform powered by AI and traditional threat det
 
 ![Logr Platform](https://img.shields.io/badge/Platform-Security%20Analysis-cyan)
 
+![Logr trailer](./docs/Logr-trailer.gif)
+
 ## Features
 
 ### **Three Analysis Modes**
