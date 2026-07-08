@@ -8,6 +8,10 @@ Production-grade security log analysis platform with dual-mode operation: Simple
 
 **Developer:** [Sena Raufi](https://github.com/Senaraufi)
 
+## Demo
+
+![Security Log Analyzer Demo](docs/Logr-trailer.gif)
+
 ## Features
 
 ### Analysis Modes
