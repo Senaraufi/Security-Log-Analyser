@@ -1,5 +1,5 @@
 use regex::Regex;
-use chrono::{DateTime, Utc, NaiveDateTime};
+use chrono::Utc;
 use crate::LogEntry;
 
 /// Parse any log format with multiple fallback strategies

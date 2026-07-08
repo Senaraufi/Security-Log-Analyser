@@ -1876,6 +1876,15 @@
     </footer>
 
     <script>
+        // Security helper: sanitize untrusted values before inserting into the DOM.
+        // All server, LLM, and log-derived data must pass through this function.
+        function escapeHtml(value) {
+            if (value === null || value === undefined) return '';
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(String(value)));
+            return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
         // Page Navigation
         const allPages = ['landing-page', 'simple-mode-page', 'advanced-mode-page', 'ai-dashboard-page', 'standard-analysis-page', 'history-page'];
         
@@ -1994,8 +2003,8 @@
                 if (data.threats && data.threats.length > 0) {
                     threatsContent.innerHTML = data.threats.map(t => `
                         <div style="padding: 0.5rem 0; border-bottom: 1px solid #1e1e1e;">
-                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;"><span style="font-weight: 500; color: #e5e5e5; font-size: 0.8125rem;">${t.type}</span> <span style="font-size: 0.6875rem; color: #737373;">${t.severity}</span></div>
-                            <div style="color: #737373; font-size: 0.8125rem; line-height: 1.5;">${t.description}</div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;"><span style="font-weight: 500; color: #e5e5e5; font-size: 0.8125rem;">${escapeHtml(t.type)}</span> <span style="font-size: 0.6875rem; color: #737373;">${escapeHtml(t.severity)}</span></div>
+                            <div style="color: #737373; font-size: 0.8125rem; line-height: 1.5;">${escapeHtml(t.description)}</div>
                         </div>
                     `).join('');
                 } else {
@@ -2007,9 +2016,9 @@
                 if (data.fixes && data.fixes.length > 0) {
                     recsContent.innerHTML = data.fixes.map(f => `
                         <div style="padding: 0.5rem 0; border-bottom: 1px solid #1e1e1e;">
-                            <div style="font-weight: 500; color: #e5e5e5; margin-bottom: 0.25rem; font-size: 0.8125rem;">${f.title}</div>
-                            <div style="color: #737373; font-size: 0.8125rem; margin-bottom: 0.375rem; line-height: 1.5;">${f.description}</div>
-                            ${f.command ? `<code style="display: block; background: #0e0e0e; padding: 0.5rem 0.625rem; border-radius: 4px; font-size: 0.75rem; color: #a3a3a3; font-family: 'JetBrains Mono', monospace; border: 1px solid #1e1e1e;">${f.command}</code>` : ''}
+                            <div style="font-weight: 500; color: #e5e5e5; margin-bottom: 0.25rem; font-size: 0.8125rem;">${escapeHtml(f.title)}</div>
+                            <div style="color: #737373; font-size: 0.8125rem; margin-bottom: 0.375rem; line-height: 1.5;">${escapeHtml(f.description)}</div>
+                            ${f.command ? `<code style="display: block; background: #0e0e0e; padding: 0.5rem 0.625rem; border-radius: 4px; font-size: 0.75rem; color: #a3a3a3; font-family: 'JetBrains Mono', monospace; border: 1px solid #1e1e1e;">${escapeHtml(f.command)}</code>` : ''}
                         </div>
                     `).join('');
                 } else {
@@ -2090,7 +2099,7 @@
                             </div>
                             <div>
                                 <div style="font-size: 0.75rem; color: #737373; margin-bottom: 0.25rem;">Risk</div>
-                                <div style="font-size: 1.5rem; font-weight: 600; color: var(--orange-400);">${data.risk_assessment.level}</div>
+                                <div style="font-size: 1.5rem; font-weight: 600; color: var(--orange-400);">${escapeHtml(data.risk_assessment.level)}</div>
                             </div>
                             <div>
                                 <div style="font-size: 0.75rem; color: #737373; margin-bottom: 0.25rem;">CVSS</div>
@@ -2098,7 +2107,7 @@
                             </div>
                         </div>
                         <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #1e1e1e; font-size: 0.8125rem; color: #737373; line-height: 1.5;">
-                            ${data.risk_assessment.description}
+                            ${escapeHtml(data.risk_assessment.description)}
                         </div>
                     </div>
                 `;
@@ -2116,10 +2125,10 @@
                         summaryHTML += `<div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #1e1e1e;">
                             <div style="display: flex; align-items: center; gap: 0.625rem;">
                                 <span style="width: 6px; height: 6px; border-radius: 50%; background: ${severityColor}; flex-shrink: 0;"></span>
-                                <span style="font-weight: 500; color: #e5e5e5; font-size: 0.8125rem;">${threat.threat_type}</span>
+                                <span style="font-weight: 500; color: #e5e5e5; font-size: 0.8125rem;">${escapeHtml(threat.threat_type)}</span>
                             </div>
                             <div style="display: flex; gap: 1rem; font-size: 0.75rem; color: #737373;">
-                                <span>${threat.severity}</span>
+                                <span>${escapeHtml(threat.severity)}</span>
                                 <span>CVSS ${threat.base_score.toFixed(1)}</span>
                             </div>
                         </div>`;
@@ -2139,10 +2148,10 @@
                         const vpnBadge = ip.is_vpn ? '<span style="color: var(--red-400); font-size: 0.6875rem; margin-left: 0.375rem;">VPN</span>' : '';
                         summaryHTML += `<div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #1e1e1e;">
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <span style="font-family: 'JetBrains Mono', monospace; color: #e5e5e5; font-size: 0.8125rem;">${ip.ip}</span>${vpnBadge}
-                                <span style="font-size: 0.6875rem; color: #525252;">${location}</span>
+                                <span style="font-family: 'JetBrains Mono', monospace; color: #e5e5e5; font-size: 0.8125rem;">${escapeHtml(ip.ip)}</span>${vpnBadge}
+                                <span style="font-size: 0.6875rem; color: #525252;">${escapeHtml(location)}</span>
                             </div>
-                            <span style="color: #737373; font-size: 0.75rem;">${ip.count}</span>
+                            <span style="color: #737373; font-size: 0.75rem;">${escapeHtml(ip.count)}</span>
                         </div>`;
                     });
                     
@@ -2221,9 +2230,9 @@
                 let summaryHTML = `
                     <div style="background: #151515; border: 1px solid #1e1e1e; border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem;">
                         <div style="font-size: 0.6875rem; color: #525252; margin-bottom: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;">Summary</div>
-                        <p style="color: #a3a3a3; line-height: 1.6; font-size: 0.875rem; margin-bottom: 0.75rem;">${report.summary || 'Analysis complete'}</p>
+                        <p style="color: #a3a3a3; line-height: 1.6; font-size: 0.875rem; margin-bottom: 0.75rem;">${escapeHtml(report.summary || 'Analysis complete')}</p>
                         <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 0.75rem; border-top: 1px solid #1e1e1e;">
-                            <div style="display: flex; align-items: center; gap: 0.5rem;"><span style="color: #737373; font-size: 0.75rem;">Threat Level</span> <span style="color: var(--red-400); font-weight: 600; font-size: 0.875rem;">${report.threat_level || 'Unknown'}</span></div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;"><span style="color: #737373; font-size: 0.75rem;">Threat Level</span> <span style="color: var(--red-400); font-weight: 600; font-size: 0.875rem;">${escapeHtml(report.threat_level || 'Unknown')}</span></div>
                             <div style="font-size: 0.75rem; color: #525252;">${data.total_logs || 0} logs · ${data.suspicious_logs || 0} suspicious</div>
                         </div>
                     </div>
@@ -2238,13 +2247,13 @@
                     if (findings.length > 0) {
                         findings.forEach((finding, i) => {
                             summaryHTML += `<div style="padding: 0.5rem 0; border-bottom: 1px solid #1e1e1e; font-size: 0.8125rem; color: #e5e5e5; line-height: 1.5;">
-                                ${i + 1}. ${finding}
+                                ${i + 1}. ${escapeHtml(finding)}
                             </div>`;
                         });
                     } else if (report.indicators_of_compromise) {
                         report.indicators_of_compromise.forEach((ioc, i) => {
                             summaryHTML += `<div style="padding: 0.5rem 0; border-bottom: 1px solid #1e1e1e; font-size: 0.8125rem; color: #a3a3a3; line-height: 1.5;">
-                                ${i + 1}. ${ioc}
+                                ${i + 1}. ${escapeHtml(ioc)}
                             </div>`;
                         });
                     }
@@ -2259,7 +2268,7 @@
                         <div style="display: flex; flex-wrap: wrap; gap: 0.375rem;">`;
                     
                     report.mitre_attack_techniques.forEach(tech => {
-                        summaryHTML += `<span style="padding: 0.25rem 0.5rem; background: #191919; border: 1px solid #1e1e1e; border-radius: 4px; color: #a3a3a3; font-size: 0.75rem; font-family: 'JetBrains Mono', monospace;">${tech}</span>`;
+                        summaryHTML += `<span style="padding: 0.25rem 0.5rem; background: #191919; border: 1px solid #1e1e1e; border-radius: 4px; color: #a3a3a3; font-size: 0.75rem; font-family: 'JetBrains Mono', monospace;">${escapeHtml(tech)}</span>`;
                     });
                     
                     summaryHTML += `</div></div>`;
@@ -2278,10 +2287,10 @@
                         summaryHTML += `<div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #1e1e1e;">
                             <div style="display: flex; align-items: center; gap: 0.625rem;">
                                 <span style="width: 6px; height: 6px; border-radius: 50%; background: ${severityColor}; flex-shrink: 0;"></span>
-                                <span style="font-weight: 500; color: #e5e5e5; font-size: 0.8125rem;">${threat.threat_type}</span>
+                                <span style="font-weight: 500; color: #e5e5e5; font-size: 0.8125rem;">${escapeHtml(threat.threat_type)}</span>
                             </div>
                             <div style="display: flex; gap: 1rem; font-size: 0.75rem; color: #737373;">
-                                <span>${threat.severity}</span>
+                                <span>${escapeHtml(threat.severity)}</span>
                                 <span>CVSS ${threat.base_score.toFixed(1)}</span>
                             </div>
                         </div>`;
@@ -2301,10 +2310,10 @@
                         const vpnBadge = ip.is_vpn ? '<span style="color: var(--red-400); font-size: 0.6875rem; margin-left: 0.375rem;">VPN</span>' : '';
                         summaryHTML += `<div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #1e1e1e;">
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <span style="font-family: 'JetBrains Mono', monospace; color: #e5e5e5; font-size: 0.8125rem;">${ip.ip}</span>${vpnBadge}
-                                <span style="font-size: 0.6875rem; color: #525252;">${location}</span>
+                                <span style="font-family: 'JetBrains Mono', monospace; color: #e5e5e5; font-size: 0.8125rem;">${escapeHtml(ip.ip)}</span>${vpnBadge}
+                                <span style="font-size: 0.6875rem; color: #525252;">${escapeHtml(location)}</span>
                             </div>
-                            <span style="color: #737373; font-size: 0.75rem;">${ip.count}</span>
+                            <span style="color: #737373; font-size: 0.75rem;">${escapeHtml(ip.count)}</span>
                         </div>`;
                     });
                     
@@ -2318,7 +2327,7 @@
                         <ul style="color: #a3a3a3; line-height: 1.6; padding-left: 1rem; margin: 0; font-size: 0.8125rem;">`;
                     
                     report.recommendations.forEach(rec => {
-                        summaryHTML += `<li style="margin-bottom: 0.375rem;">${rec}</li>`;
+                        summaryHTML += `<li style="margin-bottom: 0.375rem;">${escapeHtml(rec)}</li>`;
                     });
                     
                     summaryHTML += `</ul></div>`;
@@ -2636,7 +2645,7 @@
                 } else if (entry.mode === 'standard') {
                     statsHTML = `<span>Events: ${(s.totalEvents || 0).toLocaleString()}</span><span>Threats: ${s.threatCount || 0}</span><span>CVSS: ${(s.cvss || 0).toFixed(1)}</span>`;
                 } else if (entry.mode === 'ai') {
-                    statsHTML = `<span>Level: ${s.threatLevel || '—'}</span><span>Logs: ${s.totalLogs || 0}</span><span>Suspicious: ${s.suspiciousLogs || 0}</span>`;
+                    statsHTML = `<span>Level: ${escapeHTML(s.threatLevel || '—')}</span><span>Logs: ${s.totalLogs || 0}</span><span>Suspicious: ${s.suspiciousLogs || 0}</span>`;
                 }
 
                 html += `
@@ -2743,7 +2752,7 @@
                         const sc = t.severity==='CRITICAL'?'var(--red-400)':t.severity==='HIGH'?'var(--orange-400)':t.severity==='MEDIUM'?'var(--yellow-400)':'var(--green-400)';
                         h += `<div style="padding:0.75rem;background:var(--neutral-800);border-left:3px solid ${sc};border-radius:0.25rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;">
                             <span style="color:var(--neutral-100);font-weight:500;">${escapeHTML(t.threat_type)}</span>
-                            <span style="font-size:0.75rem;padding:0.2rem 0.5rem;background:${sc};color:#000;border-radius:0.25rem;font-weight:600;">${t.severity}</span>
+                            <span style="font-size:0.75rem;padding:0.2rem 0.5rem;background:${sc};color:#000;border-radius:0.25rem;font-weight:600;">${escapeHTML(t.severity)}</span>
                         </div>`;
                     });
                 }

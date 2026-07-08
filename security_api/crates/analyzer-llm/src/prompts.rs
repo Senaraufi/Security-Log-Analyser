@@ -224,7 +224,7 @@ pub fn build_recommendations_prompt(threat_summary: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::{DateTime, Utc, TimeZone};
+    use chrono::{Utc, TimeZone};
 
     fn create_test_log(ip: &str, method: &str, path: &str, status: u16) -> ApacheLog {
         ApacheLog {

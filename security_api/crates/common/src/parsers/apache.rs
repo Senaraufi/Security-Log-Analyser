@@ -3,8 +3,8 @@ use nom::{
     branch::alt,
     bytes::complete::{tag, take_until, take_while1},
     character::complete::{char, digit1, space1},
-    combinator::{map_res, opt},
-    sequence::{delimited, preceded, tuple},
+    combinator::map_res,
+    sequence::delimited,
     IResult,
 };
 use serde::{Deserialize, Serialize};
@@ -166,7 +166,7 @@ fn parse_timestamp(input: &str) -> IResult<&str, DateTime<Utc>> {
     );
     
     let naive_dt = NaiveDateTime::parse_from_str(&datetime_str, "%Y-%m-%d %H:%M:%S")
-        .unwrap_or_else(|_| NaiveDateTime::from_timestamp_opt(0, 0).unwrap());
+        .unwrap_or_else(|_| DateTime::from_timestamp(0, 0).unwrap_or_default().naive_utc());
     
     Ok((input, DateTime::from_naive_utc_and_offset(naive_dt, Utc)))
 }

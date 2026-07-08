@@ -120,14 +120,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_from_env_returns_error_without_config() {
-        // Clear any existing env vars for this test
-        std::env::remove_var("LLM_PROVIDER");
-        std::env::remove_var("OPENAI_API_KEY");
-        
-        // Should return an error because no API key is set
+    fn test_from_env_returns_error_with_invalid_provider() {
+        // Use an invalid provider name: deterministic failure regardless of
+        // whatever API keys exist in the local .env file (dotenv reloads it).
+        std::env::set_var("LLM_PROVIDER", "not-a-real-provider");
+
         let result = from_env();
         assert!(result.is_err());
+
+        std::env::remove_var("LLM_PROVIDER");
     }
 
     #[test]

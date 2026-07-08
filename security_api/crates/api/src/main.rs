@@ -1,10 +1,65 @@
 use axum::{
-    extract::{Multipart, Extension},
-    response::{IntoResponse, Json},
+    extract::{ConnectInfo, DefaultBodyLimit, Extension, Multipart, Request},
+    http::StatusCode,
+    middleware::{self, Next},
+    response::{IntoResponse, Json, Response},
     routing::post,
     Router,
 };
+use std::collections::HashMap;
+use std::net::SocketAddr;
+use std::sync::{Mutex, OnceLock};
+use std::time::{Duration, Instant};
 use tower_http::services::ServeDir;
+
+/// Maximum upload size: 50 MB
+const MAX_UPLOAD_BYTES: usize = 50 * 1024 * 1024;
+
+/// Rate limit: max requests per IP within the window
+const RATE_LIMIT_MAX_REQUESTS: usize = 30;
+const RATE_LIMIT_WINDOW: Duration = Duration::from_secs(60);
+
+fn rate_limit_store() -> &'static Mutex<HashMap<String, Vec<Instant>>> {
+    static STORE: OnceLock<Mutex<HashMap<String, Vec<Instant>>>> = OnceLock::new();
+    STORE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// Simple per-IP sliding-window rate limiter for API routes
+async fn rate_limit_middleware(
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    request: Request,
+    next: Next,
+) -> Response {
+    let ip = addr.ip().to_string();
+    let now = Instant::now();
+
+    let allowed = {
+        let mut store = match rate_limit_store().lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+        let timestamps = store.entry(ip).or_default();
+        timestamps.retain(|t| now.duration_since(*t) < RATE_LIMIT_WINDOW);
+        if timestamps.len() >= RATE_LIMIT_MAX_REQUESTS {
+            false
+        } else {
+            timestamps.push(now);
+            true
+        }
+    };
+
+    if !allowed {
+        return (
+            StatusCode::TOO_MANY_REQUESTS,
+            Json(serde_json::json!({
+                "error": "Rate limit exceeded. Please wait before retrying."
+            })),
+        )
+            .into_response();
+    }
+
+    next.run(request).await
+}
 
 // Import from workspace crates
 use security_common::{
@@ -12,7 +67,7 @@ use security_common::{
     cvss,
     geolocation,
     AnalysisResult, ThreatStats, IpAnalysis, IpInfo, RiskAssessment, 
-    ParsingInfo, ParseError, FormatQuality, LogEntry,
+    ParsingInfo, ParseError, FormatQuality,
 };
 use security_analyzer_basic::BasicAnalyzer;
 
@@ -44,12 +99,15 @@ async fn main() {
     
     let static_files = ServeDir::new("crates/api/static");
     
-    let mut app = Router::new()
+    let api_routes = Router::new()
         .route("/api/analyze", post(analyze_logs))
         .route("/api/analyze-with-llm", post(llm_handler::analyze_logs_with_llm))
         .route("/api/llm-health", axum::routing::get(llm_handler::llm_health_check))
         .route("/api/explain-logs", post(simple_handler::explain_logs))
-        .nest_service("/", static_files);
+        .layer(middleware::from_fn(rate_limit_middleware))
+        .layer(DefaultBodyLimit::max(MAX_UPLOAD_BYTES));
+
+    let mut app = api_routes.nest_service("/", static_files);
     
     // Add database pool to app state if available
     if let Some(pool) = db_pool {
@@ -65,25 +123,64 @@ async fn main() {
     println!("[INFO] LLM Analysis: POST /api/analyze-with-llm");
     println!("[INFO] LLM Health:   GET  /api/llm-health");
     
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await
+    .unwrap();
 }
 
 // Basic analysis endpoint
 async fn analyze_logs(
-    Extension(db_pool): Extension<DbPool>,
+    Extension(_db_pool): Extension<DbPool>,
     mut multipart: Multipart,
-) -> impl IntoResponse {
+) -> Response {
     let mut content = String::new();
     let mut filename = String::from("unknown");
     
-    while let Some(field) = multipart.next_field().await.unwrap() {
-        let name = field.name().unwrap_or("").to_string();
-        
-        if name == "file" {
-            filename = field.file_name().unwrap_or("unknown").to_string();
-            let data = field.bytes().await.unwrap();
-            content = String::from_utf8_lossy(&data).to_string();
+    loop {
+        match multipart.next_field().await {
+            Ok(Some(field)) => {
+                let name = field.name().unwrap_or("").to_string();
+                
+                if name == "file" {
+                    filename = field.file_name().unwrap_or("unknown").to_string();
+                    match field.bytes().await {
+                        Ok(data) => {
+                            content = String::from_utf8_lossy(&data).to_string();
+                        }
+                        Err(e) => {
+                            return (
+                                StatusCode::BAD_REQUEST,
+                                Json(serde_json::json!({
+                                    "error": format!("Failed to read uploaded file: {}", e)
+                                })),
+                            )
+                                .into_response();
+                        }
+                    }
+                }
+            }
+            Ok(None) => break,
+            Err(e) => {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(serde_json::json!({
+                        "error": format!("Malformed multipart request: {}", e)
+                    })),
+                )
+                    .into_response();
+            }
         }
+    }
+    
+    if content.is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": "No file content provided" })),
+        )
+            .into_response();
     }
     
     println!("[INFO] Processing log file: {}", filename);
@@ -116,7 +213,7 @@ async fn analyze_logs(
     
     println!("[INFO] Analysis complete");
     
-    Json(result)
+    Json(result).into_response()
 }
 
 // Process logs with basic analyzer
@@ -277,31 +374,3 @@ pub fn process_logs(content: &str) -> AnalysisResult {
     }
 }
 
-// Simple log parser
-fn parse_log_line(line: &str) -> Option<LogEntry> {
-    use regex::Regex;
-    
-    let re = Regex::new(r"^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+\[(\w+)\]\s+(.+)$").ok()?;
-    
-    if let Some(caps) = re.captures(line) {
-        let timestamp = caps.get(1)?.as_str().to_string();
-        let level = caps.get(2)?.as_str().to_string();
-        let message = caps.get(3)?.as_str().to_string();
-        
-        // Extract IP if present
-        let ip_re = Regex::new(r"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})").ok()?;
-        let ip_address = ip_re.captures(&message)
-            .and_then(|c| c.get(1))
-            .map(|m| m.as_str().to_string());
-        
-        Some(LogEntry {
-            timestamp,
-            level,
-            ip_address,
-            username: None,
-            message,
-        })
-    } else {
-        None
-    }
-}

@@ -62,35 +62,47 @@ pub async fn analyze_logs_with_llm(
         }));
     }
 
-    // Create the LLM analyzer from environment configuration or user override
-    let analyzer = if let Some(provider) = provider_override {
-        // Temporarily set LLM_PROVIDER env var for this request
-        // SAFETY: This is safe because we're only modifying the environment for this process
-        // and the analyzer will read it immediately after
-        unsafe {
-            std::env::set_var("LLM_PROVIDER", &provider);
-            
-            // Set appropriate model for each provider
-            match provider.as_str() {
-                "groq" => std::env::set_var("LLM_MODEL", "llama-3.3-70b-versatile"),
-                "gemini" => std::env::set_var("LLM_MODEL", "gemini-3-flash-preview"),
-                "openai" => std::env::set_var("LLM_MODEL", "gpt-4o"),
-                "anthropic" => std::env::set_var("LLM_MODEL", "claude-sonnet-4-20250514"),
-                _ => {}
-            }
-        }
-        println!("[INFO] User selected provider: {}", provider);
-        match LlmAnalyzer::from_env() {
-            Ok(a) => a,
-            Err(e) => {
-                let suggestion = get_error_suggestion(&e);
-                eprintln!("[ERROR] LLM Analyzer configuration error: {}", e);
+    // Create the LLM analyzer from environment configuration or user override.
+    // The override builds an explicit per-request config instead of mutating
+    // process-wide environment variables (which would race between requests).
+    let analyzer = if let Some(provider_name) = provider_override {
+        use security_analyzer_llm::{LlmConfig, LlmProvider};
+
+        let provider = match LlmProvider::from_str(&provider_name) {
+            Some(p) => p,
+            None => {
                 return Json(serde_json::json!({
-                    "error": format!("LLM configuration error: {}", e),
-                    "suggestion": suggestion
+                    "error": format!("Unsupported provider: {}", provider_name),
+                    "suggestion": "Valid options: openai, anthropic, groq, gemini"
                 }));
             }
-        }
+        };
+
+        let model = match provider {
+            LlmProvider::Groq => "llama-3.3-70b-versatile",
+            LlmProvider::Gemini => "gemini-3-flash-preview",
+            LlmProvider::OpenAI => "gpt-4o",
+            LlmProvider::Anthropic => "claude-sonnet-4-20250514",
+        };
+
+        let api_key = match std::env::var(provider.api_key_env_var()) {
+            Ok(key) if !key.is_empty() => key,
+            _ => {
+                return Json(serde_json::json!({
+                    "error": format!(
+                        "API key not configured for provider '{}'",
+                        provider_name
+                    ),
+                    "suggestion": format!(
+                        "Set the {} environment variable in your .env file.",
+                        provider.api_key_env_var()
+                    )
+                }));
+            }
+        };
+
+        println!("[INFO] User selected provider: {}", provider_name);
+        LlmAnalyzer::with_config(LlmConfig::new(provider, model, api_key))
     } else {
         // Use default environment configuration
         match LlmAnalyzer::from_env() {

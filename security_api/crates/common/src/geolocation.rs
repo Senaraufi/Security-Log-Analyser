@@ -78,8 +78,20 @@ fn is_private_ip(ip_str: &str) -> bool {
 /// Look up geolocation for a batch of IP addresses
 /// Uses ip-api.com batch endpoint (max 100 IPs per request, 45 req/min for free tier)
 /// Returns a HashMap mapping IP strings to their GeoResult
+///
+/// PRIVACY NOTE: the free ip-api.com endpoint is HTTP-only, meaning the IPs
+/// from analyzed logs are sent unencrypted to a third party. Set
+/// `GEOLOCATION_ENABLED=false` to disable external lookups entirely.
 pub async fn lookup_batch(ips: &[String]) -> HashMap<String, GeoResult> {
     let mut results: HashMap<String, GeoResult> = HashMap::new();
+
+    // Allow operators to opt out of third-party IP lookups
+    let enabled = std::env::var("GEOLOCATION_ENABLED")
+        .map(|v| v.to_lowercase() != "false" && v != "0")
+        .unwrap_or(true);
+    if !enabled {
+        return results;
+    }
 
     // Filter out private IPs
     let public_ips: Vec<&String> = ips
