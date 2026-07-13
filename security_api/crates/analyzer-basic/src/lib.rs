@@ -55,28 +55,30 @@ impl BasicAnalyzer {
                 critical_alerts += 1;
             }
 
-            // Detect SQL injection
-            if entry.message.contains("SELECT") ||
-               entry.message.contains("DROP TABLE") ||
-               entry.message.contains("UNION SELECT") ||
-               entry.message.contains("SQL Injection") ||
-               entry.message.contains("' OR '1'='1") {
+            let message_lower = entry.message.to_lowercase();
+
+            // Detect SQL injection: require actual injection markers, not just
+            // the word "SELECT" (which appears in legitimate query logs).
+            if message_lower.contains("union select") ||
+               message_lower.contains("drop table") ||
+               message_lower.contains("'; drop") ||
+               message_lower.contains("or 1=1") ||
+               message_lower.contains("' or '1'='1") ||
+               message_lower.contains("sql injection") {
                 sql_injection_attempts += 1;
             }
 
             // Detect port scanning
-            if entry.message.contains("port scan") ||
-               entry.message.contains("nmap") ||
-               entry.message.contains("Port scan") {
+            if message_lower.contains("port scan") ||
+               message_lower.contains("nmap") {
                 port_scanning_attempts += 1;
             }
 
-            // Detect malware
-            if entry.message.contains("malware") ||
-               entry.message.contains("trojan") ||
-               entry.message.contains("virus") ||
-               entry.message.contains("ransomware") ||
-               entry.message.contains("Malware") {
+            // Detect malware (avoid matching benign strings like "antivirus")
+            if message_lower.contains("malware") ||
+               message_lower.contains("trojan") ||
+               message_lower.contains("ransomware") ||
+               (message_lower.contains("virus") && !message_lower.contains("antivirus")) {
                 malware_detections += 1;
             }
         }
@@ -202,5 +204,49 @@ pub struct BasicAnalysisResult {
 impl Default for BasicAnalyzer {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn entry(level: &str, message: &str) -> LogEntry {
+        LogEntry {
+            timestamp: "2025-12-15T17:19:00Z".to_string(),
+            level: level.to_string(),
+            ip_address: Some("10.0.0.1".to_string()),
+            username: None,
+            message: message.to_string(),
+        }
+    }
+
+    #[test]
+    fn detects_real_sql_injection() {
+        let entries = vec![entry("INFO", "GET /api?id=1 UNION SELECT password FROM users")];
+        let result = BasicAnalyzer::new().analyze(&entries);
+        assert_eq!(result.sql_injection_attempts, 1);
+    }
+
+    #[test]
+    fn ignores_benign_select_in_message() {
+        // A legitimate query log mentioning SELECT must not be flagged.
+        let entries = vec![entry("INFO", "Executed query: SELECT * FROM products WHERE active = 1")];
+        let result = BasicAnalyzer::new().analyze(&entries);
+        assert_eq!(result.sql_injection_attempts, 0);
+    }
+
+    #[test]
+    fn antivirus_is_not_malware() {
+        let entries = vec![entry("INFO", "Antivirus definitions updated successfully")];
+        let result = BasicAnalyzer::new().analyze(&entries);
+        assert_eq!(result.malware_detections, 0);
+    }
+
+    #[test]
+    fn detects_malware_keyword() {
+        let entries = vec![entry("WARN", "Detected trojan in uploaded file")];
+        let result = BasicAnalyzer::new().analyze(&entries);
+        assert_eq!(result.malware_detections, 1);
     }
 }

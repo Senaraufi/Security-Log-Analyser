@@ -1875,14 +1875,24 @@
         </div>
     </footer>
 
+    <script src="/dompurify.min.js"></script>
     <script>
-        // Security helper: sanitize untrusted values before inserting into the DOM.
+        // Security helper: sanitize untrusted HTML before assigning to innerHTML.
+        // Uses the vendored DOMPurify library (Cure53) as the single trusted sink.
+        function setSafeHtml(element, html) {
+            element.innerHTML = DOMPurify.sanitize(html);
+        }
+
+        // Security helper: escape untrusted values before inserting into the DOM.
         // All server, LLM, and log-derived data must pass through this function.
         function escapeHtml(value) {
             if (value === null || value === undefined) return '';
-            const div = document.createElement('div');
-            div.appendChild(document.createTextNode(String(value)));
-            return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
 
         // Page Navigation
@@ -1993,20 +2003,20 @@
                     riskColor = 'var(--orange-400)';
                 }
                 
-                riskDisplay.innerHTML = `
+                setSafeHtml(riskDisplay, `
                     <div style="font-size: 2rem; font-weight: 600; color: ${riskColor}; line-height: 1;">${riskScore.toFixed(1)}</div>
                     <div style="color: #737373; margin-top: 0.375rem; font-size: 0.75rem;">${riskLevel}</div>
-                `;
+                `);
                 
                 // Update threats - backend returns array of {type, description, severity}
                 const threatsContent = document.getElementById('threats-content');
                 if (data.threats && data.threats.length > 0) {
-                    threatsContent.innerHTML = data.threats.map(t => `
+                    setSafeHtml(threatsContent, data.threats.map(t => `
                         <div style="padding: 0.5rem 0; border-bottom: 1px solid #1e1e1e;">
                             <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;"><span style="font-weight: 500; color: #e5e5e5; font-size: 0.8125rem;">${escapeHtml(t.type)}</span> <span style="font-size: 0.6875rem; color: #737373;">${escapeHtml(t.severity)}</span></div>
                             <div style="color: #737373; font-size: 0.8125rem; line-height: 1.5;">${escapeHtml(t.description)}</div>
                         </div>
-                    `).join('');
+                    `).join(''));
                 } else {
                     threatsContent.innerHTML = '<div style="text-align: center; color: #525252; padding: 2rem; font-size: 0.8125rem;">No threats detected</div>';
                 }
@@ -2014,13 +2024,13 @@
                 // Update recommendations (fixes) - backend returns array of {title, description, command}
                 const recsContent = document.getElementById('recommendations-content');
                 if (data.fixes && data.fixes.length > 0) {
-                    recsContent.innerHTML = data.fixes.map(f => `
+                    setSafeHtml(recsContent, data.fixes.map(f => `
                         <div style="padding: 0.5rem 0; border-bottom: 1px solid #1e1e1e;">
                             <div style="font-weight: 500; color: #e5e5e5; margin-bottom: 0.25rem; font-size: 0.8125rem;">${escapeHtml(f.title)}</div>
                             <div style="color: #737373; font-size: 0.8125rem; margin-bottom: 0.375rem; line-height: 1.5;">${escapeHtml(f.description)}</div>
                             ${f.command ? `<code style="display: block; background: #0e0e0e; padding: 0.5rem 0.625rem; border-radius: 4px; font-size: 0.75rem; color: #a3a3a3; font-family: 'JetBrains Mono', monospace; border: 1px solid #1e1e1e;">${escapeHtml(f.command)}</code>` : ''}
                         </div>
-                    `).join('');
+                    `).join(''));
                 } else {
                     recsContent.innerHTML = '<div style="text-align: center; color: #525252; padding: 2rem; font-size: 0.8125rem;">No actions needed</div>';
                 }
@@ -2177,7 +2187,7 @@
                     </div>
                 </div>`;
                 
-                document.getElementById('standard-summary-content').innerHTML = summaryHTML;
+                setSafeHtml(document.getElementById('standard-summary-content'), summaryHTML);
 
                 // Save to session history
                 saveToHistory('standard', data);
@@ -2362,7 +2372,7 @@
                     </div>`;
                 }
                 
-                document.getElementById('ai-summary-content').innerHTML = summaryHTML;
+                setSafeHtml(document.getElementById('ai-summary-content'), summaryHTML);
 
                 // Save to session history
                 saveToHistory('ai', data);
@@ -2523,10 +2533,12 @@
         }
         
         function downloadFile(blob, filename) {
+            // Whitelist the filename: only safe filesystem characters are allowed.
+            const safeName = String(filename).replace(/[^a-zA-Z0-9._-]/g, '_');
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = filename;
+            link.download = safeName;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -2666,7 +2678,7 @@
                     </div>`;
             });
             html += '</div>';
-            container.innerHTML = html;
+            setSafeHtml(container, html);
         }
 
         function escapeHTML(str) {
@@ -2689,7 +2701,7 @@
             badge.textContent = modeLabels[entry.mode] || entry.mode;
             ts.textContent = new Date(entry.timestamp).toLocaleString();
 
-            body.innerHTML = buildDetailHTML(entry.mode, entry.data);
+            setSafeHtml(body, buildDetailHTML(entry.mode, entry.data));
             modal.style.display = 'flex';
         }
 

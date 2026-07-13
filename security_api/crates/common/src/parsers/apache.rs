@@ -106,10 +106,34 @@ impl ApacheLog {
     }
     
     fn is_command_injection(&self) -> bool {
-        self.path.contains(";")
-            || self.path.contains("|")
-            || self.path.contains("&&")
-            || self.path.contains("`")
+        let path_lower = self.path.to_lowercase();
+
+        // A shell metacharacter alone is not enough: legitimate URLs often
+        // contain ';' or '|' in query strings (e.g. matrix params, filters).
+        // Require a chaining/substitution metacharacter *and* an actual shell
+        // command token to flag a genuine injection payload.
+        let has_metachar = path_lower.contains(';')
+            || path_lower.contains('|')
+            || path_lower.contains("&&")
+            || path_lower.contains('`')
+            || path_lower.contains("$(")
+            || path_lower.contains("%3b") // ; encoded
+            || path_lower.contains("%7c") // | encoded
+            || path_lower.contains("%60"); // ` encoded
+
+        if !has_metachar {
+            return false;
+        }
+
+        const COMMAND_TOKENS: [&str; 16] = [
+            "whoami", "netcat", "wget", "curl", "bash", "/bin/", "/etc/",
+            "cat ", "cat%20", "ls ", "ls%20", "rm ", "rm%20", "chmod",
+            "cmd.exe", "powershell",
+        ];
+
+        COMMAND_TOKENS
+            .iter()
+            .any(|token| path_lower.contains(token))
     }
     
     fn is_scanner(&self) -> bool {
@@ -304,5 +328,29 @@ mod tests {
         let log = result.unwrap();
         assert!(log.is_suspicious);
         assert_eq!(log.threat_type, Some("Security Scanner".to_string()));
+    }
+
+    #[test]
+    fn test_parse_command_injection() {
+        let line = r#"198.51.100.7 - - [15/Dec/2025:17:19:00 +0000] "GET /ping?host=127.0.0.1;cat%20/etc/passwd HTTP/1.1" 200 0 "-" "curl/7.68.0""#;
+        let result = parse_apache_combined(line);
+        assert!(result.is_ok());
+
+        let log = result.unwrap();
+        assert!(log.is_suspicious);
+        assert_eq!(log.threat_type, Some("Command Injection".to_string()));
+        assert_eq!(log.severity, Some("Critical".to_string()));
+    }
+
+    #[test]
+    fn test_metacharacter_in_url_is_not_command_injection() {
+        // Legitimate URL with a ';' matrix parameter must not be flagged.
+        let line = r#"192.168.1.50 - - [15/Dec/2025:17:19:00 +0000] "GET /shop/products;jsessionid=A1B2C3?sort=price|asc HTTP/1.1" 200 512 "https://example.com" "Mozilla/5.0""#;
+        let result = parse_apache_combined(line);
+        assert!(result.is_ok());
+
+        let log = result.unwrap();
+        assert!(!log.is_suspicious);
+        assert_eq!(log.threat_type, None);
     }
 }

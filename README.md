@@ -8,6 +8,8 @@ Production-grade security log analysis platform with dual-mode operation: Simple
 
 **Developer:** [Sena Raufi](https://github.com/Senaraufi)
 
+![Logr trailer](./docs/Logr-trailer.gif)
+
 ## Features
 
 ### Analysis Modes
@@ -26,18 +28,32 @@ Production-grade security log analysis platform with dual-mode operation: Simple
 - MITRE ATT&CK framework mapping
 - Database integration for audit trails
 
+**CLI (`logr`)** - For terminal workflows and CI/CD
+- Analyze log files or piped `stdin`
+- Table, JSON, and compact output formats
+- Severity filtering (`--severity low|medium|high|critical`)
+- CI mode (`--ci`) exits non-zero when threats exceed a threshold
+
 ### Core Capabilities
 - Multi-provider LLM support (OpenAI, Anthropic, Groq, Gemini)
 - Apache Combined Log Format parsing
-- 10+ threat detection patterns (SQL injection, XSS, malware, etc.)
+- Threat detection patterns (SQL injection, XSS, command injection, path traversal, scanners, malware, etc.)
+- Tuned detection heuristics to reduce false positives on legitimate traffic
 - Attack chain detection and timeline analysis
 - Real-time web dashboard with responsive design
 
+### Security Hardening
+- Per-IP rate limiting and upload size limits on the API
+- Client-side XSS protection via DOMPurify sanitization of all rendered output
+- Panic-free multipart handling (no `unwrap()` in request paths)
+- Opt-out IP geolocation to avoid leaking log IPs over plaintext
+
 ### Technical Stack
 - **Backend:** Rust, Axum, Tokio, SQLx, rig-core
-- **Frontend:** Vanilla JavaScript, HTML5, CSS3
+- **Frontend:** Vanilla JavaScript, HTML5, CSS3, DOMPurify
+- **CLI:** Rust, clap, comfy-table
 - **Security:** CVSS 3.1, MITRE ATT&CK
-- **Architecture:** Cargo workspace with 4 independent crates
+- **Architecture:** Cargo workspace with 5 independent crates
 
 ## Project Structure
 
@@ -47,7 +63,8 @@ security_api/
 │   ├── common/          # Shared types, parsers, CVSS scoring
 │   ├── analyzer-basic/  # Pattern-based threat detection
 │   ├── analyzer-llm/    # Multi-provider LLM analysis
-│   └── api/             # Web server and frontend
+│   ├── api/             # Web server and frontend
+│   └── cli/             # `logr` command-line tool
 ├── .env                 # Configuration (gitignored)
 └── test_logs/           # Sample log files
 ```
@@ -122,6 +139,18 @@ See `crates/analyzer-llm/LLM_CONFIG.md` for detailed configuration options.
 3. Upload log file
 4. Review detailed CVSS scores and threat analysis
 
+### CLI
+```bash
+# Analyze a log file (table output)
+cargo run -p logr-cli -- analyze access.log
+
+# JSON output for automation
+cargo run -p logr-cli -- analyze access.log --format json
+
+# Read from stdin and fail CI on high-severity threats
+cat /var/log/auth.log | cargo run -p logr-cli -- analyze - --severity high --ci
+```
+
 ## Development
 
 ```bash
@@ -141,7 +170,7 @@ MIT License - See LICENSE file for details
 
 ## Project Information
 
-**Status:** Production Ready  
+**Status:** Active Development  
 **Language:** Rust  
-**Architecture:** Cargo Workspace (4 crates)  
+**Architecture:** Cargo Workspace (5 crates)  
 **Developer:** [Sena Raufi](https://github.com/Senaraufi)

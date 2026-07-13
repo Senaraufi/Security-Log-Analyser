@@ -55,17 +55,27 @@ security_api/
 │   ├── api/              # Axum web server & REST API
 │   ├── analyzer-basic/   # Pattern-based threat detection
 │   ├── analyzer-llm/     # LLM integration layer
-│   ├── common/           # Shared types & log parsers
-│   └── db/              # Database models & queries
+│   ├── common/           # Shared types, log parsers & DB queries
+│   └── cli/              # `logr` command-line tool
 ├── database/            # MySQL schema & migrations
 └── .env.example        # Configuration template
 ```
 
 **Tech Stack:**
 - **Backend**: Rust, Axum, Tokio
-- **Frontend**: Vanilla JS, Modern CSS
+- **Frontend**: Vanilla JS, Modern CSS, DOMPurify
+- **CLI**: Rust, clap, comfy-table
 - **Database**: MySQL
 - **LLMs**: Groq, Gemini, OpenAI, Anthropic
+
+## Security Hardening
+
+- **Rate limiting**: 30 requests/minute per IP on all API routes
+- **Upload limits**: 50 MB max body size to prevent resource exhaustion
+- **XSS protection**: all dynamic output is sanitized with DOMPurify before rendering
+- **Robust request handling**: no `unwrap()` panics in multipart parsing paths
+- **Privacy**: IP geolocation is opt-out to avoid leaking log IPs over the plaintext lookup service
+- **Tuned detection**: command-injection and SQL-injection heuristics require real payloads to cut false positives on legitimate traffic
 
 ## Installation
 
@@ -171,12 +181,27 @@ POST   /api/analyze-with-llm     # AI-powered analysis
 GET    /api/llm-health           # LLM provider health check
 ```
 
-## Security
+## Command-Line Tool (`logr`)
+
+A standalone CLI for terminal workflows and CI/CD pipelines:
+
+```bash
+# Analyze a log file (human-readable table)
+cargo run -p logr-cli -- analyze access.log
+
+# Machine-readable JSON output
+cargo run -p logr-cli -- analyze access.log --format json
+
+# Read from stdin, fail the pipeline on high-severity threats
+cat /var/log/auth.log | cargo run -p logr-cli -- analyze - --severity high --ci
+```
+
+## Deployment Notes
 
 - **API Keys**: Never commit `.env` file (already in `.gitignore`)
 - **Database**: Use strong passwords and secure connections
-- **HTTPS**: Enable in production environments
-- **Rate Limiting**: Implement for public deployments
+- **HTTPS**: Enable in production environments (terminate TLS at a reverse proxy)
+- **Rate Limiting**: Built-in per-IP limiting is enabled; tune limits for your traffic profile
 
 ## Contributing
 
