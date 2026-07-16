@@ -1,4 +1,4 @@
-use chrono::{DateTime, NaiveDateTime, Utc};
+use chrono::{DateTime, Utc};
 use nom::{
     branch::alt,
     bytes::complete::{tag, take_until, take_while1},
@@ -155,44 +155,24 @@ fn parse_ip(input: &str) -> IResult<&str, String> {
 }
 
 /// Parse timestamp in Apache format: [15/Dec/2025:17:19:00 +0000]
+///
+/// The timezone offset is honored and the result is normalized to UTC, so a
+/// `+0100` log line and a `+0000` log line an hour apart map to the same UTC
+/// instant. This is essential for correct forensic timelines. If the timestamp
+/// cannot be parsed we fall back to the Unix epoch rather than the current time,
+/// so a parse failure can never silently falsify when an event occurred.
 fn parse_timestamp(input: &str) -> IResult<&str, DateTime<Utc>> {
-    let (input, _) = char('[')(input)?;
-    let (input, day) = digit1(input)?;
-    let (input, _) = char('/')(input)?;
-    let (input, month) = take_while1(|c: char| c.is_alphabetic())(input)?;
-    let (input, _) = char('/')(input)?;
-    let (input, year) = digit1(input)?;
-    let (input, _) = char(':')(input)?;
-    let (input, hour) = digit1(input)?;
-    let (input, _) = char(':')(input)?;
-    let (input, minute) = digit1(input)?;
-    let (input, _) = char(':')(input)?;
-    let (input, second) = digit1(input)?;
-    let (input, _) = space1(input)?;
-    let (input, _timezone) = take_while1(|c: char| c == '+' || c == '-' || c.is_digit(10))(input)?;
-    let (input, _) = char(']')(input)?;
-    
-    // Convert month name to number
-    let month_num = match month {
-        "Jan" => 1, "Feb" => 2, "Mar" => 3, "Apr" => 4,
-        "May" => 5, "Jun" => 6, "Jul" => 7, "Aug" => 8,
-        "Sep" => 9, "Oct" => 10, "Nov" => 11, "Dec" => 12,
-        _ => 1,
-    };
-    
-    // Create datetime
-    let datetime_str = format!(
-        "{}-{:02}-{:02} {:02}:{:02}:{:02}",
-        year, month_num, day.parse::<u32>().unwrap_or(1),
-        hour.parse::<u32>().unwrap_or(0),
-        minute.parse::<u32>().unwrap_or(0),
-        second.parse::<u32>().unwrap_or(0)
-    );
-    
-    let naive_dt = NaiveDateTime::parse_from_str(&datetime_str, "%Y-%m-%d %H:%M:%S")
-        .unwrap_or_else(|_| DateTime::from_timestamp(0, 0).unwrap_or_default().naive_utc());
-    
-    Ok((input, DateTime::from_naive_utc_and_offset(naive_dt, Utc)))
+    let (input, ts_str) = delimited(
+        char('['),
+        take_until("]"),
+        char(']'),
+    )(input)?;
+
+    let datetime = DateTime::parse_from_str(ts_str, "%d/%b/%Y:%H:%M:%S %z")
+        .map(|dt| dt.with_timezone(&Utc))
+        .unwrap_or_else(|_| DateTime::from_timestamp(0, 0).unwrap_or_default());
+
+    Ok((input, datetime))
 }
 
 /// Parse HTTP request: "GET /path HTTP/1.1"
@@ -340,6 +320,20 @@ mod tests {
         assert!(log.is_suspicious);
         assert_eq!(log.threat_type, Some("Command Injection".to_string()));
         assert_eq!(log.severity, Some("Critical".to_string()));
+    }
+
+    #[test]
+    fn test_timestamp_timezone_normalized_to_utc() {
+        // +0100 means the local wall-clock time is one hour ahead of UTC,
+        // so 17:19:00 +0100 must normalize to 16:19:00 UTC.
+        let line = r#"192.168.1.1 - - [15/Dec/2025:17:19:00 +0100] "GET /index.html HTTP/1.1" 200 1234 "-" "Mozilla/5.0""#;
+        let log = parse_apache_combined(line).expect("should parse");
+        assert_eq!(log.timestamp.to_rfc3339(), "2025-12-15T16:19:00+00:00");
+
+        // A +0000 line at the same wall-clock time stays at 17:19:00 UTC.
+        let line_utc = r#"192.168.1.1 - - [15/Dec/2025:17:19:00 +0000] "GET /index.html HTTP/1.1" 200 1234 "-" "Mozilla/5.0""#;
+        let log_utc = parse_apache_combined(line_utc).expect("should parse");
+        assert_eq!(log_utc.timestamp.to_rfc3339(), "2025-12-15T17:19:00+00:00");
     }
 
     #[test]

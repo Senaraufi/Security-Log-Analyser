@@ -31,8 +31,18 @@ impl BasicAnalyzer {
                     .or_insert(1);
             }
 
-            // Detect failed logins
-            if entry.level == "ERROR" && entry.message.contains("Failed login") {
+            // Detect failed logins across common auth formats:
+            // - Apache/app logs:   "Failed login"
+            // - sshd/auth.log:     "Failed password", "authentication failure", "Invalid user"
+            // - Windows events:    "an account failed to log on", audit failure 4625
+            let login_msg = entry.message.to_lowercase();
+            if login_msg.contains("failed login")
+                || login_msg.contains("failed password")
+                || login_msg.contains("authentication failure")
+                || login_msg.contains("invalid user")
+                || login_msg.contains("failed to log on")
+                || login_msg.contains("login failed")
+            {
                 failed_logins += 1;
             }
 
@@ -248,5 +258,18 @@ mod tests {
         let entries = vec![entry("WARN", "Detected trojan in uploaded file")];
         let result = BasicAnalyzer::new().analyze(&entries);
         assert_eq!(result.malware_detections, 1);
+    }
+
+    #[test]
+    fn detects_failed_logins_across_formats() {
+        let entries = vec![
+            entry("ERROR", "Failed login for admin from 10.0.0.1"),
+            entry("INFO", "Failed password for invalid user root from 203.0.113.5 port 22 ssh2"),
+            entry("INFO", "pam_unix(sshd:auth): authentication failure; rhost=203.0.113.9"),
+            entry("INFO", "An account failed to log on. Account Name: bob"),
+        ];
+        let result = BasicAnalyzer::new().analyze(&entries);
+        // "Failed password for invalid user" matches two patterns but counts once per entry.
+        assert_eq!(result.failed_logins, 4);
     }
 }

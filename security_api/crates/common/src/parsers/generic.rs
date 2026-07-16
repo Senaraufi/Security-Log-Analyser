@@ -1,5 +1,4 @@
 use regex::Regex;
-use chrono::Utc;
 use crate::LogEntry;
 
 /// Parse any log format with multiple fallback strategies
@@ -105,11 +104,10 @@ fn try_minimal_parsing(line: &str) -> LogEntry {
     let ip_address = extract_ip_address(&message);
     let username = extract_username(&message);
 
-    // Use current time as fallback timestamp
-    let timestamp = Utc::now().to_rfc3339();
-
+    // No parseable timestamp: leave it empty rather than substituting the
+    // current time, which would falsify forensic timelines.
     LogEntry {
-        timestamp,
+        timestamp: String::new(),
         level,
         ip_address,
         username,
