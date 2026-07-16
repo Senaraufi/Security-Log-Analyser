@@ -7,22 +7,22 @@ pub async fn save_log_upload(
     pool: &DbPool,
     upload: &NewLogUpload,
 ) -> Result<i32, sqlx::Error> {
-    let result = sqlx::query!(
+    let result = sqlx::query(
         r#"
         INSERT INTO log_uploads 
         (filename, file_size_bytes, total_lines, parsed_lines, failed_lines, 
          analysis_mode, processing_time_ms, user_ip)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         "#,
-        upload.filename,
-        upload.file_size_bytes,
-        upload.total_lines,
-        upload.parsed_lines,
-        upload.failed_lines,
-        upload.analysis_mode,
-        upload.processing_time_ms,
-        upload.user_ip
     )
+    .bind(upload.filename.as_str())
+    .bind(upload.file_size_bytes)
+    .bind(upload.total_lines)
+    .bind(upload.parsed_lines)
+    .bind(upload.failed_lines)
+    .bind(upload.analysis_mode.as_str())
+    .bind(upload.processing_time_ms)
+    .bind(upload.user_ip.as_deref())
     .execute(pool)
     .await?;
     
@@ -34,7 +34,7 @@ pub async fn save_analysis_result(
     pool: &DbPool,
     analysis: &NewAnalysisResult,
 ) -> Result<i32, sqlx::Error> {
-    let result = sqlx::query!(
+    let result = sqlx::query(
         r#"
         INSERT INTO analysis_results 
         (upload_id, risk_level, total_threats, threat_score,
@@ -44,20 +44,20 @@ pub async fn save_analysis_result(
          minor_issues_count, major_issues_count)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         "#,
-        analysis.upload_id,
-        analysis.risk_level,
-        analysis.total_threats,
-        analysis.threat_score,
-        analysis.sql_injection_count,
-        analysis.xss_count,
-        analysis.path_traversal_count,
-        analysis.command_injection_count,
-        analysis.suspicious_patterns_count,
-        analysis.format_quality_percentage,
-        analysis.perfect_format_count,
-        analysis.minor_issues_count,
-        analysis.major_issues_count
     )
+    .bind(analysis.upload_id)
+    .bind(analysis.risk_level.as_str())
+    .bind(analysis.total_threats)
+    .bind(analysis.threat_score)
+    .bind(analysis.sql_injection_count)
+    .bind(analysis.xss_count)
+    .bind(analysis.path_traversal_count)
+    .bind(analysis.command_injection_count)
+    .bind(analysis.suspicious_patterns_count)
+    .bind(analysis.format_quality_percentage)
+    .bind(analysis.perfect_format_count)
+    .bind(analysis.minor_issues_count)
+    .bind(analysis.major_issues_count)
     .execute(pool)
     .await?;
     
@@ -69,22 +69,22 @@ pub async fn save_ai_analysis(
     pool: &DbPool,
     ai_analysis: &NewAIAnalysis,
 ) -> Result<i32, sqlx::Error> {
-    let result = sqlx::query!(
+    let result = sqlx::query(
         r#"
         INSERT INTO ai_analysis 
         (upload_id, threat_level, summary, total_logs_analyzed,
          suspicious_logs_count, confidence_score, processing_time_ms, tokens_used)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         "#,
-        ai_analysis.upload_id,
-        ai_analysis.threat_level,
-        ai_analysis.summary,
-        ai_analysis.total_logs_analyzed,
-        ai_analysis.suspicious_logs_count,
-        ai_analysis.confidence_score,
-        ai_analysis.processing_time_ms,
-        ai_analysis.tokens_used
     )
+    .bind(ai_analysis.upload_id)
+    .bind(ai_analysis.threat_level.as_str())
+    .bind(ai_analysis.summary.as_str())
+    .bind(ai_analysis.total_logs_analyzed)
+    .bind(ai_analysis.suspicious_logs_count)
+    .bind(ai_analysis.confidence_score)
+    .bind(ai_analysis.processing_time_ms)
+    .bind(ai_analysis.tokens_used)
     .execute(pool)
     .await?;
     
@@ -96,18 +96,18 @@ pub async fn save_ip_analysis(
     pool: &DbPool,
     ip_data: &NewIPAnalysis,
 ) -> Result<(), sqlx::Error> {
-    sqlx::query!(
+    sqlx::query(
         r#"
         INSERT INTO ip_analysis 
         (analysis_id, ip_address, request_count, threat_count, risk_level)
         VALUES (?, ?, ?, ?, ?)
         "#,
-        ip_data.analysis_id,
-        ip_data.ip_address,
-        ip_data.request_count,
-        ip_data.threat_count,
-        ip_data.risk_level
     )
+    .bind(ip_data.analysis_id)
+    .bind(ip_data.ip_address.as_str())
+    .bind(ip_data.request_count)
+    .bind(ip_data.threat_count)
+    .bind(ip_data.risk_level.as_str())
     .execute(pool)
     .await?;
     
@@ -119,19 +119,19 @@ pub async fn save_detected_threat(
     pool: &DbPool,
     threat: &NewDetectedThreat,
 ) -> Result<(), sqlx::Error> {
-    sqlx::query!(
+    sqlx::query(
         r#"
         INSERT INTO detected_threats 
         (analysis_id, threat_type, severity, description, log_line_number, log_entry)
         VALUES (?, ?, ?, ?, ?, ?)
         "#,
-        threat.analysis_id,
-        threat.threat_type,
-        threat.severity,
-        threat.description,
-        threat.log_line_number,
-        threat.log_entry
     )
+    .bind(threat.analysis_id)
+    .bind(threat.threat_type.as_str())
+    .bind(threat.severity.as_str())
+    .bind(threat.description.as_deref())
+    .bind(threat.log_line_number)
+    .bind(threat.log_entry.as_deref())
     .execute(pool)
     .await?;
     
