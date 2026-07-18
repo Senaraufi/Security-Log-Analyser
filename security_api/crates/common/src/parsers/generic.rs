@@ -116,7 +116,7 @@ fn try_minimal_parsing(line: &str) -> LogEntry {
 }
 
 /// Extract IP address from message text
-fn extract_ip_address(text: &str) -> Option<String> {
+pub(crate) fn extract_ip_address(text: &str) -> Option<String> {
     let ip_re = Regex::new(r"\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b").ok()?;
     ip_re.captures(text)
         .and_then(|c| c.get(1))
@@ -124,7 +124,7 @@ fn extract_ip_address(text: &str) -> Option<String> {
 }
 
 /// Extract username from message text
-fn extract_username(text: &str) -> Option<String> {
+pub(crate) fn extract_username(text: &str) -> Option<String> {
     // Common patterns: "user: username", "user=username", "username@", etc.
     let patterns = [
         r"user[:\s=]+([a-zA-Z0-9_-]+)",
@@ -151,7 +151,7 @@ fn extract_username(text: &str) -> Option<String> {
 }
 
 /// Infer log level from message content
-fn infer_log_level(message: &str) -> String {
+pub(crate) fn infer_log_level(message: &str) -> String {
     let msg_lower = message.to_lowercase();
 
     // Critical indicators
