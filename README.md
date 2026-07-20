@@ -84,7 +84,59 @@ security_api/
 
 [View Interactive Graph](graphify-out/graph.html) | [Full Analysis Report](graphify-out/GRAPH_REPORT.md)
 
-## Installation
+## Install the CLI (`logr`)
+
+### Quick install (macOS / Linux)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/senaraufi/Security-Log-Analyser/master/install.sh | sh
+```
+
+This downloads the correct prebuilt binary for your platform from the latest
+[GitHub Release](https://github.com/senaraufi/Security-Log-Analyser/releases)
+and installs it to `/usr/local/bin` (or `~/.local/bin` as a fallback).
+
+### Homebrew (macOS / Linux)
+
+```bash
+brew install senaraufi/tap/logr
+```
+
+> Requires the `homebrew-tap` repo to be published — see
+> [`packaging/homebrew/logr.rb`](packaging/homebrew/logr.rb).
+
+### Manual download
+
+Grab the archive for your platform from the
+[Releases page](https://github.com/senaraufi/Security-Log-Analyser/releases),
+extract it, and move `logr` onto your `PATH`.
+
+| Platform | Asset |
+| --- | --- |
+| macOS (Apple Silicon) | `logr-<version>-aarch64-apple-darwin.tar.gz` |
+| macOS (Intel) | `logr-<version>-x86_64-apple-darwin.tar.gz` |
+| Linux (x86_64) | `logr-<version>-x86_64-unknown-linux-gnu.tar.gz` |
+| Windows (x86_64) | `logr-<version>-x86_64-pc-windows-msvc.zip` |
+
+Each asset ships with a matching `.sha256` file for verification.
+
+### From source (requires Rust 1.70+)
+
+```bash
+cargo install --path security_api/crates/cli
+# or run without installing:
+cargo run -p logr-cli -- analyze access.log
+```
+
+Once installed:
+
+```bash
+logr analyze access.log                       # table output
+logr analyze access.log --format json         # machine-readable
+cat /var/log/auth.log | logr analyze - --severity high --ci
+```
+
+## Run the web dashboard
 
 ### Prerequisites
 - Rust 1.70+

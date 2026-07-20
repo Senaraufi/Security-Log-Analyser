@@ -1,0 +1,104 @@
+name: Release
+
+# Builds prebuilt `logr` binaries for macOS, Linux, and Windows and attaches
+# them to the GitHub Release whenever a version tag (e.g. v1.0.1) is pushed.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  BIN_NAME: logr
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            archive: tar.gz
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            archive: tar.gz
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            archive: tar.gz
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            archive: zip
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            security_api/target
+          key: ${{ runner.os }}-release-${{ matrix.target }}-${{ hashFiles('security_api/**/Cargo.toml') }}
+          restore-keys: ${{ runner.os }}-release-${{ matrix.target }}-
+
+      - name: Build
+        working-directory: security_api
+        run: cargo build --release -p logr-cli --target ${{ matrix.target }}
+
+      - name: Package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd security_api
+          DIST="${BIN_NAME}-${GITHUB_REF_NAME}-${{ matrix.target }}"
+          mkdir -p "dist/${DIST}"
+
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            cp "target/${{ matrix.target }}/release/${BIN_NAME}.exe" "dist/${DIST}/"
+          else
+            cp "target/${{ matrix.target }}/release/${BIN_NAME}" "dist/${DIST}/"
+          fi
+
+          # Bundle docs/license when present (paths relative to repo root or crate)
+          cp ../README.md "dist/${DIST}/" 2>/dev/null || true
+          cp ../LICENSE "dist/${DIST}/" 2>/dev/null || cp LICENSE "dist/${DIST}/" 2>/dev/null || true
+
+          cd dist
+          if [[ "${{ matrix.archive }}" == "zip" ]]; then
+            7z a "${DIST}.zip" "${DIST}" >/dev/null
+            ASSET="${DIST}.zip"
+          else
+            tar czf "${DIST}.tar.gz" "${DIST}"
+            ASSET="${DIST}.tar.gz"
+          fi
+
+          # SHA-256 checksum (used by Homebrew and manual verification)
+          if command -v shasum >/dev/null 2>&1; then
+            shasum -a 256 "${ASSET}" > "${ASSET}.sha256"
+          else
+            certutil -hashfile "${ASSET}" SHA256 > "${ASSET}.sha256"
+          fi
+
+          echo "ASSET_PATH=security_api/dist/${ASSET}" >> "$GITHUB_ENV"
+          echo "ASSET_SHA=security_api/dist/${ASSET}.sha256" >> "$GITHUB_ENV"
+
+      - name: Attach to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ env.ASSET_PATH }}
+            ${{ env.ASSET_SHA }}
+          fail_on_unmatched_files: true

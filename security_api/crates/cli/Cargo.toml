@@ -1,6 +1,6 @@
 [package]
 name = "logr-cli"
-version = "0.1.0"
+version = "1.0.1"
 edition = "2021"
 description = "Security log analyzer CLI — detect threats, score risks, and audit logs from the terminal"
 license = "MIT"
