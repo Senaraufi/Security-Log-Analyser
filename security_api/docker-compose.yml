@@ -1,0 +1,43 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      LLM_PROVIDER: ${LLM_PROVIDER:-groq}
+      LLM_MODEL: ${LLM_MODEL:-llama-3.3-70b-versatile}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # No DATABASE_URL by default: the app runs fully featured without a
+      # database (Simple Mode and Advanced Mode both work; only persistent
+      # audit-trail storage is skipped). Enable the `db` profile below for
+      # persistence.
+      DATABASE_URL: ${DATABASE_URL:-}
+    restart: unless-stopped
+
+  # Optional: MySQL for the audit-trail / persistence features.
+  # Start with:  docker-compose --profile db up
+  # Then set DATABASE_URL=mysql://root:logr@db:3306/security_LogsDB in your .env.
+  db:
+    image: mysql:8
+    profiles: ["db"]
+    environment:
+      MYSQL_ROOT_PASSWORD: logr
+      MYSQL_DATABASE: security_LogsDB
+    ports:
+      - "3306:3306"
+    volumes:
+      - logr-mysql-data:/var/lib/mysql
+      - ./database/create_tables.sql:/docker-entrypoint-initdb.d/create_tables.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-plogr"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  logr-mysql-data:

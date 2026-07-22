@@ -81,23 +81,56 @@ security_api/
 
 ### Prerequisites
 
-- **Rust** 1.70+ ([Install](https://rustup.rs/))
-- **MySQL** 8.0+ ([Install](https://dev.mysql.com/downloads/))
+- **Docker** ([Install](https://docs.docker.com/get-docker/)) — easiest way to run Logr, no Rust/MySQL setup required
+- or **Rust** 1.85+ ([Install](https://rustup.rs/)) for building from source
+- **MySQL** 8.0+ ([Install](https://dev.mysql.com/downloads/)) — optional, only needed for persistent audit-trail storage
 - **LLM API Keys** (optional, for AI analysis):
   - [Groq](https://console.groq.com) (Free)
   - [Google Gemini](https://ai.google.dev/)
 
-### Quick Start
+### Quick Start (Docker — recommended)
+
+One command, no Rust or MySQL install required. The database is optional; Simple Mode and Advanced Mode both work without it.
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/security-log-analyzer.git
-   cd security-log-analyzer
+   git clone https://github.com/senaraufi/Security-Log-Analyser.git
+   cd Security-Log-Analyser/security_api
    ```
 
-2. **Set up the database**
+2. **Configure LLM keys (optional)**
    ```bash
-   # Create MySQL database
+   cp .env.example .env
+   # Edit .env and set GROQ_API_KEY (or another provider) for AI analysis
+   ```
+
+3. **Start the stack**
+   ```bash
+   docker compose up
+   ```
+
+4. **Access the platform**
+   ```
+   Open http://localhost:3000 in your browser
+   ```
+
+**Want persistent audit-trail storage?** Start MySQL alongside the API and point `DATABASE_URL` at it:
+```bash
+docker compose --profile db up
+# then in .env: DATABASE_URL=mysql://root:logr@db:3306/security_LogsDB
+```
+
+### Quick Start (from source)
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/senaraufi/Security-Log-Analyser.git
+   cd Security-Log-Analyser/security_api
+   ```
+
+2. **(Optional) Set up the database**
+   ```bash
+   # Only needed for persistent audit-trail storage; the app runs fine without it.
    mysql -u root -p < database/schema.sql
    ```
 

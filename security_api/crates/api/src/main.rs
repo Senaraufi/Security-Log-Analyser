@@ -1,5 +1,5 @@
 use axum::{
-    extract::{ConnectInfo, DefaultBodyLimit, Extension, Multipart, Request},
+    extract::{ConnectInfo, DefaultBodyLimit, Multipart, Request},
     http::StatusCode,
     middleware::{self, Next},
     response::{IntoResponse, Json, Response},
@@ -63,7 +63,7 @@ async fn rate_limit_middleware(
 
 // Import from workspace crates
 use security_common::{
-    database::{init_db, test_connection, DbPool},
+    database::{init_db, test_connection},
     cvss,
     geolocation,
     AnalysisResult, ThreatStats, IpAnalysis, IpInfo, RiskAssessment, 
@@ -79,23 +79,21 @@ async fn main() {
     // Load environment variables
     dotenv::dotenv().ok();
     
-    // Initialize database connection
+    // Database is optional and currently unused by any route handler
+    // (kept for future persistence features); this is a startup diagnostic only.
     println!("Starting Security API Server...");
-    let db_pool = match init_db().await {
+    match init_db().await {
         Ok(pool) => {
             if let Err(e) = test_connection(&pool).await {
                 eprintln!("[ERROR] Database connection test failed: {}", e);
-                eprintln!("  Server will run but database features will be unavailable");
+            } else {
+                println!("[INFO] Database connected");
             }
-            Some(pool)
         }
         Err(e) => {
-            eprintln!("Failed to connect to database: {}", e);
-            eprintln!("Server will run but database features will be unavailable");
-            eprintln!("Check your DATABASE_URL in .env file");
-            None
+            println!("[INFO] Running without a database: {}", e);
         }
-    };
+    }
     
     let static_files = ServeDir::new("crates/api/static");
     
@@ -107,12 +105,7 @@ async fn main() {
         .layer(middleware::from_fn(rate_limit_middleware))
         .layer(DefaultBodyLimit::max(MAX_UPLOAD_BYTES));
 
-    let mut app = api_routes.nest_service("/", static_files);
-    
-    // Add database pool to app state if available
-    if let Some(pool) = db_pool {
-        app = app.layer(Extension(pool));
-    }
+    let app = api_routes.nest_service("/", static_files);
     
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await
@@ -133,7 +126,6 @@ async fn main() {
 
 // Basic analysis endpoint
 async fn analyze_logs(
-    Extension(_db_pool): Extension<DbPool>,
     mut multipart: Multipart,
 ) -> Response {
     let mut content = String::new();

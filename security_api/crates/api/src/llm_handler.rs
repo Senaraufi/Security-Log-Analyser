@@ -5,11 +5,11 @@
 //! via environment variables.
 
 use axum::{
-    extract::{Extension, Multipart},
+    extract::Multipart,
     response::{IntoResponse, Json},
 };
 use security_analyzer_llm::{LlmAnalyzer, AnalyzerError};
-use security_common::{database::DbPool, geolocation, parsers::apache::parse_apache_combined};
+use security_common::{geolocation, parsers::apache::parse_apache_combined};
 
 /// Analyze logs using the configured LLM provider
 ///
@@ -25,7 +25,6 @@ use security_common::{database::DbPool, geolocation, parsers::apache::parse_apac
 ///
 /// See `LLM_CONFIG.md` in the analyzer-llm crate for full configuration details.
 pub async fn analyze_logs_with_llm(
-    Extension(_db_pool): Extension<DbPool>,
     mut multipart: Multipart,
 ) -> impl IntoResponse {
     let mut content = String::new();
