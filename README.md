@@ -1,10 +1,10 @@
 # Security Log Analyzer
 
-[![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org/)
+[![Rust](https://img.shields.io/badge/rust-1.85%2B-orange.svg)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![CVSS](https://img.shields.io/badge/CVSS-3.1-green.svg)](https://www.first.org/cvss/)
 
-Production-grade security log analysis platform with dual-mode operation: Simple Mode for beginners and Advanced Mode for security professionals. Built with Rust for performance and reliability.
+Production-grade security log analysis platform with dual-mode operation: Simple Mode for beginners and Advanced Mode for security professionals. Built with Rust for performance and reliability. Runs with **zero setup friction** — one Docker command, no database required.
 
 **Developer:** [Sena Raufi](https://github.com/Senaraufi)
 
@@ -12,62 +12,63 @@ Production-grade security log analysis platform with dual-mode operation: Simple
 
 ![Security Log Analyzer Demo](docs/Logr-trailer.gif)
 
+## Quick Start
+
+**Docker (recommended — no Rust/MySQL install needed):**
+
+```bash
+git clone https://github.com/senaraufi/Security-Log-Analyser.git
+cd Security-Log-Analyser/security_api
+cp .env.example .env   # optional: add an LLM key for AI analysis
+docker compose up
+# Open http://localhost:3000
+```
+
+The database is optional — Simple Mode and Advanced Mode both work without it. To persist audit trails, run `docker compose --profile db up` instead.
+
+**CLI, prebuilt binary:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/senaraufi/Security-Log-Analyser/master/install.sh | sh
+logr analyze access.log
+```
+
+See [Install the CLI](#install-the-cli-logr) and [Run from source](#run-from-source) below for other options.
+
 ## Features
 
-### Analysis Modes
+**Three ways to analyze logs:**
+- **Simple Mode** — paste logs, get plain-English threat explanations, risk scores (0–10), and actionable fixes. No technical expertise required.
+- **Advanced Mode** — batch file upload, CVSS 3.1 scoring, IP reputation, MITRE ATT&CK mapping, database-backed audit trails.
+- **CLI (`logr`)** — analyze files or piped `stdin`, table/JSON/compact output, `--severity` filtering, `--ci` mode for pipelines.
 
-**Simple Mode** - For beginners, students, and small businesses
-- Paste logs directly into the interface
-- Plain English explanations of security threats
-- Risk score with color-coded severity (0-10 scale)
-- Actionable remediation steps with commands
-- No technical expertise required
-
-**Advanced Mode** - For security professionals
-- File upload with batch processing
-- CVSS 3.1 scoring for all threats
-- Detailed threat statistics and IP analysis
-- MITRE ATT&CK framework mapping
-- Database integration for audit trails
-
-**CLI (`logr`)** - For terminal workflows and CI/CD
-- Analyze log files or piped `stdin`
-- Table, JSON, and compact output formats
-- Severity filtering (`--severity low|medium|high|critical`)
-- CI mode (`--ci`) exits non-zero when threats exceed a threshold
-
-### Core Capabilities
-- Multi-provider LLM support (OpenAI, Anthropic, Groq, Gemini)
-- Apache Combined Log Format parsing
-- Threat detection patterns (SQL injection, XSS, command injection, path traversal, scanners, malware, etc.)
-- Tuned detection heuristics to reduce false positives on legitimate traffic
+**Detection & parsing:**
+- Multi-format log parsing: Apache/Nginx combined, syslog/`auth.log` (sshd, sudo, PAM), JSON-lines (NDJSON), and a generic fallback
+- Threat patterns: SQL injection, XSS, command injection, path traversal, scanners, malware, brute-force logins
+- Tuned heuristics with regression tests to cut false positives on legitimate traffic
 - Attack chain detection and timeline analysis
-- Real-time web dashboard with responsive design
+- Multi-provider LLM support: Groq (free), Gemini, OpenAI, Anthropic
 
-### Security Hardening
+**Security hardening:**
 - Per-IP rate limiting and upload size limits on the API
 - Client-side XSS protection via DOMPurify sanitization of all rendered output
-- Panic-free multipart handling (no `unwrap()` in request paths)
+- Panic-free multipart handling and truly optional database (fails fast, never blocks startup)
 - Opt-out IP geolocation to avoid leaking log IPs over plaintext
 
-### Technical Stack
-- **Backend:** Rust, Axum, Tokio, SQLx, rig-core
-- **Frontend:** Vanilla JavaScript, HTML5, CSS3, DOMPurify
-- **CLI:** Rust, clap, comfy-table
-- **Security:** CVSS 3.1, MITRE ATT&CK
-- **Architecture:** Cargo workspace with 5 independent crates
+**Technical stack:** Rust, Axum, Tokio, SQLx, rig-core (backend) · Vanilla JS/HTML/CSS + DOMPurify (frontend) · clap + comfy-table (CLI) · Cargo workspace, 5 crates
 
 ## Project Structure
 
 ```
 security_api/
 ├── crates/
-│   ├── common/          # Shared types, parsers, CVSS scoring
+│   ├── common/          # Shared types, log parsers, CVSS scoring
 │   ├── analyzer-basic/  # Pattern-based threat detection
 │   ├── analyzer-llm/    # Multi-provider LLM analysis
 │   ├── api/             # Web server and frontend
 │   └── cli/             # `logr` command-line tool
-├── .env                 # Configuration (gitignored)
+├── Dockerfile, docker-compose.yml   # One-command local setup
+├── .env.example         # Configuration template
 └── test_logs/           # Sample log files
 ```
 
@@ -77,58 +78,18 @@ security_api/
 
 *Interactive knowledge graph showing 292 code entities and 574 relationships across 15 communities. Generated with [Graphify](https://github.com/safishamsi/graphify).*
 
-**Key Components:**
-- **God Nodes:** `LlmAnalyzer`, `AnalyzerError`, `ApacheLog`, `parse_apache_combined()`
-- **15 Communities:** Logical groupings of related functionality
-- **Cross-module bridges:** High betweenness centrality nodes connecting different parts of the system
-
 [View Interactive Graph](graphify-out/graph.html) | [Full Analysis Report](graphify-out/GRAPH_REPORT.md)
 
 ## Install the CLI (`logr`)
 
-### Quick install (macOS / Linux)
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/senaraufi/Security-Log-Analyser/master/install.sh | sh
-```
-
-This downloads the correct prebuilt binary for your platform from the latest
-[GitHub Release](https://github.com/senaraufi/Security-Log-Analyser/releases)
-and installs it to `/usr/local/bin` (or `~/.local/bin` as a fallback).
-
-### Homebrew (macOS / Linux)
-
-```bash
-brew install senaraufi/tap/logr
-```
-
-> Requires the `homebrew-tap` repo to be published — see
-> [`packaging/homebrew/logr.rb`](packaging/homebrew/logr.rb).
-
-### Manual download
-
-Grab the archive for your platform from the
-[Releases page](https://github.com/senaraufi/Security-Log-Analyser/releases),
-extract it, and move `logr` onto your `PATH`.
-
-| Platform | Asset |
+| Method | Command |
 | --- | --- |
-| macOS (Apple Silicon) | `logr-<version>-aarch64-apple-darwin.tar.gz` |
-| macOS (Intel) | `logr-<version>-x86_64-apple-darwin.tar.gz` |
-| Linux (x86_64) | `logr-<version>-x86_64-unknown-linux-gnu.tar.gz` |
-| Windows (x86_64) | `logr-<version>-x86_64-pc-windows-msvc.zip` |
+| **Install script** (macOS/Linux) | `curl -fsSL https://raw.githubusercontent.com/senaraufi/Security-Log-Analyser/master/install.sh \| sh` |
+| **Homebrew** | `brew install senaraufi/tap/logr` |
+| **Manual download** | Grab an asset from [Releases](https://github.com/senaraufi/Security-Log-Analyser/releases) (each ships with a `.sha256`) |
+| **From source** | `cargo install --path security_api/crates/cli` |
 
-Each asset ships with a matching `.sha256` file for verification.
-
-### From source (requires Rust 1.70+)
-
-```bash
-cargo install --path security_api/crates/cli
-# or run without installing:
-cargo run -p logr-cli -- analyze access.log
-```
-
-Once installed:
+Usage:
 
 ```bash
 logr analyze access.log                       # table output
@@ -136,86 +97,38 @@ logr analyze access.log --format json         # machine-readable
 cat /var/log/auth.log | logr analyze - --severity high --ci
 ```
 
-## Run the web dashboard
-
-### Prerequisites
-- Rust 1.70+
-- MySQL (optional, for database features)
-- LLM API key (Groq recommended for free tier)
-
-### Setup
+## Run from source
 
 ```bash
-# Navigate to project
 cd security_api
-
-# Configure environment
-cp .env.example .env
-# Add your API key: GROQ_API_KEY=your_key_here
-
-# Build and run
+cp .env.example .env          # add GROQ_API_KEY (or another provider) for AI analysis
 cargo run -p security-api --release
-
-# Access at http://localhost:3000
+# Open http://localhost:3000
 ```
+
+Requires Rust 1.85+. MySQL is optional — only needed for persistent audit-trail storage.
 
 ## Configuration
 
-### LLM Provider Setup
-
-Create a `.env` file with your preferred provider:
+Edit `.env` (see `.env.example`):
 
 ```bash
-# Groq (Free tier available)
-LLM_PROVIDER=groq
+LLM_PROVIDER=groq                              # groq | gemini | openai | anthropic
 LLM_MODEL=llama-3.3-70b-versatile
 GROQ_API_KEY=your_key_here
 
-# Or use Gemini
-LLM_PROVIDER=gemini
-LLM_MODEL=gemini-1.5-flash
-GEMINI_API_KEY=your_key_here
+# Optional — leave unset to run without a database
+#DATABASE_URL=mysql://root:password@localhost:3306/security_LogsDB
 ```
 
-See `crates/analyzer-llm/LLM_CONFIG.md` for detailed configuration options.
-
-## Usage
-
-### Simple Mode
-1. Open http://localhost:3000
-2. Paste your Apache logs into the textarea
-3. Click "Analyze Logs"
-4. Review plain English explanations and suggested fixes
-
-### Advanced Mode
-1. Toggle to "Advanced Mode" in the header
-2. Select analysis type (Standard or AI-Powered)
-3. Upload log file
-4. Review detailed CVSS scores and threat analysis
-
-### CLI
-```bash
-# Analyze a log file (table output)
-cargo run -p logr-cli -- analyze access.log
-
-# JSON output for automation
-cargo run -p logr-cli -- analyze access.log --format json
-
-# Read from stdin and fail CI on high-severity threats
-cat /var/log/auth.log | cargo run -p logr-cli -- analyze - --severity high --ci
-```
+See `security_api/crates/analyzer-llm/LLM_CONFIG.md` for detailed LLM provider options.
 
 ## Development
 
 ```bash
-# Build workspace
-cargo build --workspace
-
-# Run tests
-cargo test --workspace
-
-# Build specific crate
-cargo build -p security-analyzer-llm
+cargo build --workspace       # build everything
+cargo test --workspace        # run tests
+cargo build -p security-analyzer-llm   # build one crate
 ```
 
 ## License
@@ -224,7 +137,7 @@ MIT License - See LICENSE file for details
 
 ## Project Information
 
-**Status:** Active Development  
-**Language:** Rust  
-**Architecture:** Cargo Workspace (5 crates)  
+**Status:** Active Development
+**Language:** Rust
+**Architecture:** Cargo Workspace (5 crates)
 **Developer:** [Sena Raufi](https://github.com/Senaraufi)
