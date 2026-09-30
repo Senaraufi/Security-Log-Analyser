@@ -137,7 +137,7 @@ MIT License - See LICENSE file for details
 
 ## Project Information
 
-**Status:** Active Development
-**Language:** Rust
-**Architecture:** Cargo Workspace (5 crates)
-**Developer:** [Sena Raufi](https://github.com/Senaraufi)
+- **Status:** Active Development
+- **Language:** Rust
+- **Architecture:** Cargo Workspace (5 crates)
+- **Developer:** [Sena Raufi](https://github.com/Senaraufi)
