@@ -61,68 +61,35 @@ pub async fn analyze_logs_with_llm(
         }));
     }
 
-    // Create the LLM analyzer from environment configuration or user override.
-    // The override builds an explicit per-request config instead of mutating
-    // process-wide environment variables (which would race between requests).
-    let analyzer = if let Some(provider_name) = provider_override {
-        use security_analyzer_llm::{LlmConfig, LlmProvider};
+    // Convert Kibana/CSV exports (e.g. honeypot data) into analyzable events
+    let content = security_common::parsers::normalize_upload(content);
 
-        let provider = match LlmProvider::from_str(&provider_name) {
-            Some(p) => p,
-            None => {
-                return Json(serde_json::json!({
-                    "error": format!("Unsupported provider: {}", provider_name),
-                    "suggestion": "Valid options: openai, anthropic, groq, gemini"
-                }));
-            }
-        };
-
-        let model = match provider {
-            LlmProvider::Groq => "llama-3.3-70b-versatile",
-            LlmProvider::Gemini => "gemini-3-flash-preview",
-            LlmProvider::OpenAI => "gpt-4o",
-            LlmProvider::Anthropic => "claude-sonnet-4-20250514",
-        };
-
-        let api_key = match std::env::var(provider.api_key_env_var()) {
-            Ok(key) if !key.is_empty() => key,
-            _ => {
-                return Json(serde_json::json!({
-                    "error": format!(
-                        "API key not configured for provider '{}'",
-                        provider_name
-                    ),
-                    "suggestion": format!(
-                        "Set the {} environment variable in your .env file.",
-                        provider.api_key_env_var()
-                    )
-                }));
-            }
-        };
-
-        println!("[INFO] User selected provider: {}", provider_name);
-        LlmAnalyzer::with_config(LlmConfig::new(provider, model, api_key))
-    } else {
-        // Use default environment configuration
-        match LlmAnalyzer::from_env() {
-            Ok(a) => a,
-            Err(e) => {
-                let suggestion = get_error_suggestion(&e);
-                eprintln!("[ERROR] LLM Analyzer configuration error: {}", e);
-                return Json(serde_json::json!({
-                    "error": format!("LLM configuration error: {}", e),
-                    "suggestion": suggestion
-                }));
-            }
-        }
+    // Build the analyzer from a per-request provider override or from the
+    // environment. Any failure here is non-fatal: we fall back to the key-free
+    // standard analysis below so the user always gets real results.
+    let analyzer_result = match &provider_override {
+        Some(provider_name) => build_override_analyzer(provider_name),
+        None => LlmAnalyzer::from_env().map_err(|e| (e.to_string(), get_error_suggestion(&e))),
     };
 
-    println!(
-        "[INFO] Processing log file with {} ({}): {}",
-        analyzer.provider(),
-        analyzer.model(),
-        filename
-    );
+    let mut ai_error: Option<String> = None;
+    let mut ai_suggestion: Option<String> = None;
+    let mut provider_str = String::from("none");
+    let mut model_str = String::from("none");
+    let analyzer_opt = match analyzer_result {
+        Ok(a) => {
+            provider_str = a.provider().to_string();
+            model_str = a.model().to_string();
+            println!("[INFO] Processing log file with {} ({}): {}", provider_str, model_str, filename);
+            Some(a)
+        }
+        Err((err, sugg)) => {
+            eprintln!("[WARN] LLM unavailable, will use standard analysis: {}", err);
+            ai_error = Some(err);
+            ai_suggestion = Some(sugg);
+            None
+        }
+    };
 
     // Parse logs with unified parser (supports Apache, generic, and any text format)
     let mut logs = Vec::new();
@@ -190,25 +157,23 @@ pub async fn analyze_logs_with_llm(
         parse_errors
     );
 
-    // Perform LLM analysis
-    let ai_report = match analyzer.analyze_logs(&logs).await {
-        Ok(report) => report,
-        Err(e) => {
-            let suggestion = get_error_suggestion(&e);
-            eprintln!("[ERROR] LLM analysis failed: {}", e);
-            return Json(serde_json::json!({
-                "error": format!("AI analysis failed: {}", e),
-                "suggestion": suggestion,
-                "provider": analyzer.provider().to_string(),
-                "model": analyzer.model()
-            }));
-        }
+    // Perform LLM analysis if an analyzer is available. On any failure we record
+    // the error but continue with the standard analysis below.
+    let ai_report = match analyzer_opt {
+        Some(analyzer) => match analyzer.analyze_logs(&logs).await {
+            Ok(report) => {
+                println!("[INFO] AI analysis complete - Threat Level: {}", report.threat_level);
+                Some(report)
+            }
+            Err(e) => {
+                eprintln!("[WARN] LLM analysis failed, using standard analysis: {}", e);
+                ai_suggestion = Some(get_error_suggestion(&e));
+                ai_error = Some(e.to_string());
+                None
+            }
+        },
+        None => None,
     };
-
-    println!(
-        "✅ Analysis complete - Threat Level: {}",
-        ai_report.threat_level
-    );
 
     // Also get basic analysis for additional context
     let mut basic_result = super::process_logs(&content);
@@ -236,6 +201,26 @@ pub async fn analyze_logs_with_llm(
         }
     }
 
+    // Build the report object from the AI result when available, otherwise from
+    // the key-free standard analysis so the UI always shows real threat data.
+    let ai_available = ai_report.is_some();
+    let report_json = match &ai_report {
+        Some(r) => serde_json::json!({
+            "summary": r.summary,
+            "threat_level": r.threat_level,
+            "attack_chains": r.attack_chains,
+            "mitre_attack_techniques": r.mitre_attack_techniques,
+            "indicators_of_compromise": r.indicators_of_compromise,
+            "recommendations": r.recommendations,
+            "confidence_score": r.confidence_score,
+        }),
+        None => build_basic_report(&basic_result, logs.len()),
+    };
+    let suspicious_logs = ai_report
+        .as_ref()
+        .map(|r| r.suspicious_logs_count)
+        .unwrap_or(basic_result.risk_assessment.total_threats);
+
     // Combine results - flatten structure for UI compatibility
     Json(serde_json::json!({
         // Basic analysis data (for threat distribution, IP analysis, parsing stats)
@@ -245,24 +230,108 @@ pub async fn analyze_logs_with_llm(
         "parsing_info": basic_result.parsing_info,
         "alerts": basic_result.alerts,
 
-        // AI analysis data
+        // AI analysis data (report is AI-derived, or standard-analysis-derived on fallback)
         "ai_report": ai_report,
-        "report": {
-            "summary": ai_report.summary,
-            "threat_level": ai_report.threat_level,
-            "attack_chains": ai_report.attack_chains,
-            "mitre_attack_techniques": ai_report.mitre_attack_techniques,
-            "indicators_of_compromise": ai_report.indicators_of_compromise,
-            "recommendations": ai_report.recommendations,
-            "confidence_score": ai_report.confidence_score,
-        },
+        "report": report_json,
+        "ai_available": ai_available,
+        "ai_error": ai_error,
+        "ai_suggestion": ai_suggestion,
 
         // Metadata
         "total_logs": logs.len(),
-        "suspicious_logs": ai_report.suspicious_logs_count,
-        "provider": analyzer.provider().to_string(),
-        "model": analyzer.model(),
+        "suspicious_logs": suspicious_logs,
+        "provider": provider_str,
+        "model": model_str,
     }))
+}
+
+/// Build an analyzer from a user-selected provider override.
+/// Returns `(error_message, suggestion)` on failure so the caller can degrade
+/// gracefully to the standard analysis.
+fn build_override_analyzer(provider_name: &str) -> Result<LlmAnalyzer, (String, String)> {
+    use security_analyzer_llm::{LlmConfig, LlmProvider};
+
+    let provider = LlmProvider::from_str(provider_name).ok_or_else(|| (
+        format!("Unsupported provider: {}", provider_name),
+        "Valid options: openai, anthropic, groq, gemini".to_string(),
+    ))?;
+
+    let model = match provider {
+        LlmProvider::Groq => "openai/gpt-oss-120b",
+        LlmProvider::Gemini => "gemini-1.5-flash",
+        LlmProvider::OpenAI => "gpt-4o",
+        LlmProvider::Anthropic => "claude-sonnet-4-20250514",
+    };
+
+    let api_key = std::env::var(provider.api_key_env_var())
+        .ok()
+        .filter(|k| !k.is_empty())
+        .ok_or_else(|| (
+            format!("API key not configured for provider '{}'", provider_name),
+            format!("Set the {} environment variable in your .env file.", provider.api_key_env_var()),
+        ))?;
+
+    println!("[INFO] User selected provider: {}", provider_name);
+    // Reasoning models (e.g. gpt-oss) spend part of this budget on hidden
+    // reasoning tokens, so a small limit truncates the JSON report.
+    let config = LlmConfig::new(provider, model, api_key).with_max_tokens(16384);
+    Ok(LlmAnalyzer::with_config(config))
+}
+
+/// Build a UI report from the key-free standard analysis. Used when the LLM
+/// provider is unavailable so the dashboard always shows real threat data
+/// instead of an empty "Analysis complete / Unknown" placeholder.
+fn build_basic_report(result: &security_common::AnalysisResult, total_logs: usize) -> serde_json::Value {
+    let ra = &result.risk_assessment;
+    let ts = &result.threat_statistics;
+
+    // Base the displayed threat level on CVSS severity (not raw threat count), so
+    // a small number of Critical findings isn't mislabeled as "Low".
+    let threat_level = match ra.cvss_severity.to_uppercase().as_str() {
+        "CRITICAL" => "Critical",
+        "HIGH" => "High",
+        "MEDIUM" => "Medium",
+        "LOW" => "Low",
+        _ => "Info",
+    };
+
+    let summary = format!(
+        "Standard (non-AI) analysis: {}. Detected {} threat indicator(s) across {} log entries, aggregate CVSS {:.1}.",
+        ra.description, ra.total_threats, total_logs, ra.cvss_aggregate_score
+    );
+
+    let findings: Vec<String> = ts
+        .cvss_scores
+        .iter()
+        .map(|s| format!("{} ({}x) - {} (CVSS {:.1})", s.threat_type, s.count, s.severity, s.cvss_score))
+        .collect();
+
+    let iocs: Vec<String> = result
+        .ip_analysis
+        .high_risk_ips
+        .iter()
+        .take(10)
+        .map(|ip| format!("Suspicious IP {} ({} requests)", ip.ip, ip.count))
+        .collect();
+
+    let mut recs = Vec::new();
+    if ts.sql_injection_attempts > 0 { recs.push("Investigate SQL injection attempts; use parameterized queries and deploy a WAF.".to_string()); }
+    if ts.suspicious_file_access > 0 { recs.push("Review access to sensitive files (e.g., /etc/passwd) and block path traversal.".to_string()); }
+    if ts.failed_logins > 0 { recs.push("Multiple failed logins detected; enforce rate limiting, MFA, and fail2ban.".to_string()); }
+    if ts.root_attempts > 0 { recs.push("Privileged/root access attempts detected; audit sudo and disable root SSH login.".to_string()); }
+    if ts.port_scanning_attempts > 0 { recs.push("Port scanning observed; block the offending IPs at the firewall.".to_string()); }
+    if ts.malware_detections > 0 { recs.push("Possible malware indicators found; isolate affected hosts and run a scan.".to_string()); }
+    if recs.is_empty() { recs.push("No high-severity threats detected. Continue monitoring.".to_string()); }
+
+    serde_json::json!({
+        "summary": summary,
+        "threat_level": threat_level,
+        "attack_chains": findings,
+        "mitre_attack_techniques": Vec::<String>::new(),
+        "indicators_of_compromise": iocs,
+        "recommendations": recs,
+        "confidence_score": serde_json::Value::Null,
+    })
 }
 
 /// Get a user-friendly suggestion for fixing an analyzer error

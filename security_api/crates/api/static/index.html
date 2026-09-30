@@ -1547,8 +1547,8 @@
                 </div>
                 <div class="provider-selector-header">
                     <select id="llm-provider-dropdown" class="provider-dropdown" onchange="handleProviderChange()">
-                        <option value="groq" selected>Groq (Llama 3.3) ✓</option>
-                        <option value="gemini">Gemini (Google) ✓</option>
+                        <option value="groq" selected>Groq (GPT-OSS 120B) ✓</option>
+                        <option value="gemini" disabled style="color: var(--neutral-600);">Gemini (Google) - Key Suspended</option>
                         <option value="openai" disabled style="color: var(--neutral-600);">GPT-4 (OpenAI) - Not Configured</option>
                         <option value="anthropic" disabled style="color: var(--neutral-600);">Claude (Anthropic) - Not Configured</option>
                     </select>
@@ -1563,7 +1563,7 @@
                         <h3>Upload Log File</h3>
                         <p>Click to browse or drag and drop your log files here</p>
                     </div>
-                    <input type="file" id="file-input" class="file-input" accept=".log,.txt" onchange="handleFileUpload(event)">
+                    <input type="file" id="file-input" class="file-input" accept=".log,.txt,.csv" onchange="handleFileUpload(event)">
                 </div>
             </div>
 
@@ -1624,7 +1624,7 @@
                         <span style="font-size: 0.875rem; color: var(--neutral-500);">Supports Apache, Nginx, and common log formats</span>
                     </div>
                 </div>
-                <input type="file" id="standard-file-input" accept=".log,.txt" onchange="handleStandardFileUpload(event)" style="display: none;">
+                <input type="file" id="standard-file-input" accept=".log,.txt,.csv" onchange="handleStandardFileUpload(event)" style="display: none;">
             </div>
 
             <!-- Loading State -->
@@ -2218,6 +2218,14 @@
             
             const formData = new FormData();
             formData.append('file', file);
+            // Send the currently-selected enabled provider (defaults to groq).
+            // Guards against sending a disabled/broken provider like suspended Gemini.
+            const dropdown = document.getElementById('llm-provider-dropdown');
+            let selectedProvider = 'groq';
+            if (dropdown && dropdown.selectedOptions[0] && !dropdown.selectedOptions[0].disabled) {
+                selectedProvider = dropdown.value;
+            }
+            formData.append('provider', selectedProvider);
             
             try {
                 const response = await fetch('/api/analyze-with-llm', {
@@ -2236,8 +2244,20 @@
                 
                 // Format comprehensive AI analysis results like the old version
                 const report = data.report || data.ai_report || {};
-                
-                let summaryHTML = `
+
+                // If the LLM provider was unavailable, show a non-blocking banner
+                // but still render the real standard-analysis-derived results below.
+                let banner = '';
+                if (data.ai_available === false) {
+                    const detail = [data.ai_error, data.ai_suggestion].filter(Boolean).map(escapeHtml).join(' — ');
+                    banner = `
+                    <div style="background: rgba(251,146,60,0.08); border: 1px solid rgba(251,146,60,0.3); border-radius: 8px; padding: 0.875rem 1rem; margin-bottom: 1rem;">
+                        <div style="color: var(--orange-400); font-weight: 600; font-size: 0.8125rem; margin-bottom: 0.25rem;">AI enrichment unavailable — showing standard analysis</div>
+                        <div style="color: #a3a3a3; font-size: 0.75rem; line-height: 1.5;">${detail || 'The AI provider could not be reached. Results below come from the key-free detection engine.'}</div>
+                    </div>`;
+                }
+
+                let summaryHTML = banner + `
                     <div style="background: #151515; border: 1px solid #1e1e1e; border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem;">
                         <div style="font-size: 0.6875rem; color: #525252; margin-bottom: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;">Summary</div>
                         <p style="color: #a3a3a3; line-height: 1.6; font-size: 0.875rem; margin-bottom: 0.75rem;">${escapeHtml(report.summary || 'Analysis complete')}</p>

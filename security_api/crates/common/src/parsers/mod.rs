@@ -4,11 +4,13 @@
 pub mod apache;
 pub mod generic;
 pub mod jsonl;
+pub mod kibana_csv;
 pub mod syslog;
 
 pub use apache::{ApacheLog, parse_apache_combined};
 pub use generic::parse_generic_log;
 pub use jsonl::parse_json_line;
+pub use kibana_csv::normalize_upload;
 pub use syslog::parse_syslog;
 
 use crate::LogEntry;

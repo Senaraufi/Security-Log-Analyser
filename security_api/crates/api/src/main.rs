@@ -175,6 +175,9 @@ async fn analyze_logs(
             .into_response();
     }
     
+    // Convert Kibana/CSV exports (e.g. honeypot data) into analyzable events
+    let content = security_common::parsers::normalize_upload(content);
+
     println!("[INFO] Processing log file: {}", filename);
     
     // Parse logs and analyze
