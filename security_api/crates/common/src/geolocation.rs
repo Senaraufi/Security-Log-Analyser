@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::net::IpAddr;
 
 /// Result of a geolocation lookup for a single IP
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct GeoResult {
     pub country: Option<String>,
     pub country_code: Option<String>,
@@ -20,24 +20,6 @@ pub struct GeoResult {
     pub is_proxy: bool,
     pub is_hosting: bool,
     pub timezone: Option<String>,
-}
-
-impl Default for GeoResult {
-    fn default() -> Self {
-        Self {
-            country: None,
-            country_code: None,
-            region: None,
-            city: None,
-            lat: None,
-            lon: None,
-            isp: None,
-            org: None,
-            is_proxy: false,
-            is_hosting: false,
-            timezone: None,
-        }
-    }
 }
 
 /// Response from ip-api.com batch endpoint
@@ -94,18 +76,18 @@ pub async fn lookup_batch(ips: &[String]) -> HashMap<String, GeoResult> {
     }
 
     // Filter out private IPs
-    let public_ips: Vec<&String> = ips
-        .iter()
-        .filter(|ip| !is_private_ip(ip))
-        .collect();
+    let public_ips: Vec<&String> = ips.iter().filter(|ip| !is_private_ip(ip)).collect();
 
     if public_ips.is_empty() {
         // Return default results for private IPs
         for ip in ips {
-            results.insert(ip.clone(), GeoResult {
-                country: Some("Private Network".to_string()),
-                ..Default::default()
-            });
+            results.insert(
+                ip.clone(),
+                GeoResult {
+                    country: Some("Private Network".to_string()),
+                    ..Default::default()
+                },
+            );
         }
         return results;
     }
@@ -143,8 +125,8 @@ pub async fn lookup_batch(ips: &[String]) -> HashMap<String, GeoResult> {
             Ok(response) => {
                 if let Ok(api_results) = response.json::<Vec<IpApiResponse>>().await {
                     for api_result in api_results {
-                        if api_result.status == "success" {
-                            if let Some(query_ip) = &api_result.query {
+                        if api_result.status == "success"
+                            && let Some(query_ip) = &api_result.query {
                                 results.insert(
                                     query_ip.clone(),
                                     GeoResult {
@@ -162,7 +144,6 @@ pub async fn lookup_batch(ips: &[String]) -> HashMap<String, GeoResult> {
                                     },
                                 );
                             }
-                        }
                     }
                 }
             }
@@ -175,10 +156,13 @@ pub async fn lookup_batch(ips: &[String]) -> HashMap<String, GeoResult> {
     // Fill in private IP entries
     for ip in ips {
         if is_private_ip(ip) {
-            results.insert(ip.clone(), GeoResult {
-                country: Some("Private Network".to_string()),
-                ..Default::default()
-            });
+            results.insert(
+                ip.clone(),
+                GeoResult {
+                    country: Some("Private Network".to_string()),
+                    ..Default::default()
+                },
+            );
         }
     }
 

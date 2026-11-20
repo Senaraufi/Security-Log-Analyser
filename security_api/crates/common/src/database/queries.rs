@@ -1,12 +1,9 @@
-use super::models::*;
 use super::DbPool;
+use super::models::*;
 use sqlx;
 
 /// Save a new log upload to the database
-pub async fn save_log_upload(
-    pool: &DbPool,
-    upload: &NewLogUpload,
-) -> Result<i32, sqlx::Error> {
+pub async fn save_log_upload(pool: &DbPool, upload: &NewLogUpload) -> Result<i32, sqlx::Error> {
     let result = sqlx::query(
         r#"
         INSERT INTO log_uploads 
@@ -25,7 +22,7 @@ pub async fn save_log_upload(
     .bind(upload.user_ip.as_deref())
     .execute(pool)
     .await?;
-    
+
     Ok(result.last_insert_id() as i32)
 }
 
@@ -60,7 +57,7 @@ pub async fn save_analysis_result(
     .bind(analysis.major_issues_count)
     .execute(pool)
     .await?;
-    
+
     Ok(result.last_insert_id() as i32)
 }
 
@@ -87,15 +84,12 @@ pub async fn save_ai_analysis(
     .bind(ai_analysis.tokens_used)
     .execute(pool)
     .await?;
-    
+
     Ok(result.last_insert_id() as i32)
 }
 
 /// Save IP analysis data
-pub async fn save_ip_analysis(
-    pool: &DbPool,
-    ip_data: &NewIPAnalysis,
-) -> Result<(), sqlx::Error> {
+pub async fn save_ip_analysis(pool: &DbPool, ip_data: &NewIPAnalysis) -> Result<(), sqlx::Error> {
     sqlx::query(
         r#"
         INSERT INTO ip_analysis 
@@ -110,7 +104,7 @@ pub async fn save_ip_analysis(
     .bind(ip_data.risk_level.as_str())
     .execute(pool)
     .await?;
-    
+
     Ok(())
 }
 
@@ -134,15 +128,12 @@ pub async fn save_detected_threat(
     .bind(threat.log_entry.as_deref())
     .execute(pool)
     .await?;
-    
+
     Ok(())
 }
 
 /// Get recent log uploads
-pub async fn get_recent_uploads(
-    pool: &DbPool,
-    limit: i32,
-) -> Result<Vec<LogUpload>, sqlx::Error> {
+pub async fn get_recent_uploads(pool: &DbPool, limit: i32) -> Result<Vec<LogUpload>, sqlx::Error> {
     let uploads = sqlx::query_as::<_, LogUpload>(
         r#"
         SELECT id, filename, upload_date, file_size_bytes, total_lines,
@@ -150,12 +141,12 @@ pub async fn get_recent_uploads(
         FROM log_uploads
         ORDER BY upload_date DESC
         LIMIT ?
-        "#
+        "#,
     )
     .bind(limit)
     .fetch_all(pool)
     .await?;
-    
+
     Ok(uploads)
 }
 
@@ -168,12 +159,12 @@ pub async fn get_analysis_by_upload_id(
         r#"
         SELECT * FROM analysis_results
         WHERE upload_id = ?
-        "#
+        "#,
     )
     .bind(upload_id)
     .fetch_optional(pool)
     .await?;
-    
+
     Ok(analysis)
 }
 
@@ -186,21 +177,19 @@ pub async fn get_ai_analysis_by_upload_id(
         r#"
         SELECT * FROM ai_analysis
         WHERE upload_id = ?
-        "#
+        "#,
     )
     .bind(upload_id)
     .fetch_optional(pool)
     .await?;
-    
+
     Ok(ai_analysis)
 }
 
 /// Get threat statistics summary
-pub async fn get_threat_statistics(
-    pool: &DbPool,
-) -> Result<ThreatStatistics, sqlx::Error> {
+pub async fn get_threat_statistics(pool: &DbPool) -> Result<ThreatStatistics, sqlx::Error> {
     use sqlx::Row;
-    
+
     let row = sqlx::query(
         r#"
         SELECT 
@@ -211,11 +200,11 @@ pub async fn get_threat_statistics(
             COALESCE(SUM(path_traversal_count), 0) as path_traversals,
             COALESCE(SUM(command_injection_count), 0) as command_injections
         FROM analysis_results
-        "#
+        "#,
     )
     .fetch_one(pool)
     .await?;
-    
+
     Ok(ThreatStatistics {
         total_uploads: row.try_get::<i64, _>("total_uploads").unwrap_or(0) as i32,
         total_threats: row.try_get::<i64, _>("total_threats").unwrap_or(0) as i32,

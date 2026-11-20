@@ -4,13 +4,20 @@
 
 use serde_json::Value;
 
-use crate::LogEntry;
 use super::generic::{extract_ip_address, extract_username, infer_log_level};
+use crate::LogEntry;
 
 const TIMESTAMP_KEYS: [&str; 6] = ["timestamp", "@timestamp", "time", "ts", "datetime", "date"];
 const LEVEL_KEYS: [&str; 5] = ["level", "severity", "loglevel", "log_level", "lvl"];
 const MESSAGE_KEYS: [&str; 4] = ["message", "msg", "event", "description"];
-const IP_KEYS: [&str; 6] = ["ip", "ip_address", "client_ip", "remote_addr", "src_ip", "source_ip"];
+const IP_KEYS: [&str; 6] = [
+    "ip",
+    "ip_address",
+    "client_ip",
+    "remote_addr",
+    "src_ip",
+    "source_ip",
+];
 const USER_KEYS: [&str; 3] = ["user", "username", "account"];
 
 /// Parse a single JSON-object log line into a `LogEntry`.

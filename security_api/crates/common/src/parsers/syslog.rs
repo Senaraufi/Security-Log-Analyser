@@ -5,8 +5,8 @@
 
 use regex::Regex;
 
-use crate::LogEntry;
 use super::generic::{extract_ip_address, infer_log_level};
+use crate::LogEntry;
 
 /// Parse an RFC 3164-style syslog line (classic syslog / auth.log format).
 ///
@@ -53,12 +53,11 @@ fn extract_syslog_username(body: &str) -> Option<String> {
     ];
 
     for pattern in &patterns {
-        if let Ok(re) = Regex::new(pattern) {
-            if let Some(caps) = re.captures(body) {
-                if let Some(m) = caps.get(1) {
-                    return Some(m.as_str().to_string());
-                }
-            }
+        if let Ok(re) = Regex::new(pattern)
+            && let Some(caps) = re.captures(body)
+            && let Some(m) = caps.get(1)
+        {
+            return Some(m.as_str().to_string());
         }
     }
 
@@ -82,7 +81,8 @@ mod tests {
 
     #[test]
     fn parses_invalid_user() {
-        let line = "Feb  3 04:05:06 web01 sshd[999]: Invalid user admin from 198.51.100.7 port 51234";
+        let line =
+            "Feb  3 04:05:06 web01 sshd[999]: Invalid user admin from 198.51.100.7 port 51234";
         let entry = parse_syslog(line).expect("should parse");
         assert_eq!(entry.username, Some("admin".to_string()));
         assert_eq!(entry.ip_address, Some("198.51.100.7".to_string()));
@@ -90,7 +90,8 @@ mod tests {
 
     #[test]
     fn parses_process_without_pid() {
-        let line = "Feb 20 10:30:45 myhost sudo: alice : TTY=pts/0 ; PWD=/home/alice ; COMMAND=/bin/ls";
+        let line =
+            "Feb 20 10:30:45 myhost sudo: alice : TTY=pts/0 ; PWD=/home/alice ; COMMAND=/bin/ls";
         let entry = parse_syslog(line).expect("should parse");
         assert_eq!(entry.username, Some("alice".to_string()));
         assert!(entry.message.contains("sudo"));

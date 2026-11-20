@@ -29,17 +29,23 @@ const EVENT_COLS: [&str; 2] = ["eventid", "event"];
 const MESSAGE_COLS: [&str; 2] = ["message", "msg"];
 const LEVEL_COLS: [&str; 3] = ["level", "severity", "loglevel"];
 
-const MALWARE_HINTS: [&str; 6] = ["wget ", "curl ", "tftp ", "chmod +x", "chmod 777", "busybox"];
+const MALWARE_HINTS: [&str; 6] = [
+    "wget ",
+    "curl ",
+    "tftp ",
+    "chmod +x",
+    "chmod 777",
+    "busybox",
+];
 
 /// Convert an uploaded file into analyzable log lines. Non-CSV input is
 /// returned unchanged.
 pub fn normalize_upload(content: String) -> String {
-    if is_kibana_csv(&content) {
-        if let Some(converted) = csv_to_jsonl(&content) {
-            if !converted.is_empty() {
-                return converted;
-            }
-        }
+    if is_kibana_csv(&content)
+        && let Some(converted) = csv_to_jsonl(&content)
+        && !converted.is_empty()
+    {
+        return converted;
     }
     content
 }
@@ -111,7 +117,9 @@ pub fn csv_to_jsonl(content: &str) -> Option<String> {
             _ => generic_message(&headers, &record, ts_i, msg_i)
                 .map(|m| (get(level_i).map(str::to_uppercase), m)),
         };
-        let Some((level, message)) = described else { continue };
+        let Some((level, message)) = described else {
+            continue;
+        };
 
         let mut obj = Map::new();
         if let Some(ts) = get(ts_i) {
@@ -154,11 +162,15 @@ fn describe_cowrie(
     let (level, message) = match event {
         "cowrie.login.failed" => (
             "WARN",
-            format!("Failed password for {user} from {ip} - honeypot login failed (password tried: {password})"),
+            format!(
+                "Failed password for {user} from {ip} - honeypot login failed (password tried: {password})"
+            ),
         ),
         "cowrie.login.success" => (
             "ERROR",
-            format!("Accepted password for {user} from {ip} - honeypot login succeeded (password: {password})"),
+            format!(
+                "Accepted password for {user} from {ip} - honeypot login succeeded (password: {password})"
+            ),
         ),
         "cowrie.command.input" | "cowrie.command.failed" => {
             let lower = input.to_lowercase();
@@ -189,7 +201,11 @@ fn generic_message(
 ) -> Option<String> {
     let clean = |v: &str| {
         let v = v.trim();
-        if v.is_empty() || v == "-" || v == "(blank)" { None } else { Some(v.to_string()) }
+        if v.is_empty() || v == "-" || v == "(blank)" {
+            None
+        } else {
+            Some(v.to_string())
+        }
     };
 
     if let Some(m) = msg_i.and_then(|i| record.get(i)).and_then(clean) {
@@ -204,7 +220,11 @@ fn generic_message(
         .take(8)
         .collect();
 
-    if pairs.is_empty() { None } else { Some(pairs.join(" ")) }
+    if pairs.is_empty() {
+        None
+    } else {
+        Some(pairs.join(" "))
+    }
 }
 
 #[cfg(test)]
@@ -219,7 +239,9 @@ mod tests {
     #[test]
     fn detects_kibana_csv() {
         assert!(is_kibana_csv(SAMPLE));
-        assert!(!is_kibana_csv("192.168.1.1 - - [15/Jan/2024:10:23:45 +0000] \"GET / HTTP/1.1\" 200 1"));
+        assert!(!is_kibana_csv(
+            "192.168.1.1 - - [15/Jan/2024:10:23:45 +0000] \"GET / HTTP/1.1\" 200 1"
+        ));
     }
 
     #[test]

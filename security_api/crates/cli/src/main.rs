@@ -114,12 +114,10 @@ fn main() {
 fn read_input(file: &str) -> String {
     if file == "-" {
         let mut buf = String::new();
-        io::stdin()
-            .read_to_string(&mut buf)
-            .unwrap_or_else(|e| {
-                eprintln!("{} Failed to read stdin: {}", "error:".red().bold(), e);
-                process::exit(2);
-            });
+        io::stdin().read_to_string(&mut buf).unwrap_or_else(|e| {
+            eprintln!("{} Failed to read stdin: {}", "error:".red().bold(), e);
+            process::exit(2);
+        });
         buf
     } else {
         fs::read_to_string(file).unwrap_or_else(|e| {

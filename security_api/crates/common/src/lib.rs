@@ -2,9 +2,9 @@
 // Contains shared models, parsers, CVSS scoring, and database integration
 
 pub mod cvss;
+pub mod database;
 pub mod geolocation;
 pub mod parsers;
-pub mod database;
 
 use serde::{Deserialize, Serialize};
 
@@ -41,9 +41,9 @@ pub struct ParsingInfo {
 /// Quality metrics for different log formats
 #[derive(Serialize)]
 pub struct FormatQuality {
-    pub perfect_format: usize,      // Format 1 (standard)
-    pub alternative_format: usize,  // Formats 2-6 (valid alternatives)
-    pub fallback_format: usize,     // Format 7+ (no timestamp/minimal structure)
+    pub perfect_format: usize,     // Format 1 (standard)
+    pub alternative_format: usize, // Formats 2-6 (valid alternatives)
+    pub fallback_format: usize,    // Format 7+ (no timestamp/minimal structure)
 }
 
 /// Parse error details

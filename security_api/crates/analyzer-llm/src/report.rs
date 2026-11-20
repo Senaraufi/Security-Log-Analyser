@@ -11,36 +11,36 @@ use serde::{Deserialize, Serialize};
 pub struct SecurityReport {
     /// Executive summary of the security analysis
     pub summary: String,
-    
+
     /// Overall threat level: Critical, High, Medium, Low, or Info
     pub threat_level: String,
-    
+
     /// Total number of logs that were analyzed
     pub total_logs_analyzed: usize,
-    
+
     /// Number of logs identified as suspicious or malicious
     pub suspicious_logs_count: usize,
-    
+
     /// Identified attack chains with descriptions
     #[serde(default)]
     pub attack_chains: Vec<String>,
-    
+
     /// MITRE ATT&CK technique mappings with T-codes
     #[serde(default)]
     pub mitre_attack_techniques: Vec<String>,
-    
+
     /// Indicators of Compromise (IOCs) found in the logs
     #[serde(default)]
     pub indicators_of_compromise: Vec<String>,
-    
+
     /// Actionable security recommendations
     #[serde(default)]
     pub recommendations: Vec<String>,
-    
+
     /// Confidence score for the analysis (0.0 - 1.0)
     #[serde(default = "default_confidence")]
     pub confidence_score: f32,
-    
+
     /// Critical alerts requiring immediate attention
     #[serde(default)]
     pub alerts: Vec<String>,
@@ -96,7 +96,9 @@ impl SecurityReport {
                 "Consider re-running the analysis if results are incomplete.".to_string(),
             ],
             confidence_score: 0.5,
-            alerts: vec!["Analysis response could not be fully parsed. Review raw output.".to_string()],
+            alerts: vec![
+                "Analysis response could not be fully parsed. Review raw output.".to_string(),
+            ],
         }
     }
 
@@ -125,7 +127,9 @@ impl SecurityReport {
     pub fn malicious_ips(&self) -> Vec<String> {
         self.indicators_of_compromise
             .iter()
-            .filter(|ioc| ioc.to_lowercase().contains("malicious ip") || ioc.to_lowercase().contains("ip:"))
+            .filter(|ioc| {
+                ioc.to_lowercase().contains("malicious ip") || ioc.to_lowercase().contains("ip:")
+            })
             .filter_map(|ioc| {
                 // Try to extract IP address pattern
                 let ip_pattern = regex::Regex::new(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}").ok()?;
@@ -140,41 +144,41 @@ impl SecurityReport {
 pub struct IpAnalysisReport {
     /// The IP address analyzed
     pub ip: String,
-    
+
     /// Classification: malicious, suspicious, or benign
     pub classification: String,
-    
+
     /// Risk score from 0.0 (safe) to 1.0 (definitely malicious)
     pub risk_score: f32,
-    
+
     /// Types of attacks detected from this IP
     #[serde(default)]
     pub attack_types: Vec<String>,
-    
+
     /// Total number of requests from this IP
     pub request_count: usize,
-    
+
     /// Number of suspicious requests
     pub suspicious_requests: usize,
-    
+
     /// First seen timestamp
     pub first_seen: Option<String>,
-    
+
     /// Last seen timestamp
     pub last_seen: Option<String>,
-    
+
     /// User agents used by this IP
     #[serde(default)]
     pub user_agents: Vec<String>,
-    
+
     /// Paths targeted by this IP
     #[serde(default)]
     pub targeted_paths: Vec<String>,
-    
+
     /// Recommended actions for this IP
     #[serde(default)]
     pub recommendations: Vec<String>,
-    
+
     /// Evidence supporting the classification
     pub evidence: Option<String>,
 }
@@ -196,19 +200,19 @@ impl IpAnalysisReport {
 pub struct TriageReport {
     /// Overall threat level
     pub threat_level: String,
-    
+
     /// Most critical findings
     #[serde(default)]
     pub critical_findings: Vec<String>,
-    
+
     /// Top malicious IPs to block
     #[serde(default)]
     pub top_malicious_ips: Vec<String>,
-    
+
     /// Actions to take immediately
     #[serde(default)]
     pub immediate_actions: Vec<String>,
-    
+
     /// Whether a deeper analysis is recommended
     #[serde(default)]
     pub requires_deep_analysis: bool,
@@ -220,15 +224,15 @@ pub struct RecommendationsReport {
     /// Actions to take immediately
     #[serde(default)]
     pub immediate_actions: Vec<ActionItem>,
-    
+
     /// Actions to take in the short term
     #[serde(default)]
     pub short_term_actions: Vec<ActionItem>,
-    
+
     /// Long-term security improvements
     #[serde(default)]
     pub long_term_improvements: Vec<ActionItem>,
-    
+
     /// Ongoing monitoring recommendations
     #[serde(default)]
     pub monitoring_recommendations: Vec<String>,
@@ -239,13 +243,13 @@ pub struct RecommendationsReport {
 pub struct ActionItem {
     /// Priority level (1 = highest)
     pub priority: u8,
-    
+
     /// The action to take
     pub action: String,
-    
+
     /// Why this action is important
     pub reason: String,
-    
+
     /// How to implement this action
     pub implementation: String,
 }
@@ -257,7 +261,7 @@ mod tests {
     #[test]
     fn test_empty_report() {
         let report = SecurityReport::empty();
-        
+
         assert_eq!(report.total_logs_analyzed, 0);
         assert_eq!(report.threat_level, "Info");
         assert_eq!(report.confidence_score, 1.0);
@@ -266,7 +270,7 @@ mod tests {
     #[test]
     fn test_fallback_report() {
         let report = SecurityReport::fallback("Some analysis text here", 100);
-        
+
         assert_eq!(report.total_logs_analyzed, 100);
         assert_eq!(report.threat_level, "Medium");
         assert_eq!(report.confidence_score, 0.5);
@@ -276,15 +280,15 @@ mod tests {
     #[test]
     fn test_severity_checks() {
         let mut report = SecurityReport::empty();
-        
+
         report.threat_level = "Critical".to_string();
         assert!(report.is_critical());
         assert!(report.is_high_severity());
-        
+
         report.threat_level = "High".to_string();
         assert!(!report.is_critical());
         assert!(report.is_high_severity());
-        
+
         report.threat_level = "Medium".to_string();
         assert!(!report.is_critical());
         assert!(!report.is_high_severity());
@@ -306,7 +310,7 @@ mod tests {
         }"#;
 
         let report: SecurityReport = serde_json::from_str(json).unwrap();
-        
+
         assert_eq!(report.threat_level, "High");
         assert_eq!(report.total_logs_analyzed, 100);
         assert_eq!(report.suspicious_logs_count, 25);
@@ -324,7 +328,7 @@ mod tests {
         }"#;
 
         let report: SecurityReport = serde_json::from_str(json).unwrap();
-        
+
         assert_eq!(report.threat_level, "Low");
         assert!(report.attack_chains.is_empty());
         assert_eq!(report.confidence_score, 0.75); // default value

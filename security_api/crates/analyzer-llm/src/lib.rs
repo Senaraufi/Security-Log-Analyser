@@ -70,14 +70,10 @@ pub mod report;
 
 // Re-export main types for convenient access
 pub use analyzer::LlmAnalyzer;
-pub use config::{LlmConfig, LlmProvider, ConfigError};
+pub use config::{ConfigError, LlmConfig, LlmProvider};
 pub use error::AnalyzerError;
 pub use report::{
-    SecurityReport,
-    IpAnalysisReport,
-    TriageReport,
-    RecommendationsReport,
-    ActionItem,
+    ActionItem, IpAnalysisReport, RecommendationsReport, SecurityReport, TriageReport,
 };
 
 /// Prelude module for convenient imports
@@ -133,12 +129,8 @@ mod tests {
 
     #[test]
     fn test_with_config() {
-        let config = LlmConfig::new(
-            LlmProvider::OpenAI,
-            "gpt-4o",
-            "test-key",
-        );
-        
+        let config = LlmConfig::new(LlmProvider::OpenAI, "gpt-4o", "test-key");
+
         let analyzer = with_config(config);
         assert_eq!(*analyzer.provider(), LlmProvider::OpenAI);
         assert_eq!(analyzer.model(), "gpt-4o");
@@ -148,7 +140,7 @@ mod tests {
     fn test_prelude_imports() {
         // Verify prelude exports work
         use crate::prelude::*;
-        
+
         let config = LlmConfig::new(LlmProvider::Anthropic, "claude-3", "key");
         let _analyzer = LlmAnalyzer::with_config(config);
     }

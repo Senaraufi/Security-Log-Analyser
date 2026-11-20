@@ -1,10 +1,10 @@
 use axum::{
+    Router,
     extract::{ConnectInfo, DefaultBodyLimit, Multipart, Request},
     http::StatusCode,
     middleware::{self, Next},
     response::{IntoResponse, Json, Response},
     routing::post,
-    Router,
 };
 use std::collections::HashMap;
 use std::net::SocketAddr;
@@ -51,14 +51,16 @@ async fn rate_limit_middleware(
     // Periodically evict stale entries to prevent unbounded memory growth.
     // We piggyback on every 100th request to avoid adding a background task.
     static EVICT_COUNTER: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-    if EVICT_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 100 == 0 {
-        if let Ok(mut store) = rate_limit_store().lock() {
-            let now = Instant::now();
-            store.retain(|_, timestamps| {
-                timestamps.retain(|t| now.duration_since(*t) < RATE_LIMIT_WINDOW);
-                !timestamps.is_empty()
-            });
-        }
+    if EVICT_COUNTER
+        .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+        .is_multiple_of(100)
+        && let Ok(mut store) = rate_limit_store().lock()
+    {
+        let now = Instant::now();
+        store.retain(|_, timestamps| {
+            timestamps.retain(|t| now.duration_since(*t) < RATE_LIMIT_WINDOW);
+            !timestamps.is_empty()
+        });
     }
 
     if !allowed {
@@ -75,11 +77,11 @@ async fn rate_limit_middleware(
 }
 
 // Import from workspace crates
+use security_analyzer_basic::analyze::analyze as analyze_logs_basic;
 use security_common::{
     database::{init_db, test_connection},
     geolocation,
 };
-use security_analyzer_basic::analyze::analyze as analyze_logs_basic;
 
 mod llm_handler;
 mod simple_handler;
@@ -88,7 +90,7 @@ mod simple_handler;
 async fn main() {
     // Load environment variables
     dotenv::dotenv().ok();
-    
+
     // Database is optional and currently unused by any route handler
     // (kept for future persistence features); this is a startup diagnostic only.
     println!("Starting Security API Server...");
@@ -104,28 +106,32 @@ async fn main() {
             println!("[INFO] Running without a database: {}", e);
         }
     }
-    
+
     let static_files = ServeDir::new("crates/api/static");
-    
+
     let api_routes = Router::new()
         .route("/api/analyze", post(analyze_logs))
-        .route("/api/analyze-with-llm", post(llm_handler::analyze_logs_with_llm))
-        .route("/api/llm-health", axum::routing::get(llm_handler::llm_health_check))
+        .route(
+            "/api/analyze-with-llm",
+            post(llm_handler::analyze_logs_with_llm),
+        )
+        .route(
+            "/api/llm-health",
+            axum::routing::get(llm_handler::llm_health_check),
+        )
         .route("/api/explain-logs", post(simple_handler::explain_logs))
         .layer(middleware::from_fn(rate_limit_middleware))
         .layer(DefaultBodyLimit::max(MAX_UPLOAD_BYTES));
 
     let app = api_routes.nest_service("/", static_files);
-    
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
-        .await
-        .unwrap();
-    
+
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+
     println!("[INFO] Security API Server running on http://localhost:3000");
     println!("[INFO] Upload logs at: http://localhost:3000");
     println!("[INFO] LLM Analysis: POST /api/analyze-with-llm");
     println!("[INFO] LLM Health:   GET  /api/llm-health");
-    
+
     axum::serve(
         listener,
         app.into_make_service_with_connect_info::<SocketAddr>(),
@@ -135,17 +141,15 @@ async fn main() {
 }
 
 // Basic analysis endpoint
-async fn analyze_logs(
-    mut multipart: Multipart,
-) -> Response {
+async fn analyze_logs(mut multipart: Multipart) -> Response {
     let mut content = String::new();
     let mut filename = String::from("unknown");
-    
+
     loop {
         match multipart.next_field().await {
             Ok(Some(field)) => {
                 let name = field.name().unwrap_or("").to_string();
-                
+
                 if name == "file" {
                     filename = field.file_name().unwrap_or("unknown").to_string();
                     match field.bytes().await {
@@ -176,7 +180,7 @@ async fn analyze_logs(
             }
         }
     }
-    
+
     if content.is_empty() {
         return (
             StatusCode::BAD_REQUEST,
@@ -184,21 +188,29 @@ async fn analyze_logs(
         )
             .into_response();
     }
-    
+
     // Convert Kibana/CSV exports (e.g. honeypot data) into analyzable events
     let content = security_common::parsers::normalize_upload(content);
 
     println!("[INFO] Processing log file: {}", filename);
-    
+
     // Parse logs and analyze
     let mut result = analyze_logs_basic(&content);
-    
+
     // Enrich IPs with geolocation data
-    let all_ip_strings: Vec<String> = result.ip_analysis.all_ips.iter().map(|ip| ip.ip.clone()).collect();
+    let all_ip_strings: Vec<String> = result
+        .ip_analysis
+        .all_ips
+        .iter()
+        .map(|ip| ip.ip.clone())
+        .collect();
     if !all_ip_strings.is_empty() {
-        println!("[INFO] Looking up geolocation for {} IPs...", all_ip_strings.len());
+        println!(
+            "[INFO] Looking up geolocation for {} IPs...",
+            all_ip_strings.len()
+        );
         let geo_data = geolocation::lookup_batch(&all_ip_strings).await;
-        
+
         for ip_info in &mut result.ip_analysis.all_ips {
             if let Some(geo) = geo_data.get(&ip_info.ip) {
                 ip_info.country = geo.country.clone();
@@ -206,7 +218,7 @@ async fn analyze_logs(
                 ip_info.is_vpn = geo.is_proxy || geo.is_hosting;
             }
         }
-        
+
         for ip_info in &mut result.ip_analysis.high_risk_ips {
             if let Some(geo) = geo_data.get(&ip_info.ip) {
                 ip_info.country = geo.country.clone();
@@ -215,9 +227,8 @@ async fn analyze_logs(
             }
         }
     }
-    
+
     println!("[INFO] Analysis complete");
-    
+
     Json(result).into_response()
 }
-

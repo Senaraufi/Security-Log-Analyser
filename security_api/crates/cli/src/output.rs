@@ -55,11 +55,7 @@ pub fn print_table(
         .collect();
 
     if filtered.is_empty() {
-        println!(
-            "  {} {}",
-            "✓".green().bold(),
-            "No threats detected".green()
-        );
+        println!("  {} {}", "✓".green().bold(), "No threats detected".green());
     } else {
         let mut table = Table::new();
         table
@@ -152,11 +148,7 @@ pub fn print_table(
             .red()
         );
     } else {
-        println!(
-            "  {} {}",
-            "✓".green().bold(),
-            "No threats detected".green()
-        );
+        println!("  {} {}", "✓".green().bold(), "No threats detected".green());
     }
     println!();
 }

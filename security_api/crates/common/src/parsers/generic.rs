@@ -1,8 +1,8 @@
-use regex::Regex;
 use crate::LogEntry;
+use regex::Regex;
 
 /// Parse any log format with multiple fallback strategies
-/// 
+///
 /// This parser tries multiple strategies in order:
 /// 1. Structured format with timestamp, level, and message
 /// 2. Timestamp and message only
@@ -118,7 +118,8 @@ fn try_minimal_parsing(line: &str) -> LogEntry {
 /// Extract IP address from message text
 pub(crate) fn extract_ip_address(text: &str) -> Option<String> {
     let ip_re = Regex::new(r"\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b").ok()?;
-    ip_re.captures(text)
+    ip_re
+        .captures(text)
         .and_then(|c| c.get(1))
         .map(|m| m.as_str().to_string())
 }
@@ -134,15 +135,14 @@ pub(crate) fn extract_username(text: &str) -> Option<String> {
     ];
 
     for pattern in &patterns {
-        if let Ok(re) = Regex::new(pattern) {
-            if let Some(caps) = re.captures(text) {
-                if let Some(m) = caps.get(1) {
-                    let username = m.as_str().to_string();
-                    // Filter out common false positives
-                    if username != "root" && username.len() > 1 {
-                        return Some(username);
-                    }
-                }
+        if let Ok(re) = Regex::new(pattern)
+            && let Some(caps) = re.captures(text)
+            && let Some(m) = caps.get(1)
+        {
+            let username = m.as_str().to_string();
+            // Filter out common false positives
+            if username != "root" && username.len() > 1 {
+                return Some(username);
             }
         }
     }
@@ -155,29 +155,32 @@ pub(crate) fn infer_log_level(message: &str) -> String {
     let msg_lower = message.to_lowercase();
 
     // Critical indicators
-    if msg_lower.contains("critical") 
-        || msg_lower.contains("fatal") 
+    if msg_lower.contains("critical")
+        || msg_lower.contains("fatal")
         || msg_lower.contains("emergency")
-        || msg_lower.contains("panic") {
+        || msg_lower.contains("panic")
+    {
         return "CRITICAL".to_string();
     }
 
     // Error indicators
-    if msg_lower.contains("error") 
-        || msg_lower.contains("fail") 
+    if msg_lower.contains("error")
+        || msg_lower.contains("fail")
         || msg_lower.contains("denied")
         || msg_lower.contains("unauthorized")
         || msg_lower.contains("forbidden")
         || msg_lower.contains("invalid")
-        || msg_lower.contains("rejected") {
+        || msg_lower.contains("rejected")
+    {
         return "ERROR".to_string();
     }
 
     // Warning indicators
-    if msg_lower.contains("warn") 
+    if msg_lower.contains("warn")
         || msg_lower.contains("suspicious")
         || msg_lower.contains("attempt")
-        || msg_lower.contains("retry") {
+        || msg_lower.contains("retry")
+    {
         return "WARN".to_string();
     }
 
@@ -246,8 +249,14 @@ mod tests {
 
     #[test]
     fn test_ip_extraction() {
-        assert_eq!(extract_ip_address("Connection from 192.168.1.1"), Some("192.168.1.1".to_string()));
-        assert_eq!(extract_ip_address("IP: 10.0.0.50 attempted access"), Some("10.0.0.50".to_string()));
+        assert_eq!(
+            extract_ip_address("Connection from 192.168.1.1"),
+            Some("192.168.1.1".to_string())
+        );
+        assert_eq!(
+            extract_ip_address("IP: 10.0.0.50 attempted access"),
+            Some("10.0.0.50".to_string())
+        );
         assert_eq!(extract_ip_address("No IP here"), None);
     }
 }

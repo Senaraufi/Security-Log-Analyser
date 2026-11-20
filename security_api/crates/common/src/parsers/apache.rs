@@ -1,11 +1,11 @@
 use chrono::{DateTime, Utc};
 use nom::{
+    IResult,
     branch::alt,
     bytes::complete::{tag, take_until, take_while1},
     character::complete::{char, digit1, space1},
     combinator::map_res,
     sequence::delimited,
-    IResult,
 };
 use serde::{Deserialize, Serialize};
 
@@ -22,7 +22,7 @@ pub struct ApacheLog {
     pub size: u64,
     pub referer: String,
     pub user_agent: String,
-    
+
     // Security analysis fields
     pub is_suspicious: bool,
     pub threat_type: Option<String>,
@@ -39,7 +39,7 @@ impl ApacheLog {
             self.severity = Some("Critical".to_string());
             return;
         }
-        
+
         // Path Traversal
         if self.is_path_traversal() {
             self.is_suspicious = true;
@@ -47,7 +47,7 @@ impl ApacheLog {
             self.severity = Some("High".to_string());
             return;
         }
-        
+
         // XSS attempts
         if self.is_xss() {
             self.is_suspicious = true;
@@ -55,7 +55,7 @@ impl ApacheLog {
             self.severity = Some("High".to_string());
             return;
         }
-        
+
         // Command Injection
         if self.is_command_injection() {
             self.is_suspicious = true;
@@ -63,7 +63,7 @@ impl ApacheLog {
             self.severity = Some("Critical".to_string());
             return;
         }
-        
+
         // Suspicious status codes
         if self.status == 401 || self.status == 403 {
             self.is_suspicious = true;
@@ -71,16 +71,15 @@ impl ApacheLog {
             self.severity = Some("Medium".to_string());
             return;
         }
-        
+
         // Scanner detection
         if self.is_scanner() {
             self.is_suspicious = true;
             self.threat_type = Some("Security Scanner".to_string());
             self.severity = Some("Medium".to_string());
-            return;
         }
     }
-    
+
     fn is_sql_injection(&self) -> bool {
         let path_lower = self.path.to_lowercase();
         path_lower.contains("union") && path_lower.contains("select")
@@ -89,14 +88,14 @@ impl ApacheLog {
             || path_lower.contains("'; drop table")
             || path_lower.contains("' or '1'='1")
     }
-    
+
     fn is_path_traversal(&self) -> bool {
         self.path.contains("../")
             || self.path.contains("..\\")
             || self.path.contains("%2e%2e%2f")
             || self.path.contains("%2e%2e/")
     }
-    
+
     fn is_xss(&self) -> bool {
         let path_lower = self.path.to_lowercase();
         path_lower.contains("<script")
@@ -104,7 +103,7 @@ impl ApacheLog {
             || path_lower.contains("onerror=")
             || path_lower.contains("onload=")
     }
-    
+
     fn is_command_injection(&self) -> bool {
         let path_lower = self.path.to_lowercase();
 
@@ -126,16 +125,29 @@ impl ApacheLog {
         }
 
         const COMMAND_TOKENS: [&str; 16] = [
-            "whoami", "netcat", "wget", "curl", "bash", "/bin/", "/etc/",
-            "cat ", "cat%20", "ls ", "ls%20", "rm ", "rm%20", "chmod",
-            "cmd.exe", "powershell",
+            "whoami",
+            "netcat",
+            "wget",
+            "curl",
+            "bash",
+            "/bin/",
+            "/etc/",
+            "cat ",
+            "cat%20",
+            "ls ",
+            "ls%20",
+            "rm ",
+            "rm%20",
+            "chmod",
+            "cmd.exe",
+            "powershell",
         ];
 
         COMMAND_TOKENS
             .iter()
             .any(|token| path_lower.contains(token))
     }
-    
+
     fn is_scanner(&self) -> bool {
         let ua_lower = self.user_agent.to_lowercase();
         ua_lower.contains("nmap")
@@ -162,11 +174,7 @@ fn parse_ip(input: &str) -> IResult<&str, String> {
 /// cannot be parsed we fall back to the Unix epoch rather than the current time,
 /// so a parse failure can never silently falsify when an event occurred.
 fn parse_timestamp(input: &str) -> IResult<&str, DateTime<Utc>> {
-    let (input, ts_str) = delimited(
-        char('['),
-        take_until("]"),
-        char(']'),
-    )(input)?;
+    let (input, ts_str) = delimited(char('['), take_until("]"), char(']'))(input)?;
 
     let datetime = DateTime::parse_from_str(ts_str, "%d/%b/%Y:%H:%M:%S %z")
         .map(|dt| dt.with_timezone(&Utc))
@@ -184,8 +192,11 @@ fn parse_request(input: &str) -> IResult<&str, (String, String, String)> {
     let (input, _) = space1(input)?;
     let (input, protocol) = take_until("\"")(input)?;
     let (input, _) = char('"')(input)?;
-    
-    Ok((input, (method.to_string(), path.to_string(), protocol.to_string())))
+
+    Ok((
+        input,
+        (method.to_string(), path.to_string(), protocol.to_string()),
+    ))
 }
 
 /// Parse status code
@@ -203,12 +214,7 @@ fn parse_size(input: &str) -> IResult<&str, u64> {
 
 /// Parse quoted string (referer or user-agent)
 fn parse_quoted_string(input: &str) -> IResult<&str, String> {
-    delimited(
-        char('"'),
-        take_until("\""),
-        char('"'),
-    )(input)
-    .map(|(i, s)| (i, s.to_string()))
+    delimited(char('"'), take_until("\""), char('"'))(input).map(|(i, s)| (i, s.to_string()))
 }
 
 /// Parse Apache Combined Log Format
@@ -232,7 +238,7 @@ pub fn parse_apache_combined(input: &str) -> Result<ApacheLog, String> {
         let (input, referer) = parse_quoted_string(input)?;
         let (input, _) = space1(input)?;
         let (input, user_agent) = parse_quoted_string(input)?;
-        
+
         let mut log = ApacheLog {
             ip,
             timestamp,
@@ -247,26 +253,28 @@ pub fn parse_apache_combined(input: &str) -> Result<ApacheLog, String> {
             threat_type: None,
             severity: None,
         };
-        
+
         // Analyze for threats
         log.analyze();
-        
+
         Ok((input, log))
     })();
-    
-    result.map(|(_, log)| log).map_err(|e| format!("Parse error: {}", e))
+
+    result
+        .map(|(_, log)| log)
+        .map_err(|e| format!("Parse error: {}", e))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_parse_normal_request() {
         let line = r#"192.168.1.1 - - [15/Dec/2025:17:19:00 +0000] "GET /index.html HTTP/1.1" 200 1234 "https://example.com" "Mozilla/5.0""#;
         let result = parse_apache_combined(line);
         assert!(result.is_ok());
-        
+
         let log = result.unwrap();
         assert_eq!(log.ip, "192.168.1.1");
         assert_eq!(log.method, "GET");
@@ -275,36 +283,36 @@ mod tests {
         assert_eq!(log.size, 1234);
         assert!(!log.is_suspicious);
     }
-    
+
     #[test]
     fn test_parse_sql_injection() {
         let line = r#"10.0.0.1 - - [15/Dec/2025:17:19:00 +0000] "GET /api/users?id=1' UNION SELECT * FROM passwords-- HTTP/1.1" 200 0 "-" "curl/7.68.0""#;
         let result = parse_apache_combined(line);
         assert!(result.is_ok());
-        
+
         let log = result.unwrap();
         assert!(log.is_suspicious);
         assert_eq!(log.threat_type, Some("SQL Injection".to_string()));
         assert_eq!(log.severity, Some("Critical".to_string()));
     }
-    
+
     #[test]
     fn test_parse_path_traversal() {
         let line = r#"172.16.0.1 - - [15/Dec/2025:17:19:00 +0000] "GET /../../../etc/passwd HTTP/1.1" 403 0 "-" "Mozilla/5.0""#;
         let result = parse_apache_combined(line);
         assert!(result.is_ok());
-        
+
         let log = result.unwrap();
         assert!(log.is_suspicious);
         assert_eq!(log.threat_type, Some("Path Traversal".to_string()));
     }
-    
+
     #[test]
     fn test_parse_scanner() {
         let line = r#"203.0.113.1 - - [15/Dec/2025:17:19:00 +0000] "GET /admin HTTP/1.1" 404 0 "-" "Nmap Scripting Engine""#;
         let result = parse_apache_combined(line);
         assert!(result.is_ok());
-        
+
         let log = result.unwrap();
         assert!(log.is_suspicious);
         assert_eq!(log.threat_type, Some("Security Scanner".to_string()));

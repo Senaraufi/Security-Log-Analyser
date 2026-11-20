@@ -23,13 +23,7 @@ pub fn format_logs_for_analysis(logs: &[ApacheLog], max_logs: usize) -> String {
         .map(|log| {
             format!(
                 "[{}] {} {} \"{}\" {} {} \"{}\"",
-                log.timestamp,
-                log.ip,
-                log.method,
-                log.path,
-                log.status,
-                log.size,
-                log.user_agent
+                log.timestamp, log.ip, log.method, log.path, log.status, log.size, log.user_agent
             )
         })
         .collect::<Vec<_>>()
@@ -109,11 +103,7 @@ pub fn build_ip_analysis_prompt(ip: &str, logs: &[ApacheLog]) -> String {
         .map(|log| {
             format!(
                 "[{}] {} \"{}\" {} \"{}\"",
-                log.timestamp,
-                log.method,
-                log.path,
-                log.status,
-                log.user_agent
+                log.timestamp, log.method, log.path, log.status, log.user_agent
             )
         })
         .collect::<Vec<_>>()
@@ -157,7 +147,7 @@ pub fn build_ip_analysis_prompt(ip: &str, logs: &[ApacheLog]) -> String {
 /// Build a prompt for quick threat triage
 pub fn build_triage_prompt(logs: &[ApacheLog]) -> String {
     let log_sample = format_logs_for_analysis(logs, 100);
-    
+
     format!(
         r#"Quickly triage these logs and identify the most critical threats.
 
@@ -224,7 +214,7 @@ pub fn build_recommendations_prompt(threat_summary: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::{Utc, TimeZone};
+    use chrono::{TimeZone, Utc};
 
     fn create_test_log(ip: &str, method: &str, path: &str, status: u16) -> ApacheLog {
         ApacheLog {
@@ -251,7 +241,7 @@ mod tests {
         ];
 
         let formatted = format_logs_for_analysis(&logs, 10);
-        
+
         assert!(formatted.contains("192.168.1.1"));
         assert!(formatted.contains("10.0.0.1"));
         assert!(formatted.contains("/index.html"));
@@ -260,12 +250,10 @@ mod tests {
 
     #[test]
     fn test_build_analysis_prompt() {
-        let logs = vec![
-            create_test_log("192.168.1.1", "GET", "/index.html", 200),
-        ];
+        let logs = vec![create_test_log("192.168.1.1", "GET", "/index.html", 200)];
 
         let prompt = build_analysis_prompt(&logs, 50);
-        
+
         assert!(prompt.contains("LOGS TO ANALYZE"));
         assert!(prompt.contains("192.168.1.1"));
         assert!(prompt.contains("MITRE ATT&CK"));
@@ -281,7 +269,7 @@ mod tests {
         ];
 
         let prompt = build_ip_analysis_prompt("192.168.1.1", &logs);
-        
+
         assert!(prompt.contains("192.168.1.1"));
         assert!(prompt.contains("/admin"));
         assert!(prompt.contains("2 total requests"));

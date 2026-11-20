@@ -88,7 +88,11 @@ impl fmt::Display for AnalyzerError {
                         provider, seconds
                     )
                 } else {
-                    write!(f, "{} rate limit exceeded. Please try again later.", provider)
+                    write!(
+                        f,
+                        "{} rate limit exceeded. Please try again later.",
+                        provider
+                    )
                 }
             }
             AnalyzerError::Timeout {

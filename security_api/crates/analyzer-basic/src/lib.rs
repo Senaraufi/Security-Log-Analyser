@@ -28,7 +28,8 @@ impl BasicAnalyzer {
         for entry in entries {
             // Track IP addresses
             if let Some(ip) = &entry.ip_address {
-                ip_frequency.entry(ip.clone())
+                ip_frequency
+                    .entry(ip.clone())
                     .and_modify(|count| *count += 1)
                     .or_insert(1);
             }
@@ -49,16 +50,18 @@ impl BasicAnalyzer {
             }
 
             // Detect root access attempts
-            if entry.message.contains("user: root") || 
-               entry.message.contains("root access") ||
-               entry.message.contains("Root access") {
+            if entry.message.contains("user: root")
+                || entry.message.contains("root access")
+                || entry.message.contains("Root access")
+            {
                 root_attempts += 1;
             }
 
             // Detect suspicious file access
-            if entry.message.contains("/etc/passwd") || 
-               entry.message.contains("/etc/shadow") ||
-               entry.message.contains("Suspicious file") {
+            if entry.message.contains("/etc/passwd")
+                || entry.message.contains("/etc/shadow")
+                || entry.message.contains("Suspicious file")
+            {
                 suspicious_file_access += 1;
             }
 
@@ -71,26 +74,27 @@ impl BasicAnalyzer {
 
             // Detect SQL injection: require actual injection markers, not just
             // the word "SELECT" (which appears in legitimate query logs).
-            if message_lower.contains("union select") ||
-               message_lower.contains("drop table") ||
-               message_lower.contains("'; drop") ||
-               message_lower.contains("or 1=1") ||
-               message_lower.contains("' or '1'='1") ||
-               message_lower.contains("sql injection") {
+            if message_lower.contains("union select")
+                || message_lower.contains("drop table")
+                || message_lower.contains("'; drop")
+                || message_lower.contains("or 1=1")
+                || message_lower.contains("' or '1'='1")
+                || message_lower.contains("sql injection")
+            {
                 sql_injection_attempts += 1;
             }
 
             // Detect port scanning
-            if message_lower.contains("port scan") ||
-               message_lower.contains("nmap") {
+            if message_lower.contains("port scan") || message_lower.contains("nmap") {
                 port_scanning_attempts += 1;
             }
 
             // Detect malware (avoid matching benign strings like "antivirus")
-            if message_lower.contains("malware") ||
-               message_lower.contains("trojan") ||
-               message_lower.contains("ransomware") ||
-               (message_lower.contains("virus") && !message_lower.contains("antivirus")) {
+            if message_lower.contains("malware")
+                || message_lower.contains("trojan")
+                || message_lower.contains("ransomware")
+                || (message_lower.contains("virus") && !message_lower.contains("antivirus"))
+            {
                 malware_detections += 1;
             }
         }
@@ -110,7 +114,7 @@ impl BasicAnalyzer {
     /// Generate CVSS scores for detected threats
     pub fn generate_cvss_scores(&self, result: &BasicAnalysisResult) -> Vec<ThreatCVSS> {
         use security_common::cvss::ThreatType;
-        
+
         let mut cvss_scores = Vec::new();
 
         if result.sql_injection_attempts > 0 {
@@ -235,7 +239,10 @@ mod tests {
 
     #[test]
     fn detects_real_sql_injection() {
-        let entries = vec![entry("INFO", "GET /api?id=1 UNION SELECT password FROM users")];
+        let entries = vec![entry(
+            "INFO",
+            "GET /api?id=1 UNION SELECT password FROM users",
+        )];
         let result = BasicAnalyzer::new().analyze(&entries);
         assert_eq!(result.sql_injection_attempts, 1);
     }
@@ -243,7 +250,10 @@ mod tests {
     #[test]
     fn ignores_benign_select_in_message() {
         // A legitimate query log mentioning SELECT must not be flagged.
-        let entries = vec![entry("INFO", "Executed query: SELECT * FROM products WHERE active = 1")];
+        let entries = vec![entry(
+            "INFO",
+            "Executed query: SELECT * FROM products WHERE active = 1",
+        )];
         let result = BasicAnalyzer::new().analyze(&entries);
         assert_eq!(result.sql_injection_attempts, 0);
     }
@@ -266,8 +276,14 @@ mod tests {
     fn detects_failed_logins_across_formats() {
         let entries = vec![
             entry("ERROR", "Failed login for admin from 10.0.0.1"),
-            entry("INFO", "Failed password for invalid user root from 203.0.113.5 port 22 ssh2"),
-            entry("INFO", "pam_unix(sshd:auth): authentication failure; rhost=203.0.113.9"),
+            entry(
+                "INFO",
+                "Failed password for invalid user root from 203.0.113.5 port 22 ssh2",
+            ),
+            entry(
+                "INFO",
+                "pam_unix(sshd:auth): authentication failure; rhost=203.0.113.9",
+            ),
             entry("INFO", "An account failed to log on. Account Name: bob"),
         ];
         let result = BasicAnalyzer::new().analyze(&entries);

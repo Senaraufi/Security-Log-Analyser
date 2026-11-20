@@ -16,7 +16,7 @@ pub use syslog::parse_syslog;
 use crate::LogEntry;
 
 /// Unified log parser that tries multiple formats with fallback
-/// 
+///
 /// Parsing strategy:
 /// 1. Try Apache/nginx Combined Log Format (most specific; nginx's default
 ///    "combined" access-log format is identical to Apache's)
@@ -24,7 +24,7 @@ use crate::LogEntry;
 /// 3. Try RFC 3164 syslog / auth.log format
 /// 4. Try generic structured formats (timestamp + level + message)
 /// 5. Fall back to minimal parsing (extract IPs and keywords)
-/// 
+///
 /// This ensures NO log lines are lost - every line gets analyzed
 pub fn parse_log_line_unified(line: &str) -> Option<LogEntry> {
     if line.trim().is_empty() {

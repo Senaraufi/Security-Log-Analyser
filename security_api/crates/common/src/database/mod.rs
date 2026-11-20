@@ -19,23 +19,21 @@ pub async fn init_db() -> Result<DbPool, sqlx::Error> {
     })?;
 
     println!(" Connecting to database...");
-    
+
     let pool = MySqlPoolOptions::new()
         .max_connections(10)
         .acquire_timeout(Duration::from_secs(5))
         .connect(&database_url)
         .await?;
-    
+
     println!(" Database connected successfully!");
     Ok(pool)
 }
 
 /// Test database connection
 pub async fn test_connection(pool: &DbPool) -> Result<(), sqlx::Error> {
-    sqlx::query("SELECT 1")
-        .fetch_one(pool)
-        .await?;
-    
+    sqlx::query("SELECT 1").fetch_one(pool).await?;
+
     println!(" Database connection test passed!");
     Ok(())
 }

@@ -4,13 +4,10 @@
 //! and receive easy-to-understand security analysis with risk scores,
 //! threat descriptions, and actionable fixes.
 
-use axum::{
-    extract::Json,
-    response::IntoResponse,
-};
-use serde::{Deserialize, Serialize};
-use security_analyzer_llm::{LlmAnalyzer, AnalyzerError};
+use axum::{extract::Json, response::IntoResponse};
+use security_analyzer_llm::{AnalyzerError, LlmAnalyzer};
 use security_common::parsers::apache::parse_apache_combined;
+use serde::{Deserialize, Serialize};
 
 /// Request payload for simple log explanation
 #[derive(Debug, Deserialize)]
@@ -92,9 +89,7 @@ Guidelines:
 Remember: Output ONLY the JSON, no markdown formatting, no explanations before or after."#;
 
 /// Analyze logs with beginner-friendly explanations
-pub async fn explain_logs(
-    Json(payload): Json<ExplainLogsRequest>,
-) -> impl IntoResponse {
+pub async fn explain_logs(Json(payload): Json<ExplainLogsRequest>) -> impl IntoResponse {
     // Parse the logs with unified parser (supports any log format)
     let mut logs = Vec::new();
     let mut _parse_errors = 0;
@@ -111,11 +106,14 @@ pub async fn explain_logs(
                 // Use generic parser to convert any log format to Apache-like structure
                 if let Some(entry) = security_common::parsers::parse_log_line_unified(line) {
                     // Convert generic LogEntry to ApacheLog for LLM analysis
-                    use security_common::parsers::apache::ApacheLog;
                     use chrono::Utc;
-                    
+                    use security_common::parsers::apache::ApacheLog;
+
                     let apache_log = ApacheLog {
-                        ip: entry.ip_address.clone().unwrap_or_else(|| "unknown".to_string()),
+                        ip: entry
+                            .ip_address
+                            .clone()
+                            .unwrap_or_else(|| "unknown".to_string()),
                         timestamp: Utc::now(), // Use current time as fallback
                         method: "GENERIC".to_string(),
                         path: entry.message.clone(),
@@ -186,7 +184,7 @@ pub async fn explain_logs(
             log.ip, log.method, log.path, log.status
         ));
     }
-    
+
     if logs.len() > 20 {
         prompt.push_str(&format!("\n... and {} more logs\n", logs.len() - 20));
     }
@@ -210,7 +208,7 @@ pub async fn explain_logs(
         Ok(result) => Json(serde_json::to_value(result).unwrap()),
         Err(e) => {
             eprintln!("[ERROR] Failed to parse LLM response: {}", e);
-            
+
             // Fallback response
             Json(serde_json::json!({
                 "summary": "We analyzed your logs and found some activity. The AI had trouble formatting the results, but your logs have been processed.",
@@ -226,74 +224,84 @@ pub async fn explain_logs(
 async fn call_llm_simple(analyzer: &LlmAnalyzer, prompt: &str) -> Result<String, AnalyzerError> {
     // Build the full prompt with system instructions
     let full_prompt = format!("{}\n\n{}", SIMPLE_MODE_PROMPT, prompt);
-    
+
     // Call the LLM using the analyzer's internal methods
     use security_analyzer_llm::LlmProvider;
-    
+
     let response = match analyzer.provider() {
         LlmProvider::OpenAI => {
-            use rig::providers::openai;
             use rig::completion::Prompt;
-            
-            let client = openai::Client::new(&std::env::var("OPENAI_API_KEY")
-                .map_err(|_| AnalyzerError::Configuration("OPENAI_API_KEY not set".to_string()))?);
-            
+            use rig::providers::openai;
+
+            let client =
+                openai::Client::new(&std::env::var("OPENAI_API_KEY").map_err(|_| {
+                    AnalyzerError::Configuration("OPENAI_API_KEY not set".to_string())
+                })?);
+
             let agent = client
                 .agent(analyzer.model())
                 .preamble(SIMPLE_MODE_PROMPT)
                 .temperature(0.3)
                 .max_tokens(2048)
                 .build();
-            
-            agent.prompt(prompt).await
+
+            agent
+                .prompt(prompt)
+                .await
                 .map_err(|e| AnalyzerError::ApiError {
                     provider: "OpenAI".to_string(),
                     message: e.to_string(),
                 })?
         }
         LlmProvider::Anthropic => {
-            use rig::providers::anthropic;
             use rig::completion::Prompt;
-            
+            use rig::providers::anthropic;
+
             let client = anthropic::Client::new(
-                &std::env::var("ANTHROPIC_API_KEY")
-                    .map_err(|_| AnalyzerError::Configuration("ANTHROPIC_API_KEY not set".to_string()))?,
+                &std::env::var("ANTHROPIC_API_KEY").map_err(|_| {
+                    AnalyzerError::Configuration("ANTHROPIC_API_KEY not set".to_string())
+                })?,
                 "https://api.anthropic.com",
                 None,
-                "2023-06-01"
+                "2023-06-01",
             );
-            
+
             let agent = client
                 .agent(analyzer.model())
                 .preamble(SIMPLE_MODE_PROMPT)
                 .temperature(0.3)
                 .max_tokens(2048)
                 .build();
-            
-            agent.prompt(prompt).await
+
+            agent
+                .prompt(prompt)
+                .await
                 .map_err(|e| AnalyzerError::ApiError {
                     provider: "Anthropic".to_string(),
                     message: e.to_string(),
                 })?
         }
         LlmProvider::Groq => {
-            use rig::providers::openai;
             use rig::completion::Prompt;
-            
+            use rig::providers::openai;
+
             let client = openai::Client::from_url(
-                &std::env::var("GROQ_API_KEY")
-                    .map_err(|_| AnalyzerError::Configuration("GROQ_API_KEY not set".to_string()))?,
-                "https://api.groq.com/openai/v1"
+                &std::env::var("GROQ_API_KEY").map_err(|_| {
+                    AnalyzerError::Configuration("GROQ_API_KEY not set".to_string())
+                })?,
+                "https://api.groq.com/openai/v1",
             );
-            
+
             let agent = client
                 .agent(analyzer.model())
                 .preamble(SIMPLE_MODE_PROMPT)
                 .temperature(0.3)
                 .max_tokens(2048)
                 .build();
-            
-            agent.prompt(prompt).await
+
+            agent
+                .prompt(prompt)
+                .await
                 .map_err(|e| AnalyzerError::ApiError {
                     provider: "Groq".to_string(),
                     message: e.to_string(),
@@ -303,12 +311,12 @@ async fn call_llm_simple(analyzer: &LlmAnalyzer, prompt: &str) -> Result<String,
             let api_key = std::env::var("GEMINI_API_KEY")
                 .map_err(|_| AnalyzerError::Configuration("GEMINI_API_KEY not set".to_string()))?;
             let model = analyzer.model();
-            
+
             let url = format!(
                 "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
                 model, api_key
             );
-            
+
             let request_body = serde_json::json!({
                 "contents": [{
                     "parts": [{
@@ -320,7 +328,7 @@ async fn call_llm_simple(analyzer: &LlmAnalyzer, prompt: &str) -> Result<String,
                     "maxOutputTokens": 2048
                 }
             });
-            
+
             let client = reqwest::Client::new();
             let response = client
                 .post(&url)
@@ -331,22 +339,25 @@ async fn call_llm_simple(analyzer: &LlmAnalyzer, prompt: &str) -> Result<String,
                     provider: "Gemini".to_string(),
                     message: format!("HTTP request failed: {}", e),
                 })?;
-            
+
             if !response.status().is_success() {
                 let status = response.status();
-                let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+                let error_text = response
+                    .text()
+                    .await
+                    .unwrap_or_else(|_| "Unknown error".to_string());
                 return Err(AnalyzerError::ApiError {
                     provider: "Gemini".to_string(),
                     message: format!("API returned {}: {}", status, error_text),
                 });
             }
-            
-            let response_json: serde_json::Value = response.json().await
-                .map_err(|e| AnalyzerError::ApiError {
+
+            let response_json: serde_json::Value =
+                response.json().await.map_err(|e| AnalyzerError::ApiError {
                     provider: "Gemini".to_string(),
                     message: format!("Failed to parse response: {}", e),
                 })?;
-            
+
             response_json["candidates"][0]["content"]["parts"][0]["text"]
                 .as_str()
                 .ok_or_else(|| AnalyzerError::ApiError {
@@ -356,7 +367,7 @@ async fn call_llm_simple(analyzer: &LlmAnalyzer, prompt: &str) -> Result<String,
                 .to_string()
         }
     };
-    
+
     Ok(response)
 }
 
@@ -364,7 +375,7 @@ async fn call_llm_simple(analyzer: &LlmAnalyzer, prompt: &str) -> Result<String,
 fn parse_simple_response(response: &str) -> Result<ExplainLogsResponse, String> {
     // Try to extract JSON from the response
     let json_str = extract_json(response);
-    
+
     // Parse JSON
     serde_json::from_str::<ExplainLogsResponse>(&json_str)
         .map_err(|e| format!("Failed to parse JSON: {}", e))
@@ -374,7 +385,7 @@ fn parse_simple_response(response: &str) -> Result<ExplainLogsResponse, String> 
 fn extract_json(text: &str) -> String {
     // Remove markdown code blocks if present
     let text = text.trim();
-    
+
     if text.starts_with("```json") {
         text.trim_start_matches("```json")
             .trim_end_matches("```")

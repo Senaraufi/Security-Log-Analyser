@@ -7,10 +7,9 @@
 
 use crate::BasicAnalyzer;
 use security_common::{
-    cvss,
+    AnalysisResult, FormatQuality, IpAnalysis, IpInfo, ParseError, ParsingInfo, RiskAssessment,
+    ThreatStats, cvss,
     parsers::{parse_apache_combined, parse_log_line_unified},
-    AnalysisResult, FormatQuality, IpAnalysis, IpInfo, ParseError, ParsingInfo,
-    RiskAssessment, ThreatStats,
 };
 
 /// Run the full basic-analysis pipeline on raw log text.
@@ -111,8 +110,10 @@ pub fn analyze(content: &str) -> AnalysisResult {
 
     let mut threat_types_for_aggregate = Vec::new();
     if analysis.sql_injection_attempts > 0 {
-        threat_types_for_aggregate
-            .push((cvss::ThreatType::SQLInjection, analysis.sql_injection_attempts));
+        threat_types_for_aggregate.push((
+            cvss::ThreatType::SQLInjection,
+            analysis.sql_injection_attempts,
+        ));
     }
     if analysis.failed_logins > 0 {
         threat_types_for_aggregate.push((cvss::ThreatType::FailedLogin, analysis.failed_logins));
@@ -127,8 +128,10 @@ pub fn analyze(content: &str) -> AnalysisResult {
         ));
     }
     if analysis.port_scanning_attempts > 0 {
-        threat_types_for_aggregate
-            .push((cvss::ThreatType::PortScanning, analysis.port_scanning_attempts));
+        threat_types_for_aggregate.push((
+            cvss::ThreatType::PortScanning,
+            analysis.port_scanning_attempts,
+        ));
     }
     if analysis.malware_detections > 0 {
         threat_types_for_aggregate.push((cvss::ThreatType::Malware, analysis.malware_detections));

@@ -8,7 +8,7 @@ use axum::{
     extract::Multipart,
     response::{IntoResponse, Json},
 };
-use security_analyzer_llm::{LlmAnalyzer, AnalyzerError};
+use security_analyzer_llm::{AnalyzerError, LlmAnalyzer};
 use security_common::{geolocation, parsers::apache::parse_apache_combined};
 
 /// Analyze logs using the configured LLM provider
@@ -24,9 +24,7 @@ use security_common::{geolocation, parsers::apache::parse_apache_combined};
 /// - Provider-specific API key (e.g., `OPENAI_API_KEY`)
 ///
 /// See `LLM_CONFIG.md` in the analyzer-llm crate for full configuration details.
-pub async fn analyze_logs_with_llm(
-    mut multipart: Multipart,
-) -> impl IntoResponse {
+pub async fn analyze_logs_with_llm(mut multipart: Multipart) -> impl IntoResponse {
     let mut content = String::new();
     let mut filename = String::from("unknown");
     let mut provider_override: Option<String> = None;
@@ -80,11 +78,17 @@ pub async fn analyze_logs_with_llm(
         Ok(a) => {
             provider_str = a.provider().to_string();
             model_str = a.model().to_string();
-            println!("[INFO] Processing log file with {} ({}): {}", provider_str, model_str, filename);
+            println!(
+                "[INFO] Processing log file with {} ({}): {}",
+                provider_str, model_str, filename
+            );
             Some(a)
         }
         Err((err, sugg)) => {
-            eprintln!("[WARN] LLM unavailable, will use standard analysis: {}", err);
+            eprintln!(
+                "[WARN] LLM unavailable, will use standard analysis: {}",
+                err
+            );
             ai_error = Some(err);
             ai_suggestion = Some(sugg);
             None
@@ -107,11 +111,14 @@ pub async fn analyze_logs_with_llm(
                 // Use generic parser to convert any log format to Apache-like structure
                 if let Some(entry) = security_common::parsers::parse_log_line_unified(line) {
                     // Convert generic LogEntry to ApacheLog for LLM analysis
-                    use security_common::parsers::apache::ApacheLog;
                     use chrono::Utc;
-                    
+                    use security_common::parsers::apache::ApacheLog;
+
                     let apache_log = ApacheLog {
-                        ip: entry.ip_address.clone().unwrap_or_else(|| "unknown".to_string()),
+                        ip: entry
+                            .ip_address
+                            .clone()
+                            .unwrap_or_else(|| "unknown".to_string()),
                         timestamp: Utc::now(), // Use current time as fallback
                         method: "GENERIC".to_string(),
                         path: entry.message.clone(),
@@ -162,7 +169,10 @@ pub async fn analyze_logs_with_llm(
     let ai_report = match analyzer_opt {
         Some(analyzer) => match analyzer.analyze_logs(&logs).await {
             Ok(report) => {
-                println!("[INFO] AI analysis complete - Threat Level: {}", report.threat_level);
+                println!(
+                    "[INFO] AI analysis complete - Threat Level: {}",
+                    report.threat_level
+                );
                 Some(report)
             }
             Err(e) => {
@@ -179,11 +189,19 @@ pub async fn analyze_logs_with_llm(
     let mut basic_result = security_analyzer_basic::analyze::analyze(&content);
 
     // Enrich IPs with geolocation data
-    let all_ip_strings: Vec<String> = basic_result.ip_analysis.all_ips.iter().map(|ip| ip.ip.clone()).collect();
+    let all_ip_strings: Vec<String> = basic_result
+        .ip_analysis
+        .all_ips
+        .iter()
+        .map(|ip| ip.ip.clone())
+        .collect();
     if !all_ip_strings.is_empty() {
-        println!("[INFO] Looking up geolocation for {} IPs...", all_ip_strings.len());
+        println!(
+            "[INFO] Looking up geolocation for {} IPs...",
+            all_ip_strings.len()
+        );
         let geo_data = geolocation::lookup_batch(&all_ip_strings).await;
-        
+
         for ip_info in &mut basic_result.ip_analysis.all_ips {
             if let Some(geo) = geo_data.get(&ip_info.ip) {
                 ip_info.country = geo.country.clone();
@@ -191,7 +209,7 @@ pub async fn analyze_logs_with_llm(
                 ip_info.is_vpn = geo.is_proxy || geo.is_hosting;
             }
         }
-        
+
         for ip_info in &mut basic_result.ip_analysis.high_risk_ips {
             if let Some(geo) = geo_data.get(&ip_info.ip) {
                 ip_info.country = geo.country.clone();
@@ -251,10 +269,12 @@ pub async fn analyze_logs_with_llm(
 fn build_override_analyzer(provider_name: &str) -> Result<LlmAnalyzer, (String, String)> {
     use security_analyzer_llm::{LlmConfig, LlmProvider};
 
-    let provider = LlmProvider::from_str(provider_name).ok_or_else(|| (
-        format!("Unsupported provider: {}", provider_name),
-        "Valid options: openai, anthropic, groq, gemini".to_string(),
-    ))?;
+    let provider = LlmProvider::from_name(provider_name).ok_or_else(|| {
+        (
+            format!("Unsupported provider: {}", provider_name),
+            "Valid options: openai, anthropic, groq, gemini".to_string(),
+        )
+    })?;
 
     let model = match provider {
         LlmProvider::Groq => "openai/gpt-oss-120b",
@@ -266,10 +286,15 @@ fn build_override_analyzer(provider_name: &str) -> Result<LlmAnalyzer, (String, 
     let api_key = std::env::var(provider.api_key_env_var())
         .ok()
         .filter(|k| !k.is_empty())
-        .ok_or_else(|| (
-            format!("API key not configured for provider '{}'", provider_name),
-            format!("Set the {} environment variable in your .env file.", provider.api_key_env_var()),
-        ))?;
+        .ok_or_else(|| {
+            (
+                format!("API key not configured for provider '{}'", provider_name),
+                format!(
+                    "Set the {} environment variable in your .env file.",
+                    provider.api_key_env_var()
+                ),
+            )
+        })?;
 
     println!("[INFO] User selected provider: {}", provider_name);
     // Reasoning models (e.g. gpt-oss) spend part of this budget on hidden
@@ -281,7 +306,10 @@ fn build_override_analyzer(provider_name: &str) -> Result<LlmAnalyzer, (String, 
 /// Build a UI report from the key-free standard analysis. Used when the LLM
 /// provider is unavailable so the dashboard always shows real threat data
 /// instead of an empty "Analysis complete / Unknown" placeholder.
-fn build_basic_report(result: &security_common::AnalysisResult, total_logs: usize) -> serde_json::Value {
+fn build_basic_report(
+    result: &security_common::AnalysisResult,
+    total_logs: usize,
+) -> serde_json::Value {
     let ra = &result.risk_assessment;
     let ts = &result.threat_statistics;
 
@@ -303,7 +331,12 @@ fn build_basic_report(result: &security_common::AnalysisResult, total_logs: usiz
     let findings: Vec<String> = ts
         .cvss_scores
         .iter()
-        .map(|s| format!("{} ({}x) - {} (CVSS {:.1})", s.threat_type, s.count, s.severity, s.cvss_score))
+        .map(|s| {
+            format!(
+                "{} ({}x) - {} (CVSS {:.1})",
+                s.threat_type, s.count, s.severity, s.cvss_score
+            )
+        })
         .collect();
 
     let iocs: Vec<String> = result
@@ -315,13 +348,41 @@ fn build_basic_report(result: &security_common::AnalysisResult, total_logs: usiz
         .collect();
 
     let mut recs = Vec::new();
-    if ts.sql_injection_attempts > 0 { recs.push("Investigate SQL injection attempts; use parameterized queries and deploy a WAF.".to_string()); }
-    if ts.suspicious_file_access > 0 { recs.push("Review access to sensitive files (e.g., /etc/passwd) and block path traversal.".to_string()); }
-    if ts.failed_logins > 0 { recs.push("Multiple failed logins detected; enforce rate limiting, MFA, and fail2ban.".to_string()); }
-    if ts.root_attempts > 0 { recs.push("Privileged/root access attempts detected; audit sudo and disable root SSH login.".to_string()); }
-    if ts.port_scanning_attempts > 0 { recs.push("Port scanning observed; block the offending IPs at the firewall.".to_string()); }
-    if ts.malware_detections > 0 { recs.push("Possible malware indicators found; isolate affected hosts and run a scan.".to_string()); }
-    if recs.is_empty() { recs.push("No high-severity threats detected. Continue monitoring.".to_string()); }
+    if ts.sql_injection_attempts > 0 {
+        recs.push(
+            "Investigate SQL injection attempts; use parameterized queries and deploy a WAF."
+                .to_string(),
+        );
+    }
+    if ts.suspicious_file_access > 0 {
+        recs.push(
+            "Review access to sensitive files (e.g., /etc/passwd) and block path traversal."
+                .to_string(),
+        );
+    }
+    if ts.failed_logins > 0 {
+        recs.push(
+            "Multiple failed logins detected; enforce rate limiting, MFA, and fail2ban."
+                .to_string(),
+        );
+    }
+    if ts.root_attempts > 0 {
+        recs.push(
+            "Privileged/root access attempts detected; audit sudo and disable root SSH login."
+                .to_string(),
+        );
+    }
+    if ts.port_scanning_attempts > 0 {
+        recs.push("Port scanning observed; block the offending IPs at the firewall.".to_string());
+    }
+    if ts.malware_detections > 0 {
+        recs.push(
+            "Possible malware indicators found; isolate affected hosts and run a scan.".to_string(),
+        );
+    }
+    if recs.is_empty() {
+        recs.push("No high-severity threats detected. Continue monitoring.".to_string());
+    }
 
     serde_json::json!({
         "summary": summary,
@@ -349,7 +410,10 @@ fn get_error_suggestion(error: &AnalyzerError) -> String {
                 provider
             )
         }
-        AnalyzerError::RateLimitExceeded { retry_after_seconds, .. } => {
+        AnalyzerError::RateLimitExceeded {
+            retry_after_seconds,
+            ..
+        } => {
             if let Some(seconds) = retry_after_seconds {
                 format!("Rate limit exceeded. Try again in {} seconds.", seconds)
             } else {

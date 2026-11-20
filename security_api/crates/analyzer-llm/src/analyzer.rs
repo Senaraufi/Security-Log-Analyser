@@ -5,13 +5,13 @@
 //! for intelligent security log analysis.
 
 use crate::config::{LlmConfig, LlmProvider};
+use crate::error::AnalyzerError;
 use crate::prompts::{build_analysis_prompt, SYSTEM_PROMPT};
 use crate::report::SecurityReport;
-use crate::error::AnalyzerError;
 use security_common::parsers::ApacheLog;
 
-use rig::providers::{anthropic, openai};
 use rig::completion::Prompt;
+use rig::providers::{anthropic, openai};
 
 /// Maximum number of logs to include in a single analysis prompt
 const MAX_LOGS_PER_ANALYSIS: usize = 100;
@@ -41,8 +41,8 @@ impl LlmAnalyzer {
     /// let report = analyzer.analyze_logs(logs).await?;
     /// ```
     pub fn from_env() -> Result<Self, AnalyzerError> {
-        let config = LlmConfig::from_env()
-            .map_err(|e| AnalyzerError::Configuration(e.to_string()))?;
+        let config =
+            LlmConfig::from_env().map_err(|e| AnalyzerError::Configuration(e.to_string()))?;
         Ok(Self { config })
     }
 
@@ -113,7 +113,7 @@ impl LlmAnalyzer {
     /// Call OpenAI API using rig-core
     async fn call_openai(&self, prompt: &str) -> Result<String, AnalyzerError> {
         let client = openai::Client::new(&self.config.api_key);
-        
+
         let agent = client
             .agent(&self.config.model)
             .preamble(SYSTEM_PROMPT)
@@ -144,9 +144,9 @@ impl LlmAnalyzer {
             &self.config.api_key,
             "https://api.anthropic.com",
             None,
-            "2023-06-01"
+            "2023-06-01",
         );
-        
+
         let agent = client
             .agent(&self.config.model)
             .preamble(SYSTEM_PROMPT)
@@ -166,11 +166,9 @@ impl LlmAnalyzer {
     /// Call Groq API (OpenAI-compatible) using rig-core
     async fn call_groq(&self, prompt: &str) -> Result<String, AnalyzerError> {
         // Groq uses OpenAI-compatible API with custom base URL
-        let client = openai::Client::from_url(
-            &self.config.api_key,
-            "https://api.groq.com/openai/v1"
-        );
-        
+        let client =
+            openai::Client::from_url(&self.config.api_key, "https://api.groq.com/openai/v1");
+
         let agent = client
             .agent(&self.config.model)
             .preamble(SYSTEM_PROMPT)
@@ -222,7 +220,10 @@ impl LlmAnalyzer {
 
         if !response.status().is_success() {
             let status = response.status();
-            let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            let error_text = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown error".to_string());
             return Err(AnalyzerError::ApiError {
                 provider: "Gemini".to_string(),
                 message: format!("Gemini API error ({}): {}", status, error_text),
@@ -230,12 +231,11 @@ impl LlmAnalyzer {
         }
 
         // Parse response
-        let response_json: serde_json::Value = response.json().await.map_err(|e| {
-            AnalyzerError::ApiError {
+        let response_json: serde_json::Value =
+            response.json().await.map_err(|e| AnalyzerError::ApiError {
                 provider: "Gemini".to_string(),
                 message: format!("Failed to parse Gemini response: {}", e),
-            }
-        })?;
+            })?;
 
         // Extract text from response
         let text = response_json["candidates"][0]["content"]["parts"][0]["text"]
@@ -249,7 +249,11 @@ impl LlmAnalyzer {
     }
 
     /// Parse the LLM response into a SecurityReport
-    fn parse_response(&self, response: &str, total_logs: usize) -> Result<SecurityReport, AnalyzerError> {
+    fn parse_response(
+        &self,
+        response: &str,
+        total_logs: usize,
+    ) -> Result<SecurityReport, AnalyzerError> {
         // Try to parse as JSON directly
         if let Ok(report) = serde_json::from_str::<SecurityReport>(response) {
             return Ok(report);
@@ -257,7 +261,7 @@ impl LlmAnalyzer {
 
         // Try to extract JSON from markdown code blocks
         let json_str = self.extract_json_from_response(response);
-        
+
         if let Ok(report) = serde_json::from_str::<SecurityReport>(&json_str) {
             return Ok(report);
         }
@@ -314,14 +318,8 @@ impl LlmAnalyzer {
 
 impl Default for LlmAnalyzer {
     fn default() -> Self {
-        Self::from_env().unwrap_or_else(|_| {
-            Self {
-                config: LlmConfig::new(
-                    LlmProvider::OpenAI,
-                    "gpt-4o",
-                    String::new(),
-                ),
-            }
+        Self::from_env().unwrap_or_else(|_| Self {
+            config: LlmConfig::new(LlmProvider::OpenAI, "gpt-4o", String::new()),
         })
     }
 }
@@ -334,19 +332,19 @@ mod tests {
     fn test_analyzer_default() {
         let analyzer = LlmAnalyzer::default();
         // Will not be configured without env vars
-        assert!(!analyzer.is_configured() || analyzer.config.api_key.is_empty() == false);
+        assert!(!analyzer.is_configured() || !analyzer.config.api_key.is_empty());
     }
 
     #[test]
     fn test_extract_json_from_code_block() {
         let analyzer = LlmAnalyzer::default();
-        
+
         let response = r#"Here is the analysis:
 ```json
 {"threat_level": "High", "summary": "Test"}
 ```
 "#;
-        
+
         let json = analyzer.extract_json_from_response(response);
         assert!(json.contains("threat_level"));
         assert!(json.contains("High"));
@@ -355,9 +353,9 @@ mod tests {
     #[test]
     fn test_extract_raw_json() {
         let analyzer = LlmAnalyzer::default();
-        
+
         let response = r#"Some text before {"threat_level": "Low"} some text after"#;
-        
+
         let json = analyzer.extract_json_from_response(response);
         assert_eq!(json, r#"{"threat_level": "Low"}"#);
     }
@@ -366,7 +364,7 @@ mod tests {
     fn test_provider_info() {
         let config = LlmConfig::new(LlmProvider::Anthropic, "claude-3-opus", "test-key");
         let analyzer = LlmAnalyzer::with_config(config);
-        
+
         assert_eq!(*analyzer.provider(), LlmProvider::Anthropic);
         assert_eq!(analyzer.model(), "claude-3-opus");
     }

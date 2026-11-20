@@ -42,7 +42,7 @@ impl fmt::Display for LlmProvider {
 
 impl LlmProvider {
     /// Parse provider from string (case-insensitive)
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn from_name(s: &str) -> Option<Self> {
         match s.to_lowercase().as_str() {
             "openai" | "gpt" => Some(LlmProvider::OpenAI),
             "anthropic" | "claude" => Some(LlmProvider::Anthropic),
@@ -109,22 +109,19 @@ impl LlmConfig {
 
         // Parse provider
         let provider = match env::var("LLM_PROVIDER") {
-            Ok(p) => LlmProvider::from_str(&p)
-                .ok_or_else(|| ConfigError::InvalidProvider(p))?,
+            Ok(p) => LlmProvider::from_name(&p).ok_or(ConfigError::InvalidProvider(p))?,
             Err(_) => LlmProvider::default(),
         };
 
         // Get model (use provider default if not specified)
-        let model = env::var("LLM_MODEL")
-            .unwrap_or_else(|_| provider.default_model().to_string());
+        let model = env::var("LLM_MODEL").unwrap_or_else(|_| provider.default_model().to_string());
 
         // Get API key for the selected provider
         let api_key_var = provider.api_key_env_var();
-        let api_key = env::var(api_key_var)
-            .map_err(|_| ConfigError::MissingApiKey {
-                provider: provider.clone(),
-                env_var: api_key_var.to_string(),
-            })?;
+        let api_key = env::var(api_key_var).map_err(|_| ConfigError::MissingApiKey {
+            provider: provider.clone(),
+            env_var: api_key_var.to_string(),
+        })?;
 
         if api_key.is_empty() {
             return Err(ConfigError::MissingApiKey {
@@ -229,27 +226,39 @@ mod tests {
 
     #[test]
     fn test_provider_parsing() {
-        assert_eq!(LlmProvider::from_str("openai"), Some(LlmProvider::OpenAI));
-        assert_eq!(LlmProvider::from_str("OPENAI"), Some(LlmProvider::OpenAI));
-        assert_eq!(LlmProvider::from_str("gpt"), Some(LlmProvider::OpenAI));
-        assert_eq!(LlmProvider::from_str("anthropic"), Some(LlmProvider::Anthropic));
-        assert_eq!(LlmProvider::from_str("claude"), Some(LlmProvider::Anthropic));
-        assert_eq!(LlmProvider::from_str("groq"), Some(LlmProvider::Groq));
-        assert_eq!(LlmProvider::from_str("gemini"), Some(LlmProvider::Gemini));
-        assert_eq!(LlmProvider::from_str("invalid"), None);
+        assert_eq!(LlmProvider::from_name("openai"), Some(LlmProvider::OpenAI));
+        assert_eq!(LlmProvider::from_name("OPENAI"), Some(LlmProvider::OpenAI));
+        assert_eq!(LlmProvider::from_name("gpt"), Some(LlmProvider::OpenAI));
+        assert_eq!(
+            LlmProvider::from_name("anthropic"),
+            Some(LlmProvider::Anthropic)
+        );
+        assert_eq!(
+            LlmProvider::from_name("claude"),
+            Some(LlmProvider::Anthropic)
+        );
+        assert_eq!(LlmProvider::from_name("groq"), Some(LlmProvider::Groq));
+        assert_eq!(LlmProvider::from_name("gemini"), Some(LlmProvider::Gemini));
+        assert_eq!(LlmProvider::from_name("invalid"), None);
     }
 
     #[test]
     fn test_default_models() {
         assert_eq!(LlmProvider::OpenAI.default_model(), "gpt-4o");
-        assert_eq!(LlmProvider::Anthropic.default_model(), "claude-sonnet-4-20250514");
+        assert_eq!(
+            LlmProvider::Anthropic.default_model(),
+            "claude-sonnet-4-20250514"
+        );
         assert_eq!(LlmProvider::Groq.default_model(), "llama-3.1-70b-versatile");
     }
 
     #[test]
     fn test_api_key_env_vars() {
         assert_eq!(LlmProvider::OpenAI.api_key_env_var(), "OPENAI_API_KEY");
-        assert_eq!(LlmProvider::Anthropic.api_key_env_var(), "ANTHROPIC_API_KEY");
+        assert_eq!(
+            LlmProvider::Anthropic.api_key_env_var(),
+            "ANTHROPIC_API_KEY"
+        );
         assert_eq!(LlmProvider::Groq.api_key_env_var(), "GROQ_API_KEY");
     }
 
@@ -268,12 +277,10 @@ mod tests {
 
     #[test]
     fn test_temperature_clamping() {
-        let config = LlmConfig::new(LlmProvider::OpenAI, "gpt-4", "key")
-            .with_temperature(1.5);
+        let config = LlmConfig::new(LlmProvider::OpenAI, "gpt-4", "key").with_temperature(1.5);
         assert_eq!(config.temperature, 1.0);
 
-        let config = LlmConfig::new(LlmProvider::OpenAI, "gpt-4", "key")
-            .with_temperature(-0.5);
+        let config = LlmConfig::new(LlmProvider::OpenAI, "gpt-4", "key").with_temperature(-0.5);
         assert_eq!(config.temperature, 0.0);
     }
 }
