@@ -7,3 +7,4 @@ edition = "2024"
 security-common = { path = "../common" }
 regex = { workspace = true }
 serde = { workspace = true }
+serde_json = { workspace = true }

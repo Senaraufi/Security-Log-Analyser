@@ -42,12 +42,9 @@ jobs:
       - name: Run tests
         run: cargo test --workspace --verbose
 
-      # Formatting and lints are informational for now (pre-existing debt).
-      # TODO: flip these to blocking once the workspace is fmt/clippy clean.
+      # Formatting and lints are blocking gates.
       - name: Check formatting
         run: cargo fmt --all -- --check
-        continue-on-error: true
 
       - name: Clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
-        continue-on-error: true

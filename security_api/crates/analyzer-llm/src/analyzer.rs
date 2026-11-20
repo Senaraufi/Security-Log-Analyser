@@ -118,7 +118,7 @@ impl LlmAnalyzer {
             .agent(&self.config.model)
             .preamble(SYSTEM_PROMPT)
             .temperature(self.config.temperature as f64)
-            .max_tokens(self.config.max_tokens as u64)
+            .additional_params(self.openai_token_params())
             .build();
 
         agent
@@ -128,6 +128,14 @@ impl LlmAnalyzer {
                 provider: "OpenAI".to_string(),
                 message: e.to_string(),
             })
+    }
+
+    /// rig-core 0.9's OpenAI-compatible client silently drops `.max_tokens()`,
+    /// so the provider default (3072 on Groq) applies. Reasoning models like
+    /// gpt-oss burn most of that on hidden reasoning, truncating the JSON
+    /// report. Passing the limit as an extra request param fixes this.
+    fn openai_token_params(&self) -> serde_json::Value {
+        serde_json::json!({ "max_tokens": self.config.max_tokens })
     }
 
     /// Call Anthropic API using rig-core
@@ -167,7 +175,7 @@ impl LlmAnalyzer {
             .agent(&self.config.model)
             .preamble(SYSTEM_PROMPT)
             .temperature(self.config.temperature as f64)
-            .max_tokens(self.config.max_tokens as u64)
+            .additional_params(self.openai_token_params())
             .build();
 
         agent

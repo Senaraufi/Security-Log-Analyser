@@ -176,7 +176,7 @@ pub async fn analyze_logs_with_llm(
     };
 
     // Also get basic analysis for additional context
-    let mut basic_result = super::process_logs(&content);
+    let mut basic_result = security_analyzer_basic::analyze::analyze(&content);
 
     // Enrich IPs with geolocation data
     let all_ip_strings: Vec<String> = basic_result.ip_analysis.all_ips.iter().map(|ip| ip.ip.clone()).collect();

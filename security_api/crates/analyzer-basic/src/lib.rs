@@ -1,6 +1,8 @@
 // Basic threat detection using regex patterns
 // Fast, synchronous analysis without AI
 
+pub mod analyze;
+
 use security_common::{LogEntry, ThreatCVSS};
 use std::collections::HashMap;
 

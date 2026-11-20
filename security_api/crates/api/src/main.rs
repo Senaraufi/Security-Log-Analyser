@@ -48,6 +48,19 @@ async fn rate_limit_middleware(
         }
     };
 
+    // Periodically evict stale entries to prevent unbounded memory growth.
+    // We piggyback on every 100th request to avoid adding a background task.
+    static EVICT_COUNTER: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    if EVICT_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 100 == 0 {
+        if let Ok(mut store) = rate_limit_store().lock() {
+            let now = Instant::now();
+            store.retain(|_, timestamps| {
+                timestamps.retain(|t| now.duration_since(*t) < RATE_LIMIT_WINDOW);
+                !timestamps.is_empty()
+            });
+        }
+    }
+
     if !allowed {
         return (
             StatusCode::TOO_MANY_REQUESTS,
@@ -64,12 +77,9 @@ async fn rate_limit_middleware(
 // Import from workspace crates
 use security_common::{
     database::{init_db, test_connection},
-    cvss,
     geolocation,
-    AnalysisResult, ThreatStats, IpAnalysis, IpInfo, RiskAssessment, 
-    ParsingInfo, ParseError, FormatQuality,
 };
-use security_analyzer_basic::BasicAnalyzer;
+use security_analyzer_basic::analyze::analyze as analyze_logs_basic;
 
 mod llm_handler;
 mod simple_handler;
@@ -181,7 +191,7 @@ async fn analyze_logs(
     println!("[INFO] Processing log file: {}", filename);
     
     // Parse logs and analyze
-    let mut result = process_logs(&content);
+    let mut result = analyze_logs_basic(&content);
     
     // Enrich IPs with geolocation data
     let all_ip_strings: Vec<String> = result.ip_analysis.all_ips.iter().map(|ip| ip.ip.clone()).collect();
@@ -209,163 +219,5 @@ async fn analyze_logs(
     println!("[INFO] Analysis complete");
     
     Json(result).into_response()
-}
-
-// Process logs with basic analyzer
-pub fn process_logs(content: &str) -> AnalysisResult {
-    use security_common::parsers::{parse_log_line_unified, parse_apache_combined};
-    
-    let mut entries = Vec::new();
-    let mut total_lines = 0;
-    let mut parsed_lines = 0;
-    let mut parse_errors: Vec<ParseError> = Vec::new();
-    let mut perfect_format = 0;
-    let mut alternative_format = 0;
-    let mut fallback_format = 0;
-    
-    // Parse all lines with unified parser (supports multiple formats)
-    for line in content.lines() {
-        total_lines += 1;
-        
-        if line.trim().is_empty() {
-            continue;
-        }
-        
-        // Try unified parser - supports Apache, generic, and fallback formats
-        if let Some(entry) = parse_log_line_unified(line) {
-            parsed_lines += 1;
-            
-            // Track format quality
-            if parse_apache_combined(line).is_ok() {
-                perfect_format += 1; // Apache format
-            } else if entry.timestamp.contains('-') && !entry.level.is_empty() {
-                alternative_format += 1; // Generic structured format
-            } else {
-                fallback_format += 1; // Minimal parsing
-            }
-            
-            entries.push(entry);
-        } else if parse_errors.len() < 10 {
-            parse_errors.push(ParseError {
-                line_number: total_lines,
-                line_content: if line.len() > 100 {
-                    format!("{}...", &line[..100])
-                } else {
-                    line.to_string()
-                },
-                error_type: "Parse failed".to_string(),
-                suggestion: "Line was empty or invalid".to_string(),
-            });
-        }
-    }
-    
-    // Run basic analysis
-    let analyzer = BasicAnalyzer::new();
-    let analysis = analyzer.analyze(&entries);
-    let cvss_scores = analyzer.generate_cvss_scores(&analysis);
-    
-    // Build IP analysis
-    let mut ip_vec: Vec<_> = analysis.ip_frequency.iter().collect();
-    ip_vec.sort_by(|a, b| b.1.cmp(a.1));
-    
-    let high_risk_ips: Vec<IpInfo> = ip_vec.iter()
-        .filter(|(_, count)| **count >= 3)
-        .map(|(ip, count)| IpInfo {
-            ip: ip.to_string(),
-            count: **count,
-            risk_level: "high".to_string(),
-            country: None,
-            city: None,
-            is_vpn: false,
-        })
-        .collect();
-    
-    let all_ips: Vec<IpInfo> = ip_vec.iter()
-        .map(|(ip, count)| IpInfo {
-            ip: ip.to_string(),
-            count: **count,
-            risk_level: if **count >= 3 { "high" } else { "low" }.to_string(),
-            country: None,
-            city: None,
-            is_vpn: false,
-        })
-        .collect();
-    
-    // Calculate aggregate CVSS
-    let total_threats = analysis.failed_logins + analysis.root_attempts + 
-                        analysis.suspicious_file_access + analysis.critical_alerts + 
-                        analysis.sql_injection_attempts + analysis.port_scanning_attempts + 
-                        analysis.malware_detections;
-    
-    let mut threat_types_for_aggregate = Vec::new();
-    if analysis.sql_injection_attempts > 0 {
-        threat_types_for_aggregate.push((cvss::ThreatType::SQLInjection, analysis.sql_injection_attempts));
-    }
-    if analysis.failed_logins > 0 {
-        threat_types_for_aggregate.push((cvss::ThreatType::FailedLogin, analysis.failed_logins));
-    }
-    if analysis.root_attempts > 0 {
-        threat_types_for_aggregate.push((cvss::ThreatType::RootAccess, analysis.root_attempts));
-    }
-    if analysis.suspicious_file_access > 0 {
-        threat_types_for_aggregate.push((cvss::ThreatType::SuspiciousFileAccess, analysis.suspicious_file_access));
-    }
-    if analysis.port_scanning_attempts > 0 {
-        threat_types_for_aggregate.push((cvss::ThreatType::PortScanning, analysis.port_scanning_attempts));
-    }
-    if analysis.malware_detections > 0 {
-        threat_types_for_aggregate.push((cvss::ThreatType::Malware, analysis.malware_detections));
-    }
-    if analysis.critical_alerts > 0 {
-        threat_types_for_aggregate.push((cvss::ThreatType::CriticalAlert, analysis.critical_alerts));
-    }
-    
-    let aggregate_cvss = cvss::calculate_aggregate_score(&threat_types_for_aggregate);
-    
-    let (level, description) = if total_threats > 20 {
-        ("CRITICAL", "Immediate action required")
-    } else if total_threats > 10 {
-        ("HIGH", "Urgent attention needed")
-    } else if total_threats > 5 {
-        ("MEDIUM", "Review recommended")
-    } else {
-        ("LOW", "Normal activity")
-    };
-    
-    AnalysisResult {
-        threat_statistics: ThreatStats {
-            failed_logins: analysis.failed_logins,
-            root_attempts: analysis.root_attempts,
-            suspicious_file_access: analysis.suspicious_file_access,
-            critical_alerts: analysis.critical_alerts,
-            sql_injection_attempts: analysis.sql_injection_attempts,
-            port_scanning_attempts: analysis.port_scanning_attempts,
-            malware_detections: analysis.malware_detections,
-            cvss_scores,
-        },
-        ip_analysis: IpAnalysis {
-            high_risk_ips,
-            all_ips,
-        },
-        risk_assessment: RiskAssessment {
-            level: level.to_string(),
-            total_threats,
-            description: description.to_string(),
-            cvss_aggregate_score: aggregate_cvss.base_score,
-            cvss_severity: aggregate_cvss.severity.as_str().to_string(),
-        },
-        parsing_info: ParsingInfo {
-            total_lines,
-            parsed_lines,
-            skipped_lines: total_lines - parsed_lines,
-            errors: parse_errors,
-            format_quality: FormatQuality {
-                perfect_format,
-                alternative_format,
-                fallback_format,
-            },
-        },
-        alerts: Vec::new(),
-    }
 }
 

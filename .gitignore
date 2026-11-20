@@ -12,20 +12,25 @@ Cargo.lock
 # IDE
 .vscode/
 .idea/
+.windsurf/
 *.swp
 *.swo
 *~
 
-# Environment variables
+# Environment variables — NEVER commit real keys
 .env
 .env.local
 
 # Logs
 *.log
 
+# Large media (keep the GIF in docs/ for the README)
+*.mov
+*.mp4
+
+# Generated output
+graphify-out/
+
 # Temporary files
 tmp/
 temp/
-
-# Snyk Security Extension - AI Rules (auto-generated)
-.windsurf/rules/snyk_rules.md
