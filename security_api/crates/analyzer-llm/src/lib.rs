@@ -35,6 +35,8 @@
 //! | `LLM_MODEL` | Model name (provider-specific) | Provider default |
 //! | `LLM_TEMPERATURE` | Generation temperature (0.0-1.0) | 0.3 |
 //! | `LLM_MAX_TOKENS` | Maximum response tokens | 4096 |
+//! | `LLM_BATCH_SIZE` | Max log lines per request | 100 |
+//! | `LLM_MODE` | ai_decides, rules_first, spotlight | ai_decides |
 //! | `OPENAI_API_KEY` | OpenAI API key | - |
 //! | `ANTHROPIC_API_KEY` | Anthropic API key | - |
 //! | `GROQ_API_KEY` | Groq API key | - |
@@ -57,7 +59,7 @@
 //!
 //! # Or use Groq (fast inference)
 //! # LLM_PROVIDER=groq
-//! # LLM_MODEL=llama-3.1-70b-versatile
+//! # LLM_MODEL=openai/gpt-oss-120b
 //! # GROQ_API_KEY=your-api-key-here
 //! ```
 
@@ -66,14 +68,16 @@ pub mod analyzer;
 pub mod config;
 pub mod error;
 pub mod prompts;
+pub mod record;
 pub mod report;
 
 // Re-export main types for convenient access
-pub use analyzer::LlmAnalyzer;
-pub use config::{ConfigError, LlmConfig, LlmProvider};
+pub use analyzer::{LlmAnalyzer, PreparedCall};
+pub use config::{AnalysisMode, ConfigError, LlmConfig, LlmProvider};
 pub use error::AnalyzerError;
+pub use record::CallRecord;
 pub use report::{
-    ActionItem, IpAnalysisReport, RecommendationsReport, SecurityReport, TriageReport,
+    ActionItem, IpAnalysisReport, LineVerdict, RecommendationsReport, SecurityReport, TriageReport,
 };
 
 /// Prelude module for convenient imports

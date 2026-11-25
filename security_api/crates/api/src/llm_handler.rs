@@ -8,7 +8,7 @@ use axum::{
     extract::Multipart,
     response::{IntoResponse, Json},
 };
-use security_analyzer_llm::{AnalyzerError, LlmAnalyzer};
+use security_analyzer_llm::{AnalysisMode, AnalyzerError, CallRecord, LlmAnalyzer};
 use security_common::{geolocation, parsers::apache::parse_apache_combined};
 
 /// Analyze logs using the configured LLM provider
@@ -28,6 +28,7 @@ pub async fn analyze_logs_with_llm(mut multipart: Multipart) -> impl IntoRespons
     let mut content = String::new();
     let mut filename = String::from("unknown");
     let mut provider_override: Option<String> = None;
+    let mut mode_override: Option<String> = None;
 
     // Extract file and optional provider from multipart form
     while let Some(field) = multipart.next_field().await.unwrap_or(None) {
@@ -50,6 +51,12 @@ pub async fn analyze_logs_with_llm(mut multipart: Multipart) -> impl IntoRespons
             if let Ok(data) = field.bytes().await {
                 provider_override = Some(String::from_utf8_lossy(&data).to_string());
             }
+        } else if name == "mode" {
+            mode_override = field
+                .bytes()
+                .await
+                .ok()
+                .map(|d| String::from_utf8_lossy(&d).to_string());
         }
     }
 
@@ -69,15 +76,28 @@ pub async fn analyze_logs_with_llm(mut multipart: Multipart) -> impl IntoRespons
         Some(provider_name) => build_override_analyzer(provider_name),
         None => LlmAnalyzer::from_env().map_err(|e| (e.to_string(), get_error_suggestion(&e))),
     };
+    let analyzer_result = match (analyzer_result, &mode_override) {
+        (Ok(a), Some(m)) => match AnalysisMode::from_name(m) {
+            Some(mode) => Ok(a.with_mode(mode)),
+            None => Err((
+                format!("Unsupported mode: {}", m),
+                "Valid options: ai_decides, rules_first, spotlight".to_string(),
+            )),
+        },
+        (r, _) => r,
+    };
 
     let mut ai_error: Option<String> = None;
     let mut ai_suggestion: Option<String> = None;
     let mut provider_str = String::from("none");
     let mut model_str = String::from("none");
+    let mut mode_str = String::from("none");
+    let mut call_record: Option<CallRecord> = None;
     let analyzer_opt = match analyzer_result {
         Ok(a) => {
             provider_str = a.provider().to_string();
             model_str = a.model().to_string();
+            mode_str = a.mode().to_string();
             println!(
                 "[INFO] Processing log file with {} ({}): {}",
                 provider_str, model_str, filename
@@ -167,8 +187,9 @@ pub async fn analyze_logs_with_llm(mut multipart: Multipart) -> impl IntoRespons
     // Perform LLM analysis if an analyzer is available. On any failure we record
     // the error but continue with the standard analysis below.
     let ai_report = match analyzer_opt {
-        Some(analyzer) => match analyzer.analyze_logs(&logs).await {
-            Ok(report) => {
+        Some(analyzer) => match analyzer.analyze_logs_with_record(&logs).await {
+            Ok((report, record)) => {
+                call_record = record;
                 println!(
                     "[INFO] AI analysis complete - Threat Level: {}",
                     report.threat_level
@@ -260,6 +281,8 @@ pub async fn analyze_logs_with_llm(mut multipart: Multipart) -> impl IntoRespons
         "suspicious_logs": suspicious_logs,
         "provider": provider_str,
         "model": model_str,
+        "mode": mode_str,
+        "call_record": call_record,
     }))
 }
 
@@ -276,12 +299,7 @@ fn build_override_analyzer(provider_name: &str) -> Result<LlmAnalyzer, (String, 
         )
     })?;
 
-    let model = match provider {
-        LlmProvider::Groq => "openai/gpt-oss-120b",
-        LlmProvider::Gemini => "gemini-1.5-flash",
-        LlmProvider::OpenAI => "gpt-4o",
-        LlmProvider::Anthropic => "claude-sonnet-4-20250514",
-    };
+    let model = provider.default_model();
 
     let api_key = std::env::var(provider.api_key_env_var())
         .ok()

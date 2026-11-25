@@ -9,6 +9,8 @@
 //! - `LLM_MODEL`: The model name to use (provider-specific)
 //! - `LLM_TEMPERATURE`: Temperature for generation (0.0 - 1.0, default: 0.3)
 //! - `LLM_MAX_TOKENS`: Maximum tokens in response (default: 4096)
+//! - `LLM_BATCH_SIZE`: Log lines sent per request (default: 100)
+//! - `LLM_MODE`: ai_decides (default), rules_first, spotlight
 //!
 //! Provider-specific API keys:
 //! - `OPENAI_API_KEY`: OpenAI API key
@@ -16,6 +18,7 @@
 //! - `GROQ_API_KEY`: Groq API key
 //! - `GEMINI_API_KEY`: Google Gemini API key
 
+use serde::{Deserialize, Serialize};
 use std::env;
 use std::fmt;
 
@@ -57,8 +60,8 @@ impl LlmProvider {
         match self {
             LlmProvider::OpenAI => "gpt-4o",
             LlmProvider::Anthropic => "claude-sonnet-4-20250514",
-            LlmProvider::Groq => "llama-3.1-70b-versatile",
-            LlmProvider::Gemini => "gemini-1.5-flash",
+            LlmProvider::Groq => "openai/gpt-oss-120b",
+            LlmProvider::Gemini => "gemini-3.5-flash-lite",
         }
     }
 
@@ -73,6 +76,57 @@ impl LlmProvider {
     }
 }
 
+/// How the verdict for each log line is produced.
+///
+/// `AiDecides` is the original (prompt-injectable) behaviour and stays the
+/// baseline; the other modes are defences that sit behind this switch.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AnalysisMode {
+    /// The AI reads the raw logs and decides what is malicious.
+    #[default]
+    AiDecides,
+    /// Rule verdicts are fixed; the AI only explains and the rules' verdict is final.
+    RulesFirst,
+    /// Log text is wrapped in "untrusted data" markers with a treat-as-data instruction.
+    Spotlight,
+}
+
+impl AnalysisMode {
+    pub const ALL: [AnalysisMode; 3] = [
+        AnalysisMode::AiDecides,
+        AnalysisMode::RulesFirst,
+        AnalysisMode::Spotlight,
+    ];
+
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            AnalysisMode::AiDecides => "ai_decides",
+            AnalysisMode::RulesFirst => "rules_first",
+            AnalysisMode::Spotlight => "spotlight",
+        }
+    }
+
+    /// Parse a mode name (case-insensitive, `-` or `_`)
+    pub fn from_name(s: &str) -> Option<Self> {
+        match s.trim().to_lowercase().replace('-', "_").as_str() {
+            "ai_decides" => Some(AnalysisMode::AiDecides),
+            "rules_first" => Some(AnalysisMode::RulesFirst),
+            "spotlight" => Some(AnalysisMode::Spotlight),
+            _ => None,
+        }
+    }
+}
+
+impl fmt::Display for AnalysisMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+/// Default number of log lines sent to the model in one request
+pub const DEFAULT_BATCH_SIZE: usize = 100;
+
 /// LLM configuration loaded from environment variables
 #[derive(Debug, Clone)]
 pub struct LlmConfig {
@@ -86,6 +140,10 @@ pub struct LlmConfig {
     pub temperature: f32,
     /// Maximum tokens in response
     pub max_tokens: u32,
+    /// Maximum number of log lines sent to the model per request
+    pub batch_size: usize,
+    /// How per-line verdicts are produced
+    pub mode: AnalysisMode,
 }
 
 impl LlmConfig {
@@ -143,12 +201,25 @@ impl LlmConfig {
             .and_then(|t| t.parse::<u32>().ok())
             .unwrap_or(4096);
 
+        let batch_size = env::var("LLM_BATCH_SIZE")
+            .ok()
+            .and_then(|t| t.parse::<usize>().ok())
+            .filter(|n| *n > 0)
+            .unwrap_or(DEFAULT_BATCH_SIZE);
+
+        let mode = match env::var("LLM_MODE") {
+            Ok(m) => AnalysisMode::from_name(&m).ok_or(ConfigError::InvalidMode(m))?,
+            Err(_) => AnalysisMode::default(),
+        };
+
         Ok(Self {
             provider,
             model,
             api_key,
             temperature,
             max_tokens,
+            batch_size,
+            mode,
         })
     }
 
@@ -169,7 +240,21 @@ impl LlmConfig {
             api_key: api_key.into(),
             temperature: 0.3,
             max_tokens: 4096,
+            batch_size: DEFAULT_BATCH_SIZE,
+            mode: AnalysisMode::default(),
         }
+    }
+
+    /// Set the analysis mode
+    pub fn with_mode(mut self, mode: AnalysisMode) -> Self {
+        self.mode = mode;
+        self
+    }
+
+    /// Set the number of log lines sent per request (minimum 1)
+    pub fn with_batch_size(mut self, batch_size: usize) -> Self {
+        self.batch_size = batch_size.max(1);
+        self
     }
 
     /// Set the temperature
@@ -195,6 +280,8 @@ pub enum ConfigError {
         provider: LlmProvider,
         env_var: String,
     },
+    /// Invalid analysis mode specified
+    InvalidMode(String),
 }
 
 impl fmt::Display for ConfigError {
@@ -207,6 +294,11 @@ impl fmt::Display for ConfigError {
                     name
                 )
             }
+            ConfigError::InvalidMode(name) => write!(
+                f,
+                "Invalid LLM mode '{}'. Valid options: ai_decides, rules_first, spotlight",
+                name
+            ),
             ConfigError::MissingApiKey { provider, env_var } => {
                 write!(
                     f,
@@ -249,7 +341,25 @@ mod tests {
             LlmProvider::Anthropic.default_model(),
             "claude-sonnet-4-20250514"
         );
-        assert_eq!(LlmProvider::Groq.default_model(), "llama-3.1-70b-versatile");
+        assert_eq!(LlmProvider::Groq.default_model(), "openai/gpt-oss-120b");
+    }
+
+    #[test]
+    fn test_mode_parsing_and_builders() {
+        assert_eq!(
+            AnalysisMode::from_name("Rules-First"),
+            Some(AnalysisMode::RulesFirst)
+        );
+        assert_eq!(
+            AnalysisMode::from_name("spotlight"),
+            Some(AnalysisMode::Spotlight)
+        );
+        assert_eq!(AnalysisMode::from_name("nope"), None);
+        let c = LlmConfig::new(LlmProvider::OpenAI, "m", "k")
+            .with_mode(AnalysisMode::Spotlight)
+            .with_batch_size(0);
+        assert_eq!(c.mode, AnalysisMode::Spotlight);
+        assert_eq!(c.batch_size, 1);
     }
 
     #[test]

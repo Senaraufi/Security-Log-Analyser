@@ -1,0 +1,22 @@
+[package]
+name = "security-bench"
+version = "0.1.0"
+edition = "2021"
+description = "Prompt-injection experiment tooling: dataset runner, injection generator and scorer"
+publish = false
+
+[[bin]]
+name = "bench"
+path = "src/main.rs"
+
+[dependencies]
+security-common = { path = "../common" }
+security-analyzer-llm = { path = "../analyzer-llm" }
+
+clap = { version = "4", features = ["derive"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+dotenv = { workspace = true }
+chrono = { workspace = true }
+sha2 = "0.10"

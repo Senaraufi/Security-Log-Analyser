@@ -5,6 +5,7 @@ members = [
     "crates/analyzer-llm",
     "crates/api",
     "crates/cli",
+    "crates/bench",
 ]
 resolver = "2"
 

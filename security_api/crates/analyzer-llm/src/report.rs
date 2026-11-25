@@ -44,6 +44,47 @@ pub struct SecurityReport {
     /// Critical alerts requiring immediate attention
     #[serde(default)]
     pub alerts: Vec<String>,
+
+    /// Yes/no verdict per log line (keyed by prompt line ID)
+    #[serde(default)]
+    pub line_verdicts: Vec<LineVerdict>,
+
+    /// True when the model output could not be read as a report. This is its
+    /// own outcome and must not be scored as a real "Medium" verdict.
+    #[serde(default)]
+    pub parse_failed: bool,
+
+    /// The raw model response, kept when parsing failed
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub raw_response: Option<String>,
+
+    /// Model that produced this report
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+
+    /// Analysis mode used (ai_decides, rules_first, spotlight)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mode: Option<String>,
+
+    /// Number of log lines actually sent to the model
+    #[serde(default)]
+    pub lines_sent: usize,
+
+    /// Configured batch size (maximum lines per request)
+    #[serde(default)]
+    pub batch_size: usize,
+}
+
+/// A yes/no verdict for a single log line
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LineVerdict {
+    /// Line ID from the prompt (`L001`, ...)
+    pub id: String,
+    pub malicious: bool,
+    #[serde(default)]
+    pub attack_type: Option<String>,
+    #[serde(default)]
+    pub reason: String,
 }
 
 fn default_confidence() -> f32 {
@@ -64,6 +105,13 @@ impl SecurityReport {
             recommendations: vec!["Provide log data for security analysis.".to_string()],
             confidence_score: 1.0,
             alerts: Vec::new(),
+            line_verdicts: Vec::new(),
+            parse_failed: false,
+            raw_response: None,
+            model: None,
+            mode: None,
+            lines_sent: 0,
+            batch_size: 0,
         }
     }
 
@@ -85,7 +133,7 @@ impl SecurityReport {
             } else {
                 summary
             },
-            threat_level: "Medium".to_string(),
+            threat_level: "Unknown".to_string(),
             total_logs_analyzed: total_logs,
             suspicious_logs_count: 0,
             attack_chains: Vec::new(),
@@ -95,10 +143,17 @@ impl SecurityReport {
                 "Review the raw AI analysis for detailed findings.".to_string(),
                 "Consider re-running the analysis if results are incomplete.".to_string(),
             ],
-            confidence_score: 0.5,
+            confidence_score: 0.0,
             alerts: vec![
                 "Analysis response could not be fully parsed. Review raw output.".to_string(),
             ],
+            line_verdicts: Vec::new(),
+            parse_failed: true,
+            raw_response: Some(raw_response.to_string()),
+            model: None,
+            mode: None,
+            lines_sent: 0,
+            batch_size: 0,
         }
     }
 
@@ -272,8 +327,12 @@ mod tests {
         let report = SecurityReport::fallback("Some analysis text here", 100);
 
         assert_eq!(report.total_logs_analyzed, 100);
-        assert_eq!(report.threat_level, "Medium");
-        assert_eq!(report.confidence_score, 0.5);
+        assert_eq!(report.threat_level, "Unknown");
+        assert!(report.parse_failed);
+        assert_eq!(
+            report.raw_response.as_deref(),
+            Some("Some analysis text here")
+        );
         assert!(report.summary.contains("Some analysis"));
     }
 
@@ -332,6 +391,16 @@ mod tests {
         assert_eq!(report.threat_level, "Low");
         assert!(report.attack_chains.is_empty());
         assert_eq!(report.confidence_score, 0.75); // default value
+    }
+
+    #[test]
+    fn test_deserialize_line_verdicts() {
+        let json = r#"{"summary":"s","threat_level":"High","total_logs_analyzed":2,"suspicious_logs_count":1,
+            "line_verdicts":[{"id":"L001","malicious":true,"attack_type":"SQL Injection","reason":"r"},{"id":"L002","malicious":false}]}"#;
+        let report: SecurityReport = serde_json::from_str(json).unwrap();
+        assert_eq!(report.line_verdicts.len(), 2);
+        assert!(!report.line_verdicts[1].malicious);
+        assert!(!report.parse_failed);
     }
 
     #[test]

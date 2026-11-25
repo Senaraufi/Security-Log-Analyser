@@ -34,3 +34,7 @@ graphify-out/
 # Temporary files
 tmp/
 temp/
+
+# bench outputs
+.bench_cache/
+bench_out/
