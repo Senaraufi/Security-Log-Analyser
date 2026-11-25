@@ -32,8 +32,10 @@ pub struct ApacheLog {
 impl ApacheLog {
     /// Analyze log entry for security threats
     pub fn analyze(&mut self) {
+        let path = url_decode(&self.path).to_lowercase();
+
         // SQL Injection patterns
-        if self.is_sql_injection() {
+        if Self::is_sql_injection(&path) {
             self.is_suspicious = true;
             self.threat_type = Some("SQL Injection".to_string());
             self.severity = Some("Critical".to_string());
@@ -41,7 +43,7 @@ impl ApacheLog {
         }
 
         // Path Traversal
-        if self.is_path_traversal() {
+        if Self::is_path_traversal(&path) {
             self.is_suspicious = true;
             self.threat_type = Some("Path Traversal".to_string());
             self.severity = Some("High".to_string());
@@ -49,7 +51,7 @@ impl ApacheLog {
         }
 
         // XSS attempts
-        if self.is_xss() {
+        if Self::is_xss(&path) {
             self.is_suspicious = true;
             self.threat_type = Some("Cross-Site Scripting".to_string());
             self.severity = Some("High".to_string());
@@ -57,18 +59,10 @@ impl ApacheLog {
         }
 
         // Command Injection
-        if self.is_command_injection() {
+        if Self::is_command_injection(&path) {
             self.is_suspicious = true;
             self.threat_type = Some("Command Injection".to_string());
             self.severity = Some("Critical".to_string());
-            return;
-        }
-
-        // Suspicious status codes
-        if self.status == 401 || self.status == 403 {
-            self.is_suspicious = true;
-            self.threat_type = Some("Unauthorized Access Attempt".to_string());
-            self.severity = Some("Medium".to_string());
             return;
         }
 
@@ -80,51 +74,41 @@ impl ApacheLog {
         }
     }
 
-    fn is_sql_injection(&self) -> bool {
-        let path_lower = self.path.to_lowercase();
-        path_lower.contains("union") && path_lower.contains("select")
-            || path_lower.contains("or 1=1")
-            || path_lower.contains("or '1'='1")
-            || path_lower.contains("'; drop table")
-            || path_lower.contains("' or '1'='1")
+    fn is_sql_injection(path: &str) -> bool {
+        path.contains("union") && path.contains("select")
+            || path.contains("or 1=1")
+            || path.contains("or '1'='1")
+            || path.contains("'; drop table")
+            || path.contains("' or '1'='1")
     }
 
-    fn is_path_traversal(&self) -> bool {
-        self.path.contains("../")
-            || self.path.contains("..\\")
-            || self.path.contains("%2e%2e%2f")
-            || self.path.contains("%2e%2e/")
+    fn is_path_traversal(path: &str) -> bool {
+        path.contains("../") || path.contains("..\\")
     }
 
-    fn is_xss(&self) -> bool {
-        let path_lower = self.path.to_lowercase();
-        path_lower.contains("<script")
-            || path_lower.contains("javascript:")
-            || path_lower.contains("onerror=")
-            || path_lower.contains("onload=")
+    fn is_xss(path: &str) -> bool {
+        path.contains("<script")
+            || path.contains("javascript:")
+            || path.contains("onerror=")
+            || path.contains("onload=")
     }
 
-    fn is_command_injection(&self) -> bool {
-        let path_lower = self.path.to_lowercase();
-
+    fn is_command_injection(path: &str) -> bool {
         // A shell metacharacter alone is not enough: legitimate URLs often
         // contain ';' or '|' in query strings (e.g. matrix params, filters).
         // Require a chaining/substitution metacharacter *and* an actual shell
         // command token to flag a genuine injection payload.
-        let has_metachar = path_lower.contains(';')
-            || path_lower.contains('|')
-            || path_lower.contains("&&")
-            || path_lower.contains('`')
-            || path_lower.contains("$(")
-            || path_lower.contains("%3b") // ; encoded
-            || path_lower.contains("%7c") // | encoded
-            || path_lower.contains("%60"); // ` encoded
+        let has_metachar = path.contains(';')
+            || path.contains('|')
+            || path.contains("&&")
+            || path.contains('`')
+            || path.contains("$(");
 
         if !has_metachar {
             return false;
         }
 
-        const COMMAND_TOKENS: [&str; 16] = [
+        const COMMAND_TOKENS: [&str; 13] = [
             "whoami",
             "netcat",
             "wget",
@@ -133,19 +117,14 @@ impl ApacheLog {
             "/bin/",
             "/etc/",
             "cat ",
-            "cat%20",
             "ls ",
-            "ls%20",
             "rm ",
-            "rm%20",
             "chmod",
             "cmd.exe",
             "powershell",
         ];
 
-        COMMAND_TOKENS
-            .iter()
-            .any(|token| path_lower.contains(token))
+        COMMAND_TOKENS.iter().any(|token| path.contains(token))
     }
 
     fn is_scanner(&self) -> bool {
@@ -158,6 +137,37 @@ impl ApacheLog {
             || ua_lower.contains("burp")
             || ua_lower.contains("acunetix")
     }
+}
+
+fn url_decode(s: &str) -> String {
+    fn hex_value(byte: u8) -> Option<u8> {
+        match byte {
+            b'0'..=b'9' => Some(byte - b'0'),
+            b'a'..=b'f' => Some(byte - b'a' + 10),
+            b'A'..=b'F' => Some(byte - b'A' + 10),
+            _ => None,
+        }
+    }
+
+    let bytes = s.as_bytes();
+    let mut decoded = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+
+    while i < bytes.len() {
+        if bytes[i] == b'%'
+            && i + 2 < bytes.len()
+            && let (Some(high), Some(low)) = (hex_value(bytes[i + 1]), hex_value(bytes[i + 2]))
+        {
+            decoded.push(high * 16 + low);
+            i += 3;
+            continue;
+        }
+
+        decoded.push(if bytes[i] == b'+' { b' ' } else { bytes[i] });
+        i += 1;
+    }
+
+    String::from_utf8_lossy(&decoded).into_owned()
 }
 
 /// Parse IP address
@@ -214,7 +224,23 @@ fn parse_size(input: &str) -> IResult<&str, u64> {
 
 /// Parse quoted string (referer or user-agent)
 fn parse_quoted_string(input: &str) -> IResult<&str, String> {
-    delimited(char('"'), take_until("\""), char('"'))(input).map(|(i, s)| (i, s.to_string()))
+    let (input, _) = char('"')(input)?;
+    let mut escaped = false;
+
+    for (index, c) in input.char_indices() {
+        if escaped {
+            escaped = false;
+        } else if c == '\\' {
+            escaped = true;
+        } else if c == '"' {
+            return Ok((&input[index + 1..], input[..index].to_string()));
+        }
+    }
+
+    Err(nom::Err::Error(nom::error::Error::new(
+        input,
+        nom::error::ErrorKind::TakeUntil,
+    )))
 }
 
 /// Parse Apache Combined Log Format
@@ -354,5 +380,60 @@ mod tests {
         let log = result.unwrap();
         assert!(!log.is_suspicious);
         assert_eq!(log.threat_type, None);
+    }
+
+    #[test]
+    fn test_parse_url_encoded_sql_injection() {
+        let line = r#"10.0.0.1 - - [15/Dec/2025:17:19:00 +0000] "GET /api/users?id=1%27%20OR%201%3D1 HTTP/1.1" 200 0 "-" "Mozilla/5.0""#;
+        let log = parse_apache_combined(line).expect("should parse");
+
+        assert_eq!(log.path, "/api/users?id=1%27%20OR%201%3D1");
+        assert_eq!(log.threat_type.as_deref(), Some("SQL Injection"));
+    }
+
+    #[test]
+    fn test_parse_plus_encoded_sql_injection() {
+        let line = r#"10.0.0.1 - - [15/Dec/2025:17:19:00 +0000] "GET /api/users?id=1'+or+'1'='1 HTTP/1.1" 200 0 "-" "Mozilla/5.0""#;
+        let log = parse_apache_combined(line).expect("should parse");
+
+        assert_eq!(log.threat_type.as_deref(), Some("SQL Injection"));
+    }
+
+    #[test]
+    fn test_parse_uppercase_url_encoded_path_traversal() {
+        let line = r#"172.16.0.1 - - [15/Dec/2025:17:19:00 +0000] "GET /%2E%2E%2F%2E%2E%2Fetc/passwd HTTP/1.1" 200 0 "-" "Mozilla/5.0""#;
+        let log = parse_apache_combined(line).expect("should parse");
+
+        assert_eq!(log.path, "/%2E%2E%2F%2E%2E%2Fetc/passwd");
+        assert_eq!(log.threat_type.as_deref(), Some("Path Traversal"));
+    }
+
+    #[test]
+    fn test_unauthorized_status_is_not_suspicious_by_itself() {
+        let line = r#"192.168.1.1 - - [15/Dec/2025:17:19:00 +0000] "GET /admin HTTP/1.1" 401 0 "-" "Mozilla/5.0""#;
+        let log = parse_apache_combined(line).expect("should parse");
+
+        assert!(!log.is_suspicious);
+    }
+
+    #[test]
+    fn test_parse_escaped_quotes_in_user_agent() {
+        let line = r#"192.168.1.1 - - [15/Dec/2025:17:19:00 +0000] "GET /index.html HTTP/1.1" 200 1234 "-" "Mozilla \"ignore previous\" end""#;
+        let log = parse_apache_combined(line).expect("should parse");
+
+        assert!(log.user_agent.ends_with("end"));
+    }
+
+    #[test]
+    fn test_parse_empty_user_agent() {
+        let line = r#"192.168.1.1 - - [15/Dec/2025:17:19:00 +0000] "GET /index.html HTTP/1.1" 200 1234 "-" """#;
+        let log = parse_apache_combined(line).expect("should parse");
+
+        assert!(log.user_agent.is_empty());
+    }
+
+    #[test]
+    fn test_url_decode_leaves_malformed_sequences_unchanged() {
+        assert_eq!(url_decode("%zz%"), "%zz%");
     }
 }

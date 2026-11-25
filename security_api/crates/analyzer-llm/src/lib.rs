@@ -35,6 +35,8 @@
 //! | `LLM_MODEL` | Model name (provider-specific) | Provider default |
 //! | `LLM_TEMPERATURE` | Generation temperature (0.0-1.0) | 0.3 |
 //! | `LLM_MAX_TOKENS` | Maximum response tokens | 4096 |
+//! | `LLM_ANALYSIS_MODE` | Analysis mode: ai_decides, rules_first, spotlight | ai_decides |
+//! | `LLM_MAX_LOGS` | Maximum logs to analyze | 100 |
 //! | `OPENAI_API_KEY` | OpenAI API key | - |
 //! | `ANTHROPIC_API_KEY` | Anthropic API key | - |
 //! | `GROQ_API_KEY` | Groq API key | - |
@@ -57,7 +59,7 @@
 //!
 //! # Or use Groq (fast inference)
 //! # LLM_PROVIDER=groq
-//! # LLM_MODEL=llama-3.1-70b-versatile
+//! # LLM_MODEL=openai/gpt-oss-120b
 //! # GROQ_API_KEY=your-api-key-here
 //! ```
 
@@ -70,16 +72,16 @@ pub mod report;
 
 // Re-export main types for convenient access
 pub use analyzer::LlmAnalyzer;
-pub use config::{ConfigError, LlmConfig, LlmProvider};
+pub use config::{AnalysisMode, ConfigError, LlmConfig, LlmProvider};
 pub use error::AnalyzerError;
 pub use report::{
-    ActionItem, IpAnalysisReport, RecommendationsReport, SecurityReport, TriageReport,
+    ActionItem, IpAnalysisReport, LineVerdict, RecommendationsReport, SecurityReport, TriageReport,
 };
 
 /// Prelude module for convenient imports
 pub mod prelude {
     pub use crate::analyzer::LlmAnalyzer;
-    pub use crate::config::{LlmConfig, LlmProvider};
+    pub use crate::config::{AnalysisMode, LlmConfig, LlmProvider};
     pub use crate::error::AnalyzerError;
     pub use crate::report::SecurityReport;
 }

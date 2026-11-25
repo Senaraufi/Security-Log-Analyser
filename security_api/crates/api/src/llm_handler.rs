@@ -267,7 +267,7 @@ pub async fn analyze_logs_with_llm(mut multipart: Multipart) -> impl IntoRespons
 /// Returns `(error_message, suggestion)` on failure so the caller can degrade
 /// gracefully to the standard analysis.
 fn build_override_analyzer(provider_name: &str) -> Result<LlmAnalyzer, (String, String)> {
-    use security_analyzer_llm::{LlmConfig, LlmProvider};
+    use security_analyzer_llm::{AnalysisMode, LlmConfig, LlmProvider};
 
     let provider = LlmProvider::from_name(provider_name).ok_or_else(|| {
         (
@@ -276,12 +276,7 @@ fn build_override_analyzer(provider_name: &str) -> Result<LlmAnalyzer, (String, 
         )
     })?;
 
-    let model = match provider {
-        LlmProvider::Groq => "openai/gpt-oss-120b",
-        LlmProvider::Gemini => "gemini-1.5-flash",
-        LlmProvider::OpenAI => "gpt-4o",
-        LlmProvider::Anthropic => "claude-sonnet-4-20250514",
-    };
+    let model = provider.default_model();
 
     let api_key = std::env::var(provider.api_key_env_var())
         .ok()
@@ -297,9 +292,17 @@ fn build_override_analyzer(provider_name: &str) -> Result<LlmAnalyzer, (String, 
         })?;
 
     println!("[INFO] User selected provider: {}", provider_name);
+    let mode = AnalysisMode::from_env().map_err(|error| {
+        (
+            error.to_string(),
+            "Set LLM_ANALYSIS_MODE to ai_decides, rules_first, or spotlight.".to_string(),
+        )
+    })?;
     // Reasoning models (e.g. gpt-oss) spend part of this budget on hidden
     // reasoning tokens, so a small limit truncates the JSON report.
-    let config = LlmConfig::new(provider, model, api_key).with_max_tokens(16384);
+    let config = LlmConfig::new(provider, model, api_key)
+        .with_max_tokens(16384)
+        .with_mode(mode);
     Ok(LlmAnalyzer::with_config(config))
 }
 

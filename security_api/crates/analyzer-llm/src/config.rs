@@ -9,6 +9,8 @@
 //! - `LLM_MODEL`: The model name to use (provider-specific)
 //! - `LLM_TEMPERATURE`: Temperature for generation (0.0 - 1.0, default: 0.3)
 //! - `LLM_MAX_TOKENS`: Maximum tokens in response (default: 4096)
+//! - `LLM_ANALYSIS_MODE`: Analysis mode (default: ai_decides)
+//! - `LLM_MAX_LOGS`: Maximum logs to analyze (default: 100)
 //!
 //! Provider-specific API keys:
 //! - `OPENAI_API_KEY`: OpenAI API key
@@ -27,6 +29,38 @@ pub enum LlmProvider {
     Anthropic,
     Groq,
     Gemini,
+}
+
+/// How the analyzer should combine model judgments and rule detections.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum AnalysisMode {
+    #[default]
+    AiDecides,
+    RulesFirst,
+    Spotlight,
+}
+
+impl AnalysisMode {
+    /// Parse an analysis mode from its name (case-insensitive).
+    pub fn from_name(s: &str) -> Option<Self> {
+        match s.to_lowercase().as_str() {
+            "ai_decides" => Some(Self::AiDecides),
+            "rules_first" => Some(Self::RulesFirst),
+            "spotlight" => Some(Self::Spotlight),
+            _ => None,
+        }
+    }
+
+    /// Load the analysis mode from the environment.
+    pub fn from_env() -> Result<Self, ConfigError> {
+        match env::var("LLM_ANALYSIS_MODE") {
+            Ok(mode) => Self::from_name(&mode).ok_or(ConfigError::InvalidMode(mode)),
+            Err(env::VarError::NotPresent) => Ok(Self::default()),
+            Err(env::VarError::NotUnicode(mode)) => Err(ConfigError::InvalidMode(
+                mode.to_string_lossy().into_owned(),
+            )),
+        }
+    }
 }
 
 impl fmt::Display for LlmProvider {
@@ -57,8 +91,8 @@ impl LlmProvider {
         match self {
             LlmProvider::OpenAI => "gpt-4o",
             LlmProvider::Anthropic => "claude-sonnet-4-20250514",
-            LlmProvider::Groq => "llama-3.1-70b-versatile",
-            LlmProvider::Gemini => "gemini-1.5-flash",
+            LlmProvider::Groq => "openai/gpt-oss-120b",
+            LlmProvider::Gemini => "gemini-2.5-flash",
         }
     }
 
@@ -86,6 +120,10 @@ pub struct LlmConfig {
     pub temperature: f32,
     /// Maximum tokens in response
     pub max_tokens: u32,
+    /// How model judgments and rule detections are combined
+    pub mode: AnalysisMode,
+    /// Maximum number of logs to include in an analysis
+    pub max_logs: usize,
 }
 
 impl LlmConfig {
@@ -97,6 +135,8 @@ impl LlmConfig {
     /// - `LLM_MODEL`: Model name (default: provider-specific)
     /// - `LLM_TEMPERATURE`: Temperature 0.0-1.0 (default: 0.3)
     /// - `LLM_MAX_TOKENS`: Max response tokens (default: 4096)
+    /// - `LLM_ANALYSIS_MODE`: Analysis mode (default: ai_decides)
+    /// - `LLM_MAX_LOGS`: Max logs to analyze (default: 100)
     /// - Provider-specific API key environment variable
     ///
     /// # Returns
@@ -142,6 +182,11 @@ impl LlmConfig {
             .ok()
             .and_then(|t| t.parse::<u32>().ok())
             .unwrap_or(4096);
+        let mode = AnalysisMode::from_env()?;
+        let max_logs = env::var("LLM_MAX_LOGS")
+            .ok()
+            .and_then(|t| t.parse::<usize>().ok())
+            .unwrap_or(100);
 
         Ok(Self {
             provider,
@@ -149,6 +194,8 @@ impl LlmConfig {
             api_key,
             temperature,
             max_tokens,
+            mode,
+            max_logs,
         })
     }
 
@@ -169,6 +216,8 @@ impl LlmConfig {
             api_key: api_key.into(),
             temperature: 0.3,
             max_tokens: 4096,
+            mode: AnalysisMode::default(),
+            max_logs: 100,
         }
     }
 
@@ -183,6 +232,18 @@ impl LlmConfig {
         self.max_tokens = max_tokens;
         self
     }
+
+    /// Set the analysis mode
+    pub fn with_mode(mut self, mode: AnalysisMode) -> Self {
+        self.mode = mode;
+        self
+    }
+
+    /// Set the maximum number of logs to analyze
+    pub fn with_max_logs(mut self, max_logs: usize) -> Self {
+        self.max_logs = max_logs;
+        self
+    }
 }
 
 /// Configuration errors
@@ -190,6 +251,8 @@ impl LlmConfig {
 pub enum ConfigError {
     /// Invalid provider name specified
     InvalidProvider(String),
+    /// Invalid analysis mode specified
+    InvalidMode(String),
     /// API key not found for provider
     MissingApiKey {
         provider: LlmProvider,
@@ -204,6 +267,13 @@ impl fmt::Display for ConfigError {
                 write!(
                     f,
                     "Invalid LLM provider '{}'. Valid options: openai, anthropic, groq, gemini",
+                    name
+                )
+            }
+            ConfigError::InvalidMode(name) => {
+                write!(
+                    f,
+                    "Invalid LLM analysis mode '{}'. Valid options: ai_decides, rules_first, spotlight",
                     name
                 )
             }
@@ -249,7 +319,25 @@ mod tests {
             LlmProvider::Anthropic.default_model(),
             "claude-sonnet-4-20250514"
         );
-        assert_eq!(LlmProvider::Groq.default_model(), "llama-3.1-70b-versatile");
+        assert_eq!(LlmProvider::Groq.default_model(), "openai/gpt-oss-120b");
+        assert_eq!(LlmProvider::Gemini.default_model(), "gemini-2.5-flash");
+    }
+
+    #[test]
+    fn test_analysis_mode_parsing() {
+        assert_eq!(
+            AnalysisMode::from_name("ai_decides"),
+            Some(AnalysisMode::AiDecides)
+        );
+        assert_eq!(
+            AnalysisMode::from_name("RULES_FIRST"),
+            Some(AnalysisMode::RulesFirst)
+        );
+        assert_eq!(
+            AnalysisMode::from_name("Spotlight"),
+            Some(AnalysisMode::Spotlight)
+        );
+        assert_eq!(AnalysisMode::from_name("invalid"), None);
     }
 
     #[test]
@@ -266,13 +354,17 @@ mod tests {
     fn test_config_builder() {
         let config = LlmConfig::new(LlmProvider::OpenAI, "gpt-4", "test-key")
             .with_temperature(0.7)
-            .with_max_tokens(2000);
+            .with_max_tokens(2000)
+            .with_mode(AnalysisMode::Spotlight)
+            .with_max_logs(25);
 
         assert_eq!(config.provider, LlmProvider::OpenAI);
         assert_eq!(config.model, "gpt-4");
         assert_eq!(config.api_key, "test-key");
         assert_eq!(config.temperature, 0.7);
         assert_eq!(config.max_tokens, 2000);
+        assert_eq!(config.mode, AnalysisMode::Spotlight);
+        assert_eq!(config.max_logs, 25);
     }
 
     #[test]

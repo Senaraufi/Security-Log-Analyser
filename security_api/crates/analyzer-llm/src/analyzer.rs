@@ -4,7 +4,7 @@
 //! to interact with multiple LLM providers (OpenAI, Anthropic, Groq, etc.)
 //! for intelligent security log analysis.
 
-use crate::config::{LlmConfig, LlmProvider};
+use crate::config::{AnalysisMode, LlmConfig, LlmProvider};
 use crate::error::AnalyzerError;
 use crate::prompts::{build_analysis_prompt, SYSTEM_PROMPT};
 use crate::report::SecurityReport;
@@ -12,9 +12,6 @@ use security_common::parsers::ApacheLog;
 
 use rig::completion::Prompt;
 use rig::providers::{anthropic, openai};
-
-/// Maximum number of logs to include in a single analysis prompt
-const MAX_LOGS_PER_ANALYSIS: usize = 100;
 
 /// Multi-provider LLM analyzer for security log analysis
 pub struct LlmAnalyzer {
@@ -96,7 +93,7 @@ impl LlmAnalyzer {
         }
 
         // Build the analysis prompt
-        let prompt = build_analysis_prompt(logs, MAX_LOGS_PER_ANALYSIS);
+        let prompt = build_analysis_prompt(logs, self.config.max_logs, self.config.mode);
 
         // Call the appropriate provider
         let response = match self.config.provider {
@@ -107,7 +104,17 @@ impl LlmAnalyzer {
         };
 
         // Parse the response into a SecurityReport
-        self.parse_response(&response, logs.len())
+        let mut report = self.parse_response(&response, logs.len())?;
+        report.raw_response = response;
+        if self.config.mode == AnalysisMode::RulesFirst {
+            report.suspicious_logs_count = logs
+                .iter()
+                .take(self.config.max_logs)
+                .filter(|log| log.is_suspicious)
+                .count();
+        }
+
+        Ok(report)
     }
 
     /// Call OpenAI API using rig-core
@@ -195,9 +202,14 @@ impl LlmAnalyzer {
 
         // Build request body
         let request_body = serde_json::json!({
+            "systemInstruction": {
+                "parts": [{
+                    "text": SYSTEM_PROMPT
+                }]
+            },
             "contents": [{
                 "parts": [{
-                    "text": format!("{}\n\n{}", SYSTEM_PROMPT, prompt)
+                    "text": prompt
                 }]
             }],
             "generationConfig": {
@@ -367,5 +379,26 @@ mod tests {
 
         assert_eq!(*analyzer.provider(), LlmProvider::Anthropic);
         assert_eq!(analyzer.model(), "claude-3-opus");
+    }
+
+    #[test]
+    fn test_parse_response_garbage_marks_parse_failed() {
+        let analyzer = LlmAnalyzer::default();
+        let report = analyzer.parse_response("not JSON", 1).unwrap();
+
+        assert!(report.parse_failed);
+    }
+
+    #[test]
+    fn test_parse_response_valid_json_does_not_mark_parse_failed() {
+        let analyzer = LlmAnalyzer::default();
+        let report = analyzer
+            .parse_response(
+                r#"{"summary":"Clean","threat_level":"Low","total_logs_analyzed":1,"suspicious_logs_count":0}"#,
+                1,
+            )
+            .unwrap();
+
+        assert!(!report.parse_failed);
     }
 }

@@ -18,6 +18,8 @@ This document describes how to configure the multi-provider LLM analyzer for sec
 | `LLM_MODEL` | The model name | Provider default | See provider-specific models below |
 | `LLM_TEMPERATURE` | Generation temperature | `0.3` | `0.0` - `1.0` |
 | `LLM_MAX_TOKENS` | Maximum response tokens | `4096` | Any positive integer |
+| `LLM_ANALYSIS_MODE` | Analysis mode | `ai_decides` | `ai_decides`, `rules_first`, `spotlight` |
+| `LLM_MAX_LOGS` | Maximum logs to analyze | `100` | Any positive integer |
 
 ### API Keys
 
@@ -59,7 +61,7 @@ ANTHROPIC_API_KEY=sk-ant-your-anthropic-api-key-here
 ```env
 # Groq Configuration (fast, cost-effective)
 LLM_PROVIDER=groq
-LLM_MODEL=llama-3.1-70b-versatile
+LLM_MODEL=openai/gpt-oss-120b
 LLM_TEMPERATURE=0.3
 LLM_MAX_TOKENS=4096
 GROQ_API_KEY=gsk_your-groq-api-key-here
@@ -70,7 +72,7 @@ GROQ_API_KEY=gsk_your-groq-api-key-here
 ```env
 # Gemini Configuration
 LLM_PROVIDER=gemini
-LLM_MODEL=gemini-1.5-flash
+LLM_MODEL=gemini-2.5-flash
 LLM_TEMPERATURE=0.3
 LLM_MAX_TOKENS=4096
 GEMINI_API_KEY=your-gemini-api-key-here
@@ -98,7 +100,7 @@ GEMINI_API_KEY=your-gemini-api-key-here
 
 | Model | Description | Best For |
 |-------|-------------|----------|
-| `llama-3.1-70b-versatile` | Llama 3.1 70B | Best accuracy (default) |
+| `openai/gpt-oss-120b` | GPT OSS 120B | Best accuracy (default) |
 | `llama-3.1-8b-instant` | Llama 3.1 8B | Ultra-fast responses |
 | `mixtral-8x7b-32768` | Mixtral 8x7B | Large context |
 
@@ -106,7 +108,7 @@ GEMINI_API_KEY=your-gemini-api-key-here
 
 | Model | Description | Best For |
 |-------|-------------|----------|
-| `gemini-1.5-flash` | Gemini 1.5 Flash | Fast, cost-effective (default) |
+| `gemini-2.5-flash` | Gemini 2.5 Flash | Fast, cost-effective (default) |
 | `gemini-1.5-pro` | Gemini 1.5 Pro | Best accuracy, larger context |
 | `gemini-2.0-flash-exp` | Gemini 2.0 Flash (Experimental) | Latest experimental features |
 
