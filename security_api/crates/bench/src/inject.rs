@@ -124,6 +124,7 @@ pub fn generate(rows: &[Row], opts: &Options) -> Vec<Row> {
                         attack_type: row.attack_type.clone(),
                         injected: true,
                         variant: Some(variant),
+                        source_id: Some(row.id.clone()),
                     });
                 }
             }
@@ -154,6 +155,7 @@ mod tests {
             attack_type: Some("SQL Injection".into()),
             injected: false,
             variant: None,
+            source_id: None,
         }
     }
 

@@ -6,6 +6,7 @@
 
 mod dataset;
 mod inject;
+mod plan;
 mod run;
 mod score;
 
@@ -43,8 +44,16 @@ enum Cmd {
     },
     /// Run every combination of mode, model and repeat over a dataset
     Run {
+        /// Clean labelled dataset (benign + attack lines)
         #[arg(long)]
         dataset: PathBuf,
+        /// Injected rows from `bench inject` (without --with-originals). Rows with
+        /// injected=true in --dataset are treated the same way.
+        #[arg(long)]
+        injected: Option<PathBuf>,
+        /// Seed for the batch shuffle (recorded in every result)
+        #[arg(long, default_value_t = 42)]
+        seed: u64,
         #[arg(long, default_value = "bench_out")]
         out: PathBuf,
         /// Comma list: ai_decides, rules_first, spotlight, rules_only (no model call)
@@ -60,7 +69,7 @@ enum Cmd {
         batch_size: usize,
         #[arg(long, default_value_t = 0.0)]
         temperature: f32,
-        #[arg(long, default_value_t = 4096)]
+        #[arg(long, default_value_t = 16384)]
         max_tokens: u32,
         #[arg(long, default_value = ".bench_cache")]
         cache_dir: PathBuf,
@@ -128,6 +137,8 @@ async fn real_main() -> Result<(), String> {
         }
         Cmd::Run {
             dataset,
+            injected,
+            seed,
             out,
             modes,
             models,
@@ -147,12 +158,17 @@ async fn real_main() -> Result<(), String> {
             if models.is_empty() && modes.iter().any(|m| m != run::RULES_ONLY) {
                 return Err("--models is required unless --modes is rules_only".into());
             }
-            let rows = dataset::read_rows(&dataset)?;
+            let mut rows = dataset::read_rows(&dataset)?;
+            if let Some(path) = &injected {
+                rows.extend(dataset::read_rows(path)?);
+            }
+            dataset::ensure_unique_ids(&rows)?;
             let cfg = run::RunConfig {
                 modes,
                 models,
                 repeats: repeats.max(1),
                 batch_size: batch_size.max(1),
+                seed,
                 temperature,
                 max_tokens,
                 cache_dir,

@@ -442,9 +442,10 @@ fn classify_api_error(provider: &str, message: String) -> AnalyzerError {
     }
 }
 
-/// `rules_first`: the rule verdicts are final. They replace whatever the model
-/// said per line, set the suspicious count, and drive the threat level.
+/// `rules_first`: the rule verdicts are final. They become `line_verdicts` (the
+/// model's own verdicts move to `ai_line_verdicts`), set the suspicious count, and drive the threat level.
 fn apply_rule_verdicts(report: &mut SecurityReport, rules: &[LineVerdict], total_logs: usize) {
+    report.ai_line_verdicts = std::mem::take(&mut report.line_verdicts);
     report.line_verdicts = rules.to_vec();
     report.suspicious_logs_count = rules.iter().filter(|v| v.malicious).count();
     report.total_logs_analyzed = total_logs;
@@ -561,7 +562,7 @@ mod tests {
     }
 
     #[test]
-    fn test_rules_first_overrides_model_verdicts() {
+    fn test_rules_first_keeps_model_verdicts_separate() {
         let config =
             LlmConfig::new(LlmProvider::OpenAI, "m", "k").with_mode(AnalysisMode::RulesFirst);
         let analyzer = LlmAnalyzer::with_config(config);
@@ -574,6 +575,8 @@ mod tests {
         assert_eq!(report.threat_level, "Critical");
         assert!(report.line_verdicts[0].malicious);
         assert_eq!(report.line_verdicts.len(), 2);
+        assert_eq!(report.ai_line_verdicts.len(), 1);
+        assert!(!report.ai_line_verdicts[0].malicious);
     }
 
     #[test]

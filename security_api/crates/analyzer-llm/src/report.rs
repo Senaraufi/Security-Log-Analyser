@@ -49,6 +49,11 @@ pub struct SecurityReport {
     #[serde(default)]
     pub line_verdicts: Vec<LineVerdict>,
 
+    /// `rules_first` only: the AI's own per-line verdicts, kept separate from
+    /// `line_verdicts` (which hold the rules' final answers)
+    #[serde(default)]
+    pub ai_line_verdicts: Vec<LineVerdict>,
+
     /// True when the model output could not be read as a report. This is its
     /// own outcome and must not be scored as a real "Medium" verdict.
     #[serde(default)]
@@ -106,6 +111,7 @@ impl SecurityReport {
             confidence_score: 1.0,
             alerts: Vec::new(),
             line_verdicts: Vec::new(),
+            ai_line_verdicts: Vec::new(),
             parse_failed: false,
             raw_response: None,
             model: None,
@@ -148,6 +154,7 @@ impl SecurityReport {
                 "Analysis response could not be fully parsed. Review raw output.".to_string(),
             ],
             line_verdicts: Vec::new(),
+            ai_line_verdicts: Vec::new(),
             parse_failed: true,
             raw_response: Some(raw_response.to_string()),
             model: None,

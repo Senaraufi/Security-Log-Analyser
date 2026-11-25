@@ -2,6 +2,7 @@
 //! labelled dataset, with a response cache and rate-limit retries.
 
 use crate::dataset::{write_jsonl, Row};
+use crate::plan::{build_batches, PlannedRow};
 use security_analyzer_llm::{
     AnalysisMode, AnalyzerError, CallRecord, LlmAnalyzer, LlmConfig, LlmProvider, PreparedCall,
 };
@@ -23,7 +24,10 @@ pub struct RowResult {
     pub repeat: usize,
     pub temperature: f32,
     pub batch_size: usize,
+    pub seed: u64,
     pub id: String,
+    /// control (clean batch) | injected (the one injected line) | bystander (clean line in an injected batch)
+    pub role: String,
     pub label_attack: bool,
     pub attack_type: Option<String>,
     pub injected: bool,
@@ -34,6 +38,8 @@ pub struct RowResult {
     pub predicted_attack_type: Option<String>,
     pub reason: Option<String>,
     pub rules_malicious: Option<bool>,
+    /// `rules_first` only: the AI's own verdict for the line (kept apart from the rules' answer)
+    pub ai_malicious: Option<bool>,
     /// The model output was unreadable (rules_first still has final verdicts)
     pub explanation_parse_failed: bool,
     pub batch_id: String,
@@ -55,6 +61,7 @@ pub struct RunConfig {
     pub models: Vec<(LlmProvider, String)>,
     pub repeats: usize,
     pub batch_size: usize,
+    pub seed: u64,
     pub temperature: f32,
     pub max_tokens: u32,
     pub cache_dir: PathBuf,
@@ -195,6 +202,8 @@ async fn call_cached(
     }
 }
 
+type ParsedBatch = Vec<(PlannedRow, Option<ApacheLog>)>;
+
 struct Ctx<'a> {
     mode: &'a str,
     provider: String,
@@ -202,16 +211,18 @@ struct Ctx<'a> {
     repeat: usize,
     temperature: f32,
     batch_size: usize,
+    seed: u64,
 }
 
 impl Ctx<'_> {
     fn row_result(
         &self,
-        row: &Row,
+        planned: &PlannedRow,
         batch_id: &str,
         log: Option<&ApacheLog>,
         outcome: &str,
     ) -> RowResult {
+        let row = &planned.row;
         RowResult {
             mode: self.mode.to_string(),
             provider: self.provider.clone(),
@@ -219,16 +230,22 @@ impl Ctx<'_> {
             repeat: self.repeat,
             temperature: self.temperature,
             batch_size: self.batch_size,
+            seed: self.seed,
             id: row.id.clone(),
+            role: planned.role.to_string(),
             label_attack: row.is_attack(),
             attack_type: row.attack_type.clone(),
             injected: row.injected,
-            variant: row.variant.clone(),
+            variant: planned
+                .batch_variant
+                .clone()
+                .or_else(|| row.variant.clone()),
             outcome: outcome.to_string(),
             predicted_malicious: None,
             predicted_attack_type: None,
             reason: None,
             rules_malicious: log.map(|l| l.is_suspicious),
+            ai_malicious: None,
             explanation_parse_failed: false,
             batch_id: batch_id.to_string(),
             cached: false,
@@ -242,14 +259,25 @@ pub async fn run(rows: Vec<Row>, cfg: &RunConfig) -> Result<Vec<RowResult>, Stri
     std::fs::create_dir_all(&cfg.cache_dir).map_err(|e| e.to_string())?;
     std::fs::create_dir_all(&cfg.out_dir).map_err(|e| e.to_string())?;
 
-    let parsed: Vec<(Row, Option<ApacheLog>)> = rows
+    let batches: Vec<(String, ParsedBatch)> = build_batches(rows, cfg.batch_size, cfg.seed)
         .into_iter()
-        .map(|r| {
-            let log = parse_apache_combined(&r.line).ok();
-            (r, log)
+        .map(|b| {
+            let rows = b
+                .rows
+                .into_iter()
+                .map(|p| {
+                    let log = parse_apache_combined(&p.row.line).ok();
+                    (p, log)
+                })
+                .collect();
+            (b.id, rows)
         })
         .collect();
-    let unparsed = parsed.iter().filter(|(_, l)| l.is_none()).count();
+    let unparsed = batches
+        .iter()
+        .flat_map(|(_, r)| r)
+        .filter(|(_, l)| l.is_none())
+        .count();
     if unparsed > 0 {
         eprintln!("warning: {unparsed} dataset line(s) are not valid Apache combined format and are skipped (outcome=unparsed_line)");
     }
@@ -295,13 +323,14 @@ pub async fn run(rows: Vec<Row>, cfg: &RunConfig) -> Result<Vec<RowResult>, Stri
                     repeat,
                     temperature: cfg.temperature,
                     batch_size: cfg.batch_size,
+                    seed: cfg.seed,
                 };
                 eprintln!(
                     "run: mode={mode} model={}:{model} repeat={repeat}",
                     ctx.provider
                 );
-                for (bi, chunk) in parsed.chunks(cfg.batch_size.max(1)).enumerate() {
-                    let batch_id = format!("{mode}-{}-{model}-r{repeat}-b{bi}", ctx.provider);
+                for (bid, chunk) in &batches {
+                    let batch_id = format!("{mode}-{}-{model}-r{repeat}-{bid}", ctx.provider);
                     let (ok, bad): (Vec<_>, Vec<_>) = chunk.iter().partition(|(_, l)| l.is_some());
                     for (row, _) in bad {
                         results.push(ctx.row_result(row, &batch_id, None, "unparsed_line"));
@@ -333,20 +362,23 @@ pub async fn run(rows: Vec<Row>, cfg: &RunConfig) -> Result<Vec<RowResult>, Stri
                                 entry.duration_ms,
                             );
                             record.cached = cached;
-                            let verdicts: HashMap<String, _> = report
-                                .line_verdicts
-                                .iter()
-                                .map(|v| (v.id.trim().to_uppercase(), v))
-                                .collect();
+                            let by_id = |vs: &[security_analyzer_llm::LineVerdict]| {
+                                vs.iter()
+                                    .map(|v| (v.id.trim().to_uppercase(), v.clone()))
+                                    .collect::<HashMap<_, _>>()
+                            };
+                            let verdicts = by_id(&report.line_verdicts);
+                            let ai_verdicts = by_id(&report.ai_line_verdicts);
                             let whole_batch_failed =
                                 report.parse_failed && report.line_verdicts.is_empty();
                             let mut row_ids = Vec::new();
                             for (i, (row, log)) in ok.iter().enumerate() {
-                                row_ids.push(row.id.clone());
+                                row_ids.push(row.row.id.clone());
                                 let id = security_analyzer_llm::prompts::line_id(i);
                                 let mut r = ctx.row_result(row, &batch_id, log.as_ref(), "ok");
                                 r.cached = cached;
                                 r.explanation_parse_failed = report.parse_failed;
+                                r.ai_malicious = ai_verdicts.get(&id).map(|v| v.malicious);
                                 if i >= prepared.lines_sent {
                                     r.outcome = "no_verdict".into();
                                 } else if whole_batch_failed {
@@ -386,9 +418,35 @@ pub async fn run(rows: Vec<Row>, cfg: &RunConfig) -> Result<Vec<RowResult>, Stri
         }
     }
 
+    write_meta(cfg, &cfg.out_dir)?;
     write_jsonl(&cfg.out_dir.join("results.jsonl"), &results)?;
     write_jsonl(&cfg.out_dir.join("calls.jsonl"), &calls)?;
     Ok(results)
+}
+
+fn write_meta(cfg: &RunConfig, dir: &Path) -> Result<(), String> {
+    let git = std::process::Command::new("git")
+        .args(["describe", "--always", "--dirty", "--tags"])
+        .output()
+        .ok()
+        .filter(|o| o.status.success())
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string());
+    let meta = serde_json::json!({
+        "git": git,
+        "seed": cfg.seed,
+        "batch_size": cfg.batch_size,
+        "temperature": cfg.temperature,
+        "max_tokens": cfg.max_tokens,
+        "repeats": cfg.repeats,
+        "modes": cfg.modes,
+        "models": cfg.models.iter().map(|(p, m)| format!("{p}:{m}")).collect::<Vec<_>>(),
+        "finished_at": chrono::Utc::now().to_rfc3339(),
+    });
+    std::fs::write(
+        dir.join("meta.json"),
+        serde_json::to_string_pretty(&meta).map_err(|e| e.to_string())?,
+    )
+    .map_err(|e| e.to_string())
 }
 
 pub fn read_results(path: &Path) -> Result<Vec<RowResult>, String> {
@@ -465,6 +523,7 @@ mod tests {
             attack_type: None,
             injected: false,
             variant: None,
+            source_id: None,
         };
         let rows = vec![
             row("a", "/x?q=%27%20OR%201%3D1", "attack"),
@@ -478,6 +537,7 @@ mod tests {
             modes: vec![RULES_ONLY.into()],
             models: vec![],
             repeats: 3,
+            seed: 1,
             batch_size: 10,
             temperature: 0.0,
             max_tokens: 10,

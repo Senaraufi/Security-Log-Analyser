@@ -17,9 +17,21 @@ This document describes how to configure the multi-provider LLM analyzer for sec
 | `LLM_PROVIDER` | The LLM provider to use | `openai` | `openai`, `anthropic`, `groq`, `gemini` |
 | `LLM_MODEL` | The model name | Provider default | See provider-specific models below |
 | `LLM_TEMPERATURE` | Generation temperature | `0.3` | `0.0` - `1.0` |
-| `LLM_MAX_TOKENS` | Maximum response tokens | `4096` | Any positive integer |
+| `LLM_MAX_TOKENS` | Maximum response tokens | `4096` | Any positive integer (reasoning models such as gpt-oss need 16384) |
+| `LLM_BATCH_SIZE` | Maximum log lines sent per request; extra lines are not analysed, and the number sent is recorded in the report | `100` | Any positive integer |
+| `LLM_MODE` | How per-line verdicts are produced (see below) | `ai_decides` | `ai_decides`, `rules_first`, `spotlight` |
 
-### API Keys
+#### Analysis modes
+
+| Mode | Behaviour |
+|------|-----------|
+| `ai_decides` | The AI reads the raw logs and decides what is malicious (baseline, prompt-injectable) |
+| `rules_first` | Rule verdicts are fixed and final. The AI explains them and still gives its own per-line verdicts, stored separately in `ai_line_verdicts` |
+| `spotlight` | Log text is fenced as untrusted data with a treat-as-data instruction. `<<<` and `>>>` inside the logs are rewritten so they cannot forge the fence |
+
+For experiments use `LLM_TEMPERATURE=0` and an explicit `LLM_MODEL`. The web API also accepts a `mode` form field.
+
+## API Keys
 
 Set the API key for your chosen provider:
 
@@ -59,7 +71,7 @@ ANTHROPIC_API_KEY=sk-ant-your-anthropic-api-key-here
 ```env
 # Groq Configuration (fast, cost-effective)
 LLM_PROVIDER=groq
-LLM_MODEL=llama-3.1-70b-versatile
+LLM_MODEL=openai/gpt-oss-120b
 LLM_TEMPERATURE=0.3
 LLM_MAX_TOKENS=4096
 GROQ_API_KEY=gsk_your-groq-api-key-here
@@ -70,7 +82,7 @@ GROQ_API_KEY=gsk_your-groq-api-key-here
 ```env
 # Gemini Configuration
 LLM_PROVIDER=gemini
-LLM_MODEL=gemini-1.5-flash
+LLM_MODEL=gemini-3.5-flash-lite
 LLM_TEMPERATURE=0.3
 LLM_MAX_TOKENS=4096
 GEMINI_API_KEY=your-gemini-api-key-here
@@ -98,17 +110,18 @@ GEMINI_API_KEY=your-gemini-api-key-here
 
 | Model | Description | Best For |
 |-------|-------------|----------|
-| `llama-3.1-70b-versatile` | Llama 3.1 70B | Best accuracy (default) |
-| `llama-3.1-8b-instant` | Llama 3.1 8B | Ultra-fast responses |
-| `mixtral-8x7b-32768` | Mixtral 8x7B | Large context |
+| `openai/gpt-oss-120b` | GPT-OSS 120B (reasoning) | Best accuracy (default); set `LLM_MAX_TOKENS=16384` |
+
+`llama-3.1-70b-versatile` was retired by Groq in January 2025. Check Groq's deprecations page before pinning other models.
 
 ### Gemini Models
 
 | Model | Description | Best For |
 |-------|-------------|----------|
-| `gemini-1.5-flash` | Gemini 1.5 Flash | Fast, cost-effective (default) |
-| `gemini-1.5-pro` | Gemini 1.5 Pro | Best accuracy, larger context |
-| `gemini-2.0-flash-exp` | Gemini 2.0 Flash (Experimental) | Latest experimental features |
+| `gemini-3.5-flash-lite` | Gemini 3.5 Flash-Lite | Fast, low cost (default) |
+| `gemini-3.6-flash` | Gemini 3.6 Flash | Higher accuracy |
+
+The Gemini 1.5 models were shut down in September 2025, and `gemini-2.5-flash` is scheduled to be routed to `gemini-3.5-flash-lite` on 1 December 2026.
 
 ## Switching Providers
 
